@@ -158,6 +158,7 @@ class ListDag(Run):
 
 
 class Help(DoitHelp):
+    name = "help"
 
     @staticmethod
     def print_usage(cmds):
