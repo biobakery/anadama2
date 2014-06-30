@@ -1,13 +1,24 @@
 import re
 import os
+import json
 import errno
+import inspect
 import mimetypes
+
 
 biopython_to_metaphlan = {
     "fasta": "multifasta",
     "fastq": "multifastq",
     "bam"  : "bam",
 }
+
+def generator_flatten(gen):
+    for item in gen:
+        if inspect.isgenerator(item):
+            for value in generator_flatten(item):
+                yield value
+        else:
+            yield item
 
 def addext(name_str, tag_str):
     return name_str + "." + tag_str
@@ -157,4 +168,7 @@ class SerializableMixin(object):
                 (key, getattr(self, key))
                 for key in self.serializable_attrs
             ])
+
+def islambda(func):
+    return getattr(func,'func_name') == '<lambda>'
 
