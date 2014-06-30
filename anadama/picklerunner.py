@@ -3,7 +3,7 @@
 import os
 from tempfile import NamedTemporaryFile
 
-from ..pickler import cloudpickle
+from .pickler import cloudpickle
 
 template = \
 """#!/usr/bin/env python

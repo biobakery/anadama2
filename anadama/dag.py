@@ -4,8 +4,13 @@ from collections import defaultdict, deque
 
 import networkx
 
-from ..util import SerializableMixin, generator_flatten
-from . import picklerunner
+from .util import (
+    SerializableMixin, 
+    generator_flatten
+)
+from . import (
+    picklerunner
+)
 
 TMP_FILE_DIR = "/tmp"
 
