@@ -18,8 +18,11 @@ class JenkinsRunner(Runner):
             if run_status == 'up-to-date':
                 yield node
             elif run_status == 'run':
-                self._update_dependency_db(node._orig_task)
-                continue
+                if all(os.path.exists(target) for target in node.targets):
+                    yield node
+                else:
+                    self._update_dependency_db(node._orig_task)
+                    continue
 
         self.dep_manager.close()
 
