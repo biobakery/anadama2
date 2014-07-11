@@ -19,6 +19,11 @@ class JenkinsRunner(Runner):
                 yield node
             elif run_status == 'run':
                 if all(os.path.exists(target) for target in node.targets):
+                    # Going beyond the standard doit logic here. If
+                    # all of the task's targets exist, the task is
+                    # up-to-date as far as the JenkinsRunner is
+                    # concerned. This means that you'll have to delete
+                    # any target files from failed tasks yourself.
                     yield node
                 else:
                     self._update_dependency_db(node._orig_task)
