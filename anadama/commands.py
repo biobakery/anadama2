@@ -4,18 +4,20 @@ import codecs
 from operator import attrgetter
 
 from doit.cmd_run import Run as DoitRun
+from doit.cmd_run import opt_reporter
 from doit.cmd_help import Help as DoitHelp
 from doit.cmd_list import List as DoitList
 from doit.task import Task
 from doit.control import TaskControl
 from doit.runner import Runner, MRunner, MThreadRunner
-from doit.reporter import REPORTERS
 from doit.cmd_base import DoitCmdBase
 from doit.cmdparse import CmdOption
 from doit.exceptions import InvalidCommand
 
 from . import dag
 from .runner import RUNNER_MAP
+from .reporter import REPORTERS
+
 
 opt_runner = dict(
     name  = "runner",
@@ -33,6 +35,15 @@ opt_tmpfiles = dict(
     help    = "Where to save temporary files",
     type=str
 )
+
+opt_reporter['help'] = \
+"""Choose output reporter. Available:
+'default': report output on console
+'executed-only': no output for skipped (up-to-date) and group tasks
+'json': output result in json format
+'verbose': output actions on console as they're executed
+[default: %(default)s]
+"""
 
 class AnadamaCmdBase(DoitCmdBase):
     my_base_opts = ()
