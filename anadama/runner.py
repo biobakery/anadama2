@@ -44,8 +44,9 @@ class JenkinsRunner(Runner):
     def run_all(self, task_dispatcher):
         task_dict = task_dispatcher.tasks
         the_dag, unordered_nodes = dag.assemble(task_dict.itervalues())
-        cached_tasks = self._cached_tasks(unordered_nodes, task_dict)
-        the_dag = dag.prune(the_dag, cached_tasks)
+        if not self.always_execute:
+            cached_tasks = self._cached_tasks(unordered_nodes, task_dict)
+            the_dag = dag.prune(the_dag, cached_tasks)
         return self._print_dag(the_dag)
 
     def _print_dag(self, dag, key="dag"):
