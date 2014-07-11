@@ -6,8 +6,8 @@ Just do something like this: my_action = CmdAction(..., verbose=True)
 """
 
 class CmdAction(DoitCmdAction):
-    def __init__(self, verbose=False, *args, **kwargs):
-        self.verbose = verbose
+    def __init__(self, *args, **kwargs):
+        self.verbose = kwargs.pop('verbose', False)
         super(CmdAction, self).__init__(*args, **kwargs)
 
     def execute(self, *args, **kwargs):
