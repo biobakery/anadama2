@@ -1,6 +1,53 @@
+import re
+
 from doit.task import dict_to_task
 from doit.loader import flat_generator
 from doit.control import no_none
+
+def Matcher(str_or_callable):
+    if type(str_or_callable) is str:
+        return lambda file_: bool(re.search(str_or_callable, file_) is not None)
+    if hasattr(str_or_callable, '__call__'):
+        return lambda file_: bool(str_or_callable is True)
+    else:
+        raise TypeError("Matcher accepts only string or callable,"
+                        "received %s"%(type(str_or_callable)))
+
+
+def route(files, rules):
+    """Fit a list of files into a dictionary of strings -> lists of
+    strings by the rules defined in `rules`. Returns a dictionary that
+    can be used as keyword args for other functions (likely
+    pipelines), where the keys are the name of the keyword argument,
+    and the values are lists of strings. `rules` should be an iterable
+    of tuples.
+
+    `rules`'s keys (the first item in the tuple) can be either
+    functions or strings. Strings are interpreted as regular
+    expressions; files are fit into the list with the first regex
+    match.  Functions are called on the string and put into the first
+    list which resulted in a True from the function. Order matters!
+
+    Example::
+
+        ret = route(['Joe', 'Bob', 'larry'],
+                    [ (r'o',                          "names_with_o")
+                      (lambda val: val.endswith('y'), "endswith_y") ]
+                    )
+        ret
+        { 'names_with_o': ['Joe', 'Bob'], 'endswith_y': ['larry'] }
+
+    """
+
+    ret =      dict([ (value, list())         for _, value in rules ])
+    matchers = dict([ (Matcher(key), value) for key, value in rules ])
+    for file_ in files:
+        for matcher, name in matchers.iteritems():
+            if matcher(file_):
+                ret[name].append(file_)
+    
+    return ret
+                
 
 class Pipeline(object):
     """ Class that encapsulates a set of workflows.
