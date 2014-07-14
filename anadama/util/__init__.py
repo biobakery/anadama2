@@ -4,7 +4,7 @@ import json
 import errno
 import inspect
 import mimetypes
-
+from collections import namedtuple
 
 biopython_to_metaphlan = {
     "fasta": "multifasta",
@@ -24,12 +24,13 @@ def addext(name_str, tag_str):
     return name_str + "." + tag_str
 
 def addtag(name_str, tag_str):
+    path, name_str = os.path.split(name_str)
     match = re.match(r'([^.]+)(\..*)', name_str)
     if match:
         base, ext = match.groups()
-        return base + "_" + tag_str + ext
+        return os.path.join(path, base + "_" + tag_str + ext)
     else:
-        return name_str + "_" + tag_str
+        return os.path.join(path, name_str + "_" + tag_str)
 
 def guess_seq_filetype(guess_from):
     if re.search(r'\.f.*q', guess_from): #fastq, fnq, fq
@@ -132,6 +133,32 @@ def deserialize_csv(file_handle):
             [ col.strip() for col in cols[1:] ] 
             )
         
+def deserialize_map_file(file_handle):
+    """Returns a list of namedtuples according to the contents of the
+    file_handle according to the customs of QIIME
+    """
+    mangle = lambda field: re.sub(r'\s+', '_', field.strip().replace('#', ''))
+
+    header = [ mangle(s)
+               for s in file_handle.readline().split('\t') ]
+
+    cls = namedtuple('Sample', header, rename=True)
+
+    i = 1
+    for row in file_handle.read().strip('\r\n').split('\n'):
+        i+=1
+        if row.startswith('#'):
+            continue
+        try:
+            yield cls._make([ r.strip() for r in row.split('\t') ])
+        except TypeError as e:
+            raise SparseMetadataException(
+                "Unable to deserialize sample-specific metadata:"+\
+                " The file %s has missing values at row %i" %(
+                    file_handle.name, i)
+            )
+
+
 def _defaultfunc(obj):
     if hasattr(obj, '_serializable_attrs'):
         return obj._serializable_attrs
