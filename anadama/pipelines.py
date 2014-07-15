@@ -56,7 +56,7 @@ class Pipeline(object):
     def __init__(self):
         """ Instantiate the Pipeline
         """
-        self.tasks   = None
+        self.task_dicts = None
 
 
     def _configure(self):
@@ -77,12 +77,12 @@ class Pipeline(object):
 
         """
         default_tasks = list()
-        self.tasks = list()
+        self.task_dicts = list()
         self._configure = no_none(self._configure)
-        task_dicts = self._configure()
-        for d, _ in flat_generator(task_dicts):
+        nested_dicts = self._configure()
+        for d, _ in flat_generator(nested_dicts):
             default_tasks.append(d["name"])
-            self.tasks.append( dict_to_task(d) )
+            self.task_dicts.append( d )
 
         # return the global doit config dictionary
         return {
@@ -92,5 +92,5 @@ class Pipeline(object):
 
 
     def tasks(self):
-        for task in self.tasks:
-            yield task
+        for d in self.task_dicts:
+            yield dict_to_task(d)
