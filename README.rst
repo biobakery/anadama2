@@ -18,6 +18,14 @@ AnADAMA is essentially DoIt_ with a few extensions:
 
 .. _DoIt: http://pydoit.org/
 
+Installation
+============
+
+One liner::
+
+  $ pip install -e 'git+https://bitbucket.org/biobakery/anadama.git@master#egg=anadama-0.0.1'
+
+
 Usage
 =====
 
