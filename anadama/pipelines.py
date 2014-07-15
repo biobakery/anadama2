@@ -51,17 +51,45 @@ def route(files, rules):
 
 class Pipeline(object):
     """ Class that encapsulates a set of workflows.
+    Subclass this to make your own pipelines.
+    The interface for a pipeline in a task is as follows::
+        def task_use_my_pipeline():
+            my_pipeline = SomePipeline(raw_files=['groceries.txt', 
+                                                  'bucket_list.txt'])
+            my_pipeline.configure()
+            yield my_pipeline.tasks()
+
+    For use in a ``loader``, use the task_dicts attribute like so::
+        from doit.cmd_base import Loader
+        class MyLoader(Loader):
+            def load_tasks(self, cmd, opt_values, pos_args):
+                my_pipeline = SomePipeline(raw_files=['groceries.txt', 
+                                                      'bucket_list.txt'])
+                global_config = my_pipeline.configure()
+                return my_pipeline.tasks(), global_config
     """
     
     def __init__(self):
-        """ Instantiate the Pipeline
+        """Instantiate the Pipeline. Doesn't do too much in the base
+        class. Subclass this to put your own options and pipeline
+        inputs.
+        Here's an example::
+            from andama.pipelines import Pipeline
+            class SomePipeline(Pipeline):
+                def __init__(self, the_inputs=list(), *args, **kwargs):
+                    self.inputs = the_inputs
+                    # don't forget to do the initialization steps from 
+                    # the superclass by using super()
+                    super(SomePipeline, self).__init__(*args, **kwargs)
+
         """
         self.task_dicts = None
 
 
     def _configure(self):
-        """Configures a pipeline, yielding tasks as a generator. Should
-        generally be overridden in base classes
+        """Configures a pipeline, yielding doit task_dicts as a
+        generator. This should be where the bulk of your pipeline
+        goes.
 
         """
         raise NotImplementedError()
@@ -73,7 +101,9 @@ class Pipeline(object):
 
         Return the global doit config dict.
 
-        Side effect: populate the tasks attribute with a list of doit tasks
+        Side effect: populate the task_dicts attribute with a list of
+        doit tasks. You'll need this to get the tasks() method to
+        return something other than an empty generator.
 
         """
         default_tasks = list()
@@ -92,5 +122,6 @@ class Pipeline(object):
 
 
     def tasks(self):
+        """Call this method to get tasks (not task dicts) from a pipeline."""
         for d in self.task_dicts:
             yield dict_to_task(d)
