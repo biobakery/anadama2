@@ -15,7 +15,7 @@ import cPickle as pickle
 the_pickle = {pickle}
 
 def remove_myself():
-    myself = os.path.dirname(os.path.realpath(__file__))
+    myself = os.path.realpath(__file__)
     os.remove(myself)
 
 def main():
