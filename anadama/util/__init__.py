@@ -6,6 +6,9 @@ import inspect
 import mimetypes
 from collections import namedtuple
 
+class SparseMetadataException(ValueError):
+    pass
+
 biopython_to_metaphlan = {
     "fasta": "multifasta",
     "fastq": "multifastq",
