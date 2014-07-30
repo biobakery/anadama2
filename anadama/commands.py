@@ -162,10 +162,19 @@ class ListDag(Run):
     dog_purpose = "print execution tree"
     doc_usage = "[TASK ...]"
 
-    def _execute(self, outfile, *args, **kwargs):
+
+    def _execute(self, outfile,
+                 verbosity=None, always=False, continue_=False,
+                 reporter='default', num_process=0, par_type='process',
+                 single=False):
+
         self.opt_values['runner'] = 'jenkins'
         dag.TMP_FILE_DIR = self.opt_values["tmpfiledir"]
-        return super(ListDag, self)._execute(outfile, *args, **kwargs)
+        return super(ListDag, self)._execute(outfile, verbosity=verbosity,
+                                             always=always, continue_=continue_,
+                                             reporter=reporter,
+                                             num_process=num_process,
+                                             par_type=par_type, single=single)
 
 
 class Help(DoitHelp):
