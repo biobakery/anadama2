@@ -202,3 +202,23 @@ class SerializableMixin(object):
 def islambda(func):
     return getattr(func,'func_name') == '<lambda>'
 
+_PATH_list = None
+
+def find_on_path(bin_str):
+    """ Finds an executable living on the shells PATH variable.
+    :param bin_str: String; executable to find
+
+    :returns: Absolute path to `bin_str` or False if not found
+    :rtype: str
+    """
+
+    global _PATH_list
+    if _PATH_list is None:
+        _PATH_list = os.environ['PATH'].split(':')
+
+    for dir_ in _PATH_list:
+        candidate = os.path.join(dir_, bin_str)
+        if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+
+    return False
