@@ -14,19 +14,30 @@ import cPickle as pickle
 
 the_pickle = {pickle}
 
+task = pickle.loads(the_pickle)
+task.__init__(task.name, task.some_actions)
+
 def remove_myself():
     myself = os.path.realpath(__file__)
     os.remove(myself)
 
+def be_verbose():
+    for action in task.actions:
+        if hasattr(action, 'expand_action'):
+            print action.expand_action()
+
 def main():
-    task = pickle.loads(the_pickle)
-    task.__init__(task.name, task.some_actions)
     return task.execute(out=sys.stdout, err=sys.stderr)
 
 if __name__ == '__main__':
+    if "-v" in sys.argv or "--verbose" in sys.argv:
+        be_verbose()
+
     ret = main()
+
     if "-r" in sys.argv or "--remove" in sys.argv:
         remove_myself()
+
     sys.exit(ret)
 
 """
