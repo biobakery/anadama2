@@ -28,7 +28,8 @@ class requires(object):
     def __call__(self, fn):
         def wrapper(*args, **kwargs):
             ret = fn(*args, **kwargs)
-            ret.setdefault('file_dep', []).extend(self.required_binaries)
+            deps = ret.get('file_dep', [])
+            ret['file_dep'] = list(set(deps+self.required_binaries))
             return ret
 
         return wrapper
