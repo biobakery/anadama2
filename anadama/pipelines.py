@@ -68,6 +68,8 @@ class Pipeline(object):
                 global_config = my_pipeline.configure()
                 return my_pipeline.tasks(), global_config
     """
+
+    name = None
     
     def __init__(self):
         """Instantiate the Pipeline. Doesn't do too much in the base
@@ -85,6 +87,9 @@ class Pipeline(object):
         """
         self.task_dicts = None
 
+        if not self.name:
+            self.name = self.__class__.__name__
+            
 
     def _configure(self):
         """Configures a pipeline, yielding doit task_dicts as a
@@ -117,7 +122,8 @@ class Pipeline(object):
         # return the global doit config dictionary
         return {
             "default_tasks": default_tasks,
-            "continue":      True
+            "continue":      True,
+            "pipeline_name": self.name
         }
 
 

@@ -15,7 +15,7 @@ from . import (
 TMP_FILE_DIR = "/tmp"
 
 class DagNode(SerializableMixin):
-    def __init__(self, name, action_func, targets, deps):
+    def __init__(self, name, action_func, targets, deps, **kwargs):
         self.name = name
         self.action_func = action_func
         self.targets = set(targets)
@@ -24,6 +24,9 @@ class DagNode(SerializableMixin):
         self._orig_task = None
         if self.action_func is None:
             self.action_func = self.execute
+
+        # set extra fields for others to play with json
+        self.extra_fields = kwargs
 
         self._cmd = ""
          
@@ -40,13 +43,14 @@ class DagNode(SerializableMixin):
         self.action_func()
 
     def _custom_serialize(self):
-        ret =  {
+        ret = self.extra_fields
+        ret.update({
             "id": hash(self),
             "name": self.name,
             "command": self._command,
             "produces": list(self.targets),
             "depends": list(self.deps),
-        }
+        })
         return ret
         
 
@@ -110,7 +114,7 @@ def indexby(task_list, attr):
     return idx
 
 
-def assemble(tasks):
+def assemble(tasks, root_attrs=dict()):
     nodes = [ DagNode.from_doit_task(t) for t in tasks ]
     nodes_by_dep = indexby(nodes, attr="deps")
     nodes_by_target = indexby(nodes, attr="targets")
@@ -118,8 +122,8 @@ def assemble(tasks):
     root_node = DagNode(name="root",
                         action_func=None, 
                         targets=list(), 
-                        deps=list())
-
+                        deps=list(),
+                        **root_attrs)
 
     dag = networkx.DiGraph()
     dag.add_edges_from(

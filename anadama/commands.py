@@ -61,7 +61,7 @@ class Run(AnadamaCmdBase, DoitRun):
     def _execute(self, outfile,
                  verbosity=None, always=False, continue_=False,
                  reporter='default', num_process=0, par_type='process',
-                 single=False):
+                 single=False, pipeline_name="Custom Pipeline"):
         """
         @param reporter: (str) one of provided reporters or ...
                          (class) user defined reporter class 
@@ -130,6 +130,7 @@ class Run(AnadamaCmdBase, DoitRun):
                     num_process, par_type)
 
             runner = RunnerClass(*run_args)
+            runner.pipeline_name = pipeline_name
             return runner.run_all(self.control.task_dispatcher())
         finally:
             if isinstance(outfile, str):
@@ -166,15 +167,15 @@ class ListDag(Run):
     def _execute(self, outfile,
                  verbosity=None, always=False, continue_=False,
                  reporter='default', num_process=0, par_type='process',
-                 single=False):
-
+                 single=False, pipeline_name="Custom Pipeline"):
         self.opt_values['runner'] = 'jenkins'
         dag.TMP_FILE_DIR = self.opt_values["tmpfiledir"]
         return super(ListDag, self)._execute(outfile, verbosity=verbosity,
                                              always=always, continue_=continue_,
                                              reporter=reporter,
                                              num_process=num_process,
-                                             par_type=par_type, single=single)
+                                             par_type=par_type, single=single,
+                                             pipeline_name=pipeline_name)
 
 
 class Help(DoitHelp):
