@@ -36,14 +36,17 @@ def addtag(name_str, tag_str):
         return os.path.join(path, name_str + "_" + tag_str)
 
 def guess_seq_filetype(guess_from):
-    if re.search(r'\.f.*q', guess_from): #fastq, fnq, fq
+    guess_from = os.path.split(guess_from)[-1]
+    if re.search(r'\.f.*q$', guess_from): #fastq, fnq, fq
         return 'fastq'
-    elif re.search(r'\.f.*a', guess_from): #fasta, fna, fa
+    elif re.search(r'\.f.*a$', guess_from): #fasta, fna, fa
         return 'fasta'
-    elif '.sff' in guess_from:
+    elif guess_from.endswith('.sff'):
         return 'sff'
-    elif '.bam' in guess_from:
+    elif guess_from.endswith('.bam'):
         return 'bam'
+    elif guess_from.endswith('.sam'):
+        return 'sam'
 
 def dict_to_cmd_opts_iter(opts_dict, sep="=", singlesep=" "):
     """sep separates long options and their values, singlesep separates
