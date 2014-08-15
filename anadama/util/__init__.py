@@ -145,13 +145,15 @@ def deserialize_map_file(file_handle):
     """
     mangle = lambda field: re.sub(r'\s+', '_', field.strip().replace('#', ''))
 
-    header = [ mangle(s)
-               for s in file_handle.readline().split('\t') ]
+    header_line = file_handle.readline()
+    if not header_line:
+        return
+    header = [ mangle(s) for s in header_line.split('\t') ]
 
     cls = namedtuple('Sample', header, rename=True)
 
     i = 1
-    for row in file_handle.read().strip('\r\n').split('\n'):
+    for row in file_handle:
         i+=1
         if row.startswith('#'):
             continue
