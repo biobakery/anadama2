@@ -8,7 +8,7 @@ def Matcher(str_or_callable):
     if type(str_or_callable) is str:
         return lambda file_: bool(re.search(str_or_callable, file_) is not None)
     if hasattr(str_or_callable, '__call__'):
-        return lambda file_: bool(str_or_callable is True)
+        return lambda file_: bool(str_or_callable(file_))
     else:
         raise TypeError("Matcher accepts only string or callable,"
                         "received %s"%(type(str_or_callable)))
