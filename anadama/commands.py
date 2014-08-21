@@ -1,6 +1,7 @@
 import sys
 import six
 import codecs
+from functools import partial
 from operator import attrgetter
 
 from doit.cmd_run import Run as DoitRun
@@ -121,9 +122,6 @@ class Run(AnadamaCmdBase, DoitRun):
 
             run_args = [self.dep_class, self.dep_file, reporter_obj,
                         continue_, always, verbosity]
-            if num_process > 0:
-                run_args.append(run_args)
-
             RunnerClass = RUNNER_MAP.get(self.opt_values["runner"])
             if not RunnerClass:
                 RunnerClass = self._discover_runner_class(
@@ -143,14 +141,14 @@ class Run(AnadamaCmdBase, DoitRun):
             if par_type == 'process':
                 RunnerClass = MRunner
                 if MRunner.available():
-                    return MRunner
+                    return partial(MRunner, num_process=num_process)
                 else:
                     RunnerClass = MThreadRunner
                     sys.stderr.write(
                         "WARNING: multiprocessing module not available, " +
                         "running in parallel using threads.")
             elif par_type == 'thread':
-                    return MThreadRunner
+                    return partial(MThreadRunner, num_process=num_process)
             else:
                 msg = "Invalid parallel type %s"
                 raise InvalidCommand(msg % par_type)
