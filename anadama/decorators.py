@@ -10,26 +10,28 @@ class requires(object):
     """
 
     def __init__(self, binaries=list()):
+        self.required_binaries = binaries
+
+    def _maybe_halt(self):
         missing = list()
-        required_binaries = list()
-        for binary in binaries:
+        for binary in self.required_binaries:
             candidate = find_on_path(binary)
             if not candidate:
                 missing.append(binary)
             else:
-                required_binaries.append(candidate)
+                yield candidate
             
         if missing:
             raise ValueError("Unable to continue, please install the "
                              "following binaries: %s" %(str(missing)))
 
-        self.required_binaries = required_binaries
-
     def __call__(self, fn):
         def wrapper(*args, **kwargs):
+            binaries_with_paths = list(self._maybe_halt())
             ret = fn(*args, **kwargs)
-            deps = ret.get('file_dep', [])
-            ret['file_dep'] = list(set(deps+self.required_binaries))
+            if ret:
+                deps = ret.get('file_dep', [])
+                ret['file_dep'] = list(set(deps+binaries_with_paths))
             return ret
 
         return wrapper
