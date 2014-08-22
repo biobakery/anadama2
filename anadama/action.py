@@ -1,3 +1,4 @@
+import sys
 from doit.action import CmdAction as DoitCmdAction
 
 """
@@ -12,6 +13,6 @@ class CmdAction(DoitCmdAction):
 
     def execute(self, *args, **kwargs):
         # Hope calling expand_action() has no side effects!
-        print self.expand_action()
-        super(CmdAction, self).execute(*args, **kwargs)
+        print >> sys.stderr, self.expand_action()
+        return super(CmdAction, self).execute(*args, **kwargs)
 
