@@ -30,10 +30,13 @@ class requires(object):
             binaries_with_paths = list(self._maybe_halt())
             ret = fn(*args, **kwargs)
             if ret:
-                deps = ret.get('file_dep', [])
-                ret['file_dep'] = list(set(deps+binaries_with_paths))
-            return ret
-
+                if type(ret) is dict:
+                    ret = [ret]
+                for t in ret:
+                    deps = t.get('file_dep', [])
+                    t['file_dep'] = list(set(deps+binaries_with_paths))
+                    yield t
+                        
         return wrapper
 
     
