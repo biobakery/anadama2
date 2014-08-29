@@ -7,7 +7,7 @@ from doit.exceptions import TaskError, TaskFailed
 
 default_conditions = [
     lambda ret, *args, **kwargs: type(ret) in (TaskError, TaskFailed),
-    lambda ret: ret is False
+    lambda ret, *args, **kwargs: ret is False
 ]
 
 class Group(list):
