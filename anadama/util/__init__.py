@@ -86,8 +86,8 @@ def mkdirp(path):
 def _new_file(*names, **opts):
     basedir = opts.get("basedir")
     for name in names:
-        if basedir is not None:
-            name = os.path.join(basedir, name)
+        if basedir:
+            name = os.path.join(basedir, os.path.basename(name))
         
         dir = os.path.dirname(name)
         if not os.path.exists(dir):
