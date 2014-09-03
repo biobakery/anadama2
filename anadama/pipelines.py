@@ -1,4 +1,5 @@
 import re
+from itertools import chain
 
 from doit.task import dict_to_task
 from doit.loader import flat_generator
@@ -131,3 +132,23 @@ class Pipeline(object):
         """Call this method to get tasks (not task dicts) from a pipeline."""
         for d in self.task_dicts:
             yield dict_to_task(d)
+
+            
+    @classmethod
+    def _chain(cls, other_pipeline):
+        raise NotImplementedError("This pipeline does not support"
+                                  " chaining into other pipelines")
+
+    
+    def append(self, other_pipeline_cls):
+        other_pipeline = other_pipeline_cls._chain(self)
+        self._old_configure = self._configure
+        def _new_configure():
+            first = self._old_configure()
+            second = other_pipeline._configure()
+            return chain(first, second)
+
+        self._configure = _new_configure
+        self.name += ", "+other_pipeline.name
+
+        return self
