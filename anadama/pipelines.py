@@ -140,9 +140,20 @@ class Pipeline(object):
 
             
     @classmethod
-    def _chain(cls, other_pipeline):
-        raise NotImplementedError("This pipeline does not support"
-                                  " chaining into other pipelines")
+    def _chain(cls, other_pipeline, workflow_options=dict()):
+        product_attributes = dict([
+            (attr, getattr(other_pipeline, attr))
+            for attr in self.products
+            if hasattr(other_pipeline, attr)
+        ])
+        if not product_attributes:
+            raise ValueError(
+                "Cannot chain to pipeline %s: missing at least one of %s"%(
+                    other_pipeline.name, self.products.keys())
+        else:
+            return cls(products_dir=None,
+                       workflow_options=workflow_options,
+                       **io_attributes)
 
     
     def append(self, other_pipeline_cls):
