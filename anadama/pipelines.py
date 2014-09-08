@@ -87,6 +87,7 @@ class Pipeline(object):
 
         """
         self.task_dicts = None
+        self.products = dict()
 
         if not self.name:
             self.name = self.__class__.__name__
@@ -100,6 +101,10 @@ class Pipeline(object):
         """
         raise NotImplementedError()
 
+
+    def add_product(self, name, value):
+        self.products[name] = value
+        setattr(self, name, value)
 
     def configure(self):
         """Configure the workflows associated with this pipeline by calling
