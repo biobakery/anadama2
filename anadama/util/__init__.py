@@ -171,6 +171,13 @@ def deserialize_map_file(file_handle):
             )
 
 
+def serialize_map_file(namedtuple_list, output_fname):
+    with open(output_fname, 'w') as map_file:
+        print >> map_file, "#"+"\t".join(namedtuple_list[0]._fields)
+        for record in namedtuple_list:
+            print >> map_file, "\t".join(record)
+
+
 def _defaultfunc(obj):
     if hasattr(obj, '_serializable_attrs'):
         return obj._serializable_attrs
@@ -231,3 +238,4 @@ def find_on_path(bin_str):
             return candidate
 
     return False
+
