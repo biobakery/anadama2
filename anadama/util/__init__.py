@@ -34,7 +34,7 @@ def addtag(name_str, tag_str):
         return os.path.join(path, base + "_" + tag_str + ext)
     else:
         return os.path.join(path, name_str + "_" + tag_str)
-
+        
 def guess_seq_filetype(guess_from):
     guess_from = os.path.split(guess_from)[-1]
     if re.search(r'\.f.*q$', guess_from): #fastq, fnq, fq
@@ -68,11 +68,10 @@ def dict_to_cmd_opts_iter(opts_dict, sep="=", singlesep=" "):
         else:
             yield key
 
-
+        
 def dict_to_cmd_opts(opts_dict, sep="=", singlesep=" "):
     return " ".join(dict_to_cmd_opts_iter(
         opts_dict, sep=sep, singlesep=singlesep))
-
 
 def mkdirp(path):
     try:
@@ -87,13 +86,18 @@ def _new_file(*names, **opts):
     basedir = opts.get("basedir")
     for name in names:
         if basedir:
-            name = os.path.join(basedir, os.path.basename(name))
+            name = os.path.realpath(
+                os.path.join(
+                    basedir, os.path.basename(name)
+                )
+            )
         
         dir = os.path.dirname(name)
         if not os.path.exists(dir):
             mkdirp(dir)
 
         yield name
+
 
 def new_file(*names, **opts):
     iterator = _new_file(*names, basedir=opts.get("basedir"))
