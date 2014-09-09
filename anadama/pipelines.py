@@ -149,7 +149,7 @@ class Pipeline(object):
         if not product_attributes:
             raise ValueError(
                 "Cannot chain to pipeline %s: missing at least one of %s"%(
-                    other_pipeline.name, self.products.keys())
+                    other_pipeline.name, self.products.keys()))
         else:
             return cls(products_dir=None,
                        workflow_options=workflow_options,
