@@ -71,6 +71,7 @@ class Pipeline(object):
     """
 
     name = None
+    products = dict()
     
     def __init__(self):
         """Instantiate the Pipeline. Doesn't do too much in the base
@@ -80,14 +81,14 @@ class Pipeline(object):
             from andama.pipelines import Pipeline
             class SomePipeline(Pipeline):
                 def __init__(self, the_inputs=list(), *args, **kwargs):
-                    self.inputs = the_inputs
                     # don't forget to do the initialization steps from 
                     # the superclass by using super()
                     super(SomePipeline, self).__init__(*args, **kwargs)
+                    self.inputs = the_inputs
 
         """
         self.task_dicts = None
-        self.products = dict()
+        self.products = self.products.copy()
 
         if not self.name:
             self.name = self.__class__.__name__
@@ -102,9 +103,11 @@ class Pipeline(object):
         raise NotImplementedError()
 
 
-    def add_product(self, name, value):
-        self.products[name] = value
-        setattr(self, name, value)
+    def add_products(self, **kwargs):
+        self.products.update(kwargs)
+        for name, value in kwargs.iteritems():
+            setattr(self, name, value)
+
 
     def configure(self):
         """Configure the workflows associated with this pipeline by calling
@@ -141,19 +144,21 @@ class Pipeline(object):
             
     @classmethod
     def _chain(cls, other_pipeline, workflow_options=dict()):
+        needed_products = cls.products.keys()
         product_attributes = dict([
             (attr, getattr(other_pipeline, attr))
-            for attr in self.products
+            for attr in needed_products
             if hasattr(other_pipeline, attr)
         ])
         if not product_attributes:
             raise ValueError(
                 "Cannot chain to pipeline %s: missing at least one of %s"%(
-                    other_pipeline.name, self.products.keys())
+                    other_pipeline.name, needed_products))
         else:
-            return cls(products_dir=None,
-                       workflow_options=workflow_options,
-                       **io_attributes)
+            pipe = cls(workflow_options=workflow_options,
+                       **product_attributes)
+            pipe.products_dir = None
+            return pipe
 
     
     def append(self, other_pipeline_cls):
