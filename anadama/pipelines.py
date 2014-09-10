@@ -155,10 +155,9 @@ class Pipeline(object):
                 "Cannot chain to pipeline %s: missing at least one of %s"%(
                     other_pipeline.name, needed_products))
         else:
-            pipe = cls(workflow_options=workflow_options,
+            return cls(workflow_options=workflow_options,
+                       products_dir=other_pipeline.products_dir,
                        **product_attributes)
-            pipe.products_dir = None
-            return pipe
 
     
     def append(self, other_pipeline_cls):
