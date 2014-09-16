@@ -34,7 +34,7 @@ class requires(object):
                     ret = [ret]
                 for t in ret:
                     deps = t.get('file_dep', [])
-                    t['file_dep'] = list(set(deps+binaries_with_paths))
+                    t['file_dep'] = list(set(list(deps)+binaries_with_paths))
                     yield t
                         
         return wrapper
