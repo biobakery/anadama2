@@ -28,7 +28,7 @@ def addext(name_str, tag_str):
 
 def addtag(name_str, tag_str):
     path, name_str = os.path.split(name_str)
-    match = re.match(r'([^.]+)(\..*)', name_str)
+    match = re.match(r'(.+)(\..*)', name_str)
     if match:
         base, ext = match.groups()
         return os.path.join(path, base + "_" + tag_str + ext)
