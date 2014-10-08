@@ -135,6 +135,8 @@ class Pipeline(object):
             "pipeline_name": self.name
         }
 
+    __call__ = configure
+
 
     def tasks(self):
         """Call this method to get tasks (not task dicts) from a pipeline."""
