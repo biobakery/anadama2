@@ -1,6 +1,7 @@
 """
 Decorators to extend workflow functions
 """
+from functools import wraps
 
 from util import find_on_path
 
@@ -26,6 +27,7 @@ class requires(object):
                              "following binaries: %s" %(str(missing)))
 
     def __call__(self, fn):
+        @wraps(fn)
         def wrapper(*args, **kwargs):
             binaries_with_paths = list(self._maybe_halt())
             ret = fn(*args, **kwargs)
