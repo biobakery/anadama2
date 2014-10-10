@@ -4,14 +4,28 @@ Decorators to extend workflow functions
 from functools import wraps
 
 from util import find_on_path
+from provenance import BINARY_PROVENANCE as bin_provenance_registry
 
 class requires(object):
     """Convenience wrapper for tracking binaries used to perform tasks
 
     """
 
-    def __init__(self, binaries=list()):
+    def __init__(self, binaries=list(), version_methods=list()):
         self.required_binaries = binaries
+        self.version_methods   = version_methods
+        if len(binaries) == len(version_methods):
+            self._update_binary_provenance()
+
+
+    def _update_binary_provenance(self):
+        """Add to the BINARY_PROVENANCE set the list of required binaries and
+        version commands in the form of (binary, command) tuples
+
+        """
+        map( bin_provenance_registry.add, 
+             zip(self.required_binaries, self.version_methods) )
+
 
     def _maybe_halt(self):
         missing = list()
@@ -39,6 +53,8 @@ class requires(object):
                     t['file_dep'] = list(set(list(deps)+binaries_with_paths))
                     yield t
                         
+        wrapper.required_binaries = self.required_binaries
+        wrapper.version_methods = self.version_methods
         return wrapper
 
     

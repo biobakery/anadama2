@@ -11,14 +11,14 @@ from doit.cmd_list import List as DoitList
 from doit.task import Task
 from doit.control import TaskControl
 from doit.runner import Runner, MRunner, MThreadRunner
-from doit.cmd_base import DoitCmdBase
+from doit.cmd_base import DoitCmdBase, Command
 from doit.cmdparse import CmdOption
 from doit.exceptions import InvalidCommand
 
 from . import dag
 from .runner import RUNNER_MAP
 from .reporter import REPORTERS
-
+from .provenance import find_versions
 
 opt_runner = dict(
     name  = "runner",
@@ -158,7 +158,7 @@ class Run(AnadamaCmdBase, DoitRun):
 class ListDag(Run):
     my_opts = (opt_runner, opt_tmpfiles)
     name = "dag"
-    dog_purpose = "print execution tree"
+    doc_purpose = "print execution tree"
     doc_usage = "[TASK ...]"
 
 
@@ -194,4 +194,16 @@ class Help(DoitHelp):
         print("  anadama help <task-name>  show task usage")
 
 
-all = (Run, ListDag, Help)
+class BinaryProvenance(Command):
+    name = "binary_provenance"
+    doc_purpose = "print versions for required dependencies"
+    doc_usage = "<module> [<module> [<module...]]"
+    
+    def execute(self, opt_values, pos_args):
+        for mod_name in pos_args:
+            for binary, version in find_versions(mod_name):
+                print binary, "\t", version
+
+
+
+all = (Run, ListDag, Help, BinaryProvenance)
