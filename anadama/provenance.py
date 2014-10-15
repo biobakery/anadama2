@@ -18,7 +18,7 @@ def _find_version_call(command):
         ret = subprocess.check_output(command, 
                                       shell=True, 
                                       stderr=subprocess.STDOUT)
-    except exception as e:
+    except Exception as e:
         ret = str(e)
 
     if not ret:
