@@ -24,6 +24,6 @@ def _find_version_call(command):
     if not ret:
         ret = "<No output>"
 
-    return ret
+    return ret.strip()
 
     
