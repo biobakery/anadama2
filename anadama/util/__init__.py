@@ -37,9 +37,9 @@ def addtag(name_str, tag_str):
         
 def guess_seq_filetype(guess_from):
     guess_from = os.path.split(guess_from)[-1]
-    if re.search(r'\.f.*q$', guess_from): #fastq, fnq, fq
+    if re.search(r'\.f.*q\.(gz|bz2)$', guess_from): #fastq, fnq, fq
         return 'fastq'
-    elif re.search(r'\.f.*a$', guess_from): #fasta, fna, fa
+    elif re.search(r'\.f.*a\.(gz|bz2)$', guess_from): #fasta, fna, fa
         return 'fasta'
     elif guess_from.endswith('.sff'):
         return 'sff'
