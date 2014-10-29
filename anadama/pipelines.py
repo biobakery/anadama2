@@ -93,6 +93,11 @@ class Pipeline(object):
         if not self.name:
             self.name = self.__class__.__name__
             
+    def __iter__(self):
+        if self.task_dicts:
+            return iter(self.task_dicts)
+        else:
+            return iter([])
 
     def _configure(self):
         """Configures a pipeline, yielding doit task_dicts as a
