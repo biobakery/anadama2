@@ -5,6 +5,8 @@ from doit.task import dict_to_task
 from doit.loader import flat_generator
 from doit.control import no_none
 
+from . import dag
+
 def Matcher(str_or_callable):
     if type(str_or_callable) is str:
         return lambda file_: bool(re.search(str_or_callable, file_) is not None)
@@ -73,7 +75,7 @@ class Pipeline(object):
     name = None
     products = dict()
     
-    def __init__(self):
+    def __init__(self, skipfilters=None):
         """Instantiate the Pipeline. Doesn't do too much in the base
         class. Subclass this to put your own options and pipeline
         inputs.
@@ -88,6 +90,7 @@ class Pipeline(object):
 
         """
         self.task_dicts = None
+        self.skipfilters = skipfilters
         self.products = self.products.copy()
 
         if not self.name:
@@ -129,7 +132,8 @@ class Pipeline(object):
         self.task_dicts = list()
         self._configure = no_none(self._configure)
         nested_dicts = self._configure()
-        for d, _ in flat_generator(nested_dicts):
+        flat_dicts = iter( d for d, _ in flat_generator(nested_dicts) )
+        for d in self.filter_tasks(flat_dicts):
             default_tasks.append(d["name"])
             self.task_dicts.append( d )
 
@@ -148,6 +152,12 @@ class Pipeline(object):
         for d in self.task_dicts:
             yield dict_to_task(d)
 
+
+    def filter_tasks(self, task_dicts):
+        if self.skipfilters:
+            return dag.filter_tree(task_dicts, self.skipfilters)
+        else:
+            return task_dicts
             
     @classmethod
     def _chain(cls, other_pipeline, workflow_options=dict()):
