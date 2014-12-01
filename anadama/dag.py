@@ -74,22 +74,26 @@ class DagNode(SerializableMixin):
     __repr__ = __str__
 
 
-            
+def _search(node, idx, using):
+    set_of_hits = map(lambda x: idx.get(x, []), using(node))
+    flattened = reduce(add, set_of_hits, [])
+    return list(set(flattened)) # deduped
+
+
+targets = attrgetter("targets")
 def _map_targets_to_children(node, idx):
     """searches for targets; all children of the current node shouldn't at
     the same time be children of other nodes.
     """
-    who_needs_our_stuff = map(lambda x: idx.get(x, []), node.targets)
-    flattened = reduce(add, who_needs_our_stuff, []) 
-    return list(set(flattened)) # deduped
+    return _search(node, idx, using=targets)
 
+
+deps = attrgetter("deps")
 def _map_deps_to_parent(node, idx):
     """non-destructive search; many different nodes can rely on the same
     parent.
     """
-    who_fills_my_deps = map(lambda x: idx.get(x, []), node.deps)
-    flattened = reduce(add, who_fills_my_deps, []) 
-    return list(set(flattened)) # deduped
+    return _search(node, idx, using=deps)
 
 
 def taskiter(nodes, idx_by_dep, idx_by_tgt, root_node):
@@ -104,8 +108,8 @@ def taskiter(nodes, idx_by_dep, idx_by_tgt, root_node):
             yield root_node, node
 
 
-def indexby(task_list, attr):
-    key_func = attrgetter(attr)
+def indexby(task_list, attr, using=attrgetter):
+    key_func = using(attr)
     idx = defaultdict(list)
     for task in task_list:
         for item in key_func(task):
@@ -148,4 +152,31 @@ def prune(dag, nodes_to_prune):
             map(prune_set.discard, to_remove)
             dag.remove_nodes_from(to_remove)
 
+    return dag
+
+
+def filter_tree(task_dicts, filters, hash_key="name"):
+
+    class HashDict(dict):
+        def __hash__(self):
+            return hash(self[hash_key])
+        def __eq__(self, other):
+            return self[hash_key] == other[hash_key]
+
+    task_dicts = [ HashDict(task_dict) for task_dict in task_dicts ]
+    dag = _assemble_task_dicts(task_dicts)
+    for task_dict in task_dicts:
+        if any( filter_(task_dict) for filter_ in filters ):
+            dag.remove_nodes_from([task_dict]+dag.successors(task_dict))
+
+    return dag.nodes()
+            
+
+def _assemble_task_dicts(task_dicts):
+    by_dep = indexby(task_dicts, attr="file_dep", using=itemgetter)
+    dag = networkx.DiGraph()
+    targets = itemgetter("targets")
+    for task_dict in task_dicts:
+        for child in _search(task_dict, by_dep, using=targets):
+            dag.add_edge(task_dict, child)
     return dag
