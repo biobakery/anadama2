@@ -37,8 +37,8 @@ def backup(actions,
     `default_conditions` or `extra_conditions` returning True), try
     the next action.
 
-    Extra *args or **kwargs are applied to the default and extra
-    condition functions.  Finally, return (but not raise) a
+    Extra ``*args`` or ``**kwargs`` are applied to the default and
+    extra condition functions.  Finally, return (but not raise) a
     doit.exceptions.TaskFailed exception if all actions fall through.
 
     :param actions: Iterable; The collection of actions.
@@ -49,7 +49,7 @@ def backup(actions,
                                executed in order and passed the return value
                                of an actions .execute() method. Extra arguments
                                and keywords are passed in if provided from
-                               `*args` or `**kwargs`.
+                               ``*args`` or ``**kwargs``.
 
     """
     conditions = default_conditions+extra_conditions
