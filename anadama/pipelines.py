@@ -19,13 +19,13 @@ def Matcher(str_or_callable):
 
 def route(files, rules):
     """Fit a list of files into a dictionary of strings -> lists of
-    strings by the rules defined in `rules`. Returns a dictionary that
+    strings by the rules defined in ``rules``. Returns a dictionary that
     can be used as keyword args for other functions (likely
     pipelines), where the keys are the name of the keyword argument,
     and the values are lists of strings. `rules` should be an iterable
     of tuples.
 
-    `rules`'s keys (the first item in the tuple) can be either
+    ``rules``'s keys (the first item in the tuple) can be either
     functions or strings. Strings are interpreted as regular
     expressions; files are fit into the list with the first regex
     match.  Functions are called on the string and put into the first
@@ -56,6 +56,7 @@ class Pipeline(object):
     """ Class that encapsulates a set of workflows.
     Subclass this to make your own pipelines.
     The interface for a pipeline in a task is as follows::
+
         def task_use_my_pipeline():
             my_pipeline = SomePipeline(raw_files=['groceries.txt', 
                                                   'bucket_list.txt'])
@@ -63,6 +64,7 @@ class Pipeline(object):
             yield my_pipeline.tasks()
 
     For use in a ``loader``, use the task_dicts attribute like so::
+
         from doit.cmd_base import Loader
         class MyLoader(Loader):
             def load_tasks(self, cmd, opt_values, pos_args):
@@ -70,6 +72,7 @@ class Pipeline(object):
                                                       'bucket_list.txt'])
                 global_config = my_pipeline.configure()
                 return my_pipeline.tasks(), global_config
+
     """
 
     name = None
@@ -79,7 +82,9 @@ class Pipeline(object):
         """Instantiate the Pipeline. Doesn't do too much in the base
         class. Subclass this to put your own options and pipeline
         inputs.
+
         Here's an example::
+
             from andama.pipelines import Pipeline
             class SomePipeline(Pipeline):
                 def __init__(self, the_inputs=list(), *args, **kwargs):
