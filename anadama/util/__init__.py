@@ -128,7 +128,7 @@ def filter_compressed(fname_list):
     recognized compression format"""
 
     return [
-        fname for fname in fname_list
+        (i,fname) for i,fname in enumerate(fname_list)
         if is_compressed(fname)
     ]
 
