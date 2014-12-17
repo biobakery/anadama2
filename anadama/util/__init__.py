@@ -132,7 +132,17 @@ def filter_compressed(fname_list):
         if is_compressed(fname)
     ]
 
+def which_compressed_idxs(fname_mtx):
+    for i, raw_tuple in enumerate(fname_mtx):
+        for j, fname in enumerate(raw_tuple):
+            if is_compressed(fname):
+                yield i, j
 
+def take(raw_seq_files, index_list):
+    return [
+        raw_seq_files[i][j] for i, j in index_list
+    ]
+        
 ###
 # Serialization things
 
