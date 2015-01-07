@@ -194,10 +194,13 @@ def deserialize_map_file(file_handle):
             )
 
 
-def serialize_map_file(namedtuple_list, output_fname):
+def serialize_map_file(namedtuples, output_fname):
+    namedtuples_iter = iter(namedtuples)
     with open(output_fname, 'w') as map_file:
-        print >> map_file, "#"+"\t".join(namedtuple_list[0]._fields)
-        for record in namedtuple_list:
+        first = namedtuples_iter.next()
+        print >> map_file, "#"+"\t".join(first._fields)
+        print >> map_file, "\t".join(first)
+        for record in namedtuples_iter:
             print >> map_file, "\t".join(record)
 
 
