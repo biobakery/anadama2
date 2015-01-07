@@ -1,5 +1,6 @@
 import sys
 from doit.action import CmdAction as DoitCmdAction
+from doit.action import PythonAction
 
 """
 AnADAMA's CmdAction has the option of being verbose.
