@@ -1,7 +1,11 @@
 import sys
 
+import six
+from six import StringIO
+
 from doit.action import CmdAction as DoitCmdAction
 from doit.action import PythonAction as DoitPythonAction
+from doit.action import Writer
 from doit.exceptions import TaskFailed, TaskError
 
 """
