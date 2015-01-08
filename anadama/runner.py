@@ -18,7 +18,6 @@ class JenkinsRunner(Runner):
                                                          tasks_dict)
             except Exception as e:
                 if 'Dependent file' in e.message:
-                    yield node
                     continue
                 else:
                     raise
