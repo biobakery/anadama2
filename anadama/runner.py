@@ -13,8 +13,16 @@ class JenkinsRunner(Runner):
     
     def _cached_tasks(self, nodes, tasks_dict):
         for node in nodes:
-            run_status = self.dep_manager.get_status(node._orig_task, 
-                                                     tasks_dict)
+            try:
+                run_status = self.dep_manager.get_status(node._orig_task, 
+                                                         tasks_dict)
+            except Exception as e:
+                if 'Dependent file' in e.message:
+                    yield node
+                    continue
+                else:
+                    raise
+
             if run_status == 'up-to-date':
                 yield node
             elif run_status == 'run':
