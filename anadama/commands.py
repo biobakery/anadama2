@@ -5,7 +5,10 @@ from functools import partial
 from operator import attrgetter
 
 from doit.cmd_run import Run as DoitRun
-from doit.cmd_run import opt_reporter
+from doit.cmd_run import (
+    opt_always, opt_continue, opt_verbosity, 
+    opt_reporter, opt_num_process, opt_single,
+)
 from doit.cmd_help import Help as DoitHelp
 from doit.cmd_list import List as DoitList
 from doit.task import Task
@@ -19,6 +22,7 @@ from . import dag
 from .runner import RUNNER_MAP
 from .reporter import REPORTERS
 from .provenance import find_versions
+from .loader import PipelineLoader
 
 opt_runner = dict(
     name  = "runner",
@@ -205,5 +209,47 @@ class BinaryProvenance(Command):
                 print binary, "\t", version
 
 
+class RunPipeline(Run):
+    name = "pipeline"
+    doc_purpose = "run an AnADAMA pipeline"
+    doc_usage = "<module.Pipeline> [options]"
 
-all = (Run, ListDag, Help, BinaryProvenance)
+    cmd_options = (opt_always, opt_continue, opt_verbosity, 
+                   opt_reporter, opt_num_process, opt_single)
+
+    my_opts = (opt_runner, opt_tmpfiles, opt_pipeline_name)
+
+    def __init__(self, *args, **kwargs):
+        kwargs['task_loader'] = PipelineLoader()
+        super(RunPipeline, self).__init__(*args, **kwargs)
+
+
+    def execute(self, opt_values, pos_args, *args, **kwargs):
+        if not pos_args:
+            raise InvalidCommand("No pipeline specified. Try pipeline -h")
+        pipeline_name = pos_args.pop()
+        self._loader.pipeline_cls = pipeline_name
+
+        return super(RunPipeline, self).execute(opt_values, pos_args,
+                                                *args, **kwargs)
+
+
+    def _execute(self, verbosity=None, always=False, continue_=False,
+                 reporter='default', num_process=0, single=False, 
+                 pipeline_name="Custom Pipeline"):
+        return super(RunPipeline, self)._execute(
+            outfile=sys.stdout, verbosity=verbosity,
+            always=always, continue_=continue_,
+            reporter=reporter,
+            num_process=num_process,
+            par_type="process", single=single,
+            pipeline_name=pipeline_name
+        )
+        
+class DagPipeline(ListDag, RunPipeline):
+    name = "pipeline_dag"
+    doc_purpose = "print dag from pipeline"
+    doc_usage = "<some_module.SomePipeline> [options]"
+
+
+all = (Run, ListDag, Help, BinaryProvenance, RunPipeline, DagPipeline)
