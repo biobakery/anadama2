@@ -66,13 +66,14 @@ class AnadamaCmdBase(DoitCmdBase):
     my_opts = ()
 
     def set_options(self):
-        opt_list = (self.base_options + self._loader.cmd_options +
-                    self.cmd_options + self.my_base_opts + self.my_opts)
+        opt_list = (self.my_base_opts + self.my_opts + 
+                    self.base_options + self._loader.cmd_options +
+                    self.cmd_options)
         return [CmdOption(opt) for opt in opt_list]
 
 
 class Run(AnadamaCmdBase, DoitRun):
-    my_opts = (opt_runner,)
+    my_opts = (opt_runner, opt_pipeline_name)
 
     def _execute(self, outfile,
                  verbosity=None, always=False, continue_=False,
@@ -171,23 +172,23 @@ class Run(AnadamaCmdBase, DoitRun):
 
 
 class ListDag(Run):
-    my_opts = (opt_runner, opt_tmpfiles)
+    my_opts = (opt_runner, opt_tmpfiles, opt_pipeline_name)
     name = "dag"
     doc_purpose = "print execution tree"
     doc_usage = "[TASK ...]"
 
 
-    def _execute(self, outfile,
+    def _execute(self,
                  verbosity=None, always=False, continue_=False,
-                 reporter='default', num_process=0, par_type='process',
+                 reporter='default', num_process=0,
                  single=False, pipeline_name="Custom Pipeline"):
         self.opt_values['runner'] = 'jenkins'
         dag.TMP_FILE_DIR = self.opt_values["tmpfiledir"]
-        return super(ListDag, self)._execute(outfile, verbosity=verbosity,
+        return super(ListDag, self)._execute(outfile=sys.stdout, verbosity=verbosity,
                                              always=always, continue_=continue_,
                                              reporter=reporter,
                                              num_process=num_process,
-                                             par_type=par_type, single=single,
+                                             par_type="process", single=single,
                                              pipeline_name=pipeline_name)
 
 
