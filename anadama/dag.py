@@ -74,6 +74,14 @@ class DagNode(SerializableMixin):
     __repr__ = __str__
 
 
+
+def item_or_list(key):
+    def getter(container_dict):
+        return container_dict.get(key, [])
+        
+    return getter
+
+
 def _search(node, idx, using):
     set_of_hits = map(lambda x: idx.get(x, []), using(node))
     flattened = reduce(add, set_of_hits, [])
@@ -173,7 +181,7 @@ def filter_tree(task_dicts, filters, hash_key="name"):
             
 
 def _assemble_task_dicts(task_dicts):
-    by_dep = indexby(task_dicts, attr="file_dep", using=itemgetter)
+    by_dep = indexby(task_dicts, attr="file_dep", using=item_or_list)
     dag = networkx.DiGraph()
     targets = itemgetter("targets")
     for task_dict in task_dicts:
