@@ -6,6 +6,7 @@ from doit.doit_cmd import DoitMain
 from doit.cmd_base import DoitCmdBase
 
 from . import commands
+from . import monkey
 
 class Main(DoitMain):
     
@@ -25,6 +26,7 @@ class Main(DoitMain):
         return cmds
 
 def main(cmds=commands.all):
+    monkey.patch_all()
     ret = Main(cmds).run(sys.argv[1:])
     sys.exit(ret)
 
