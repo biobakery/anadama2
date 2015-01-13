@@ -77,7 +77,8 @@ class Pipeline(object):
 
     name = None
     products = dict()
-    
+    default_options = dict()
+
     def __init__(self, skipfilters=None):
         """Instantiate the Pipeline. Doesn't do too much in the base
         class. Subclass this to put your own options and pipeline
