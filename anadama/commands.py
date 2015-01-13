@@ -28,12 +28,12 @@ from .provenance import find_versions
 from .loader import PipelineLoader
 
 opt_runner = dict(
-    name  = "runner",
-    long  = "runner",
+    name    = "runner",
+    long    = "runner",
     default = "MRunner",
-    help = ("Runner to use for executing tasks."
-            " Choices: "+",".join(RUNNER_MAP.keys()) ),
-    type=str
+    help    = ("Runner to use for executing tasks."
+               " Choices: "+",".join(RUNNER_MAP.keys()) ),
+    type    = str
 )
 
 opt_tmpfiles = dict(
@@ -41,7 +41,15 @@ opt_tmpfiles = dict(
     long    = "tmpfiledir",
     default = "/tmp",
     help    = "Where to save temporary files",
-    type=str
+    type    = str
+)
+
+opt_pipeline_name = dict(
+    name    = "pipeline_name",
+    long    = "pipeline_name",
+    default = "Custom Pipeline",
+    help    = "Optional name to give to the current pipeline",
+    type    = str
 )
 
 opt_reporter['help'] = \
