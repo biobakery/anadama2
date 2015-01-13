@@ -1,6 +1,9 @@
 import sys
 import six
 import codecs
+import inspect
+import pprint
+from cStringIO import StringIO
 from functools import partial
 from operator import attrgetter
 
@@ -16,7 +19,7 @@ from doit.control import TaskControl
 from doit.runner import Runner, MRunner, MThreadRunner
 from doit.cmd_base import DoitCmdBase, Command
 from doit.cmdparse import CmdOption
-from doit.exceptions import InvalidCommand
+from doit.exceptions import InvalidCommand, InvalidDodoFile
 
 from . import dag
 from .runner import RUNNER_MAP
@@ -192,10 +195,58 @@ class Help(DoitHelp):
         for cmd in sorted(six.itervalues(cmds), key=attrgetter('name')):
             six.print_("  anadama %s \t\t %s" % (cmd.name, cmd.doc_purpose))
         print("")
-        print("  anadama help              show help / reference")
-        print("  anadama help task         show help on task fields")
-        print("  anadama help <command>    show command usage")
-        print("  anadama help <task-name>  show task usage")
+        print("  anadama help                              show help / reference")
+        print("  anadama help task                         show help on task fields")
+        print("  anadama help pipeline <module.Pipeline>   show module.Pipeline help")
+        print("  anadama help <command>                    show command usage")
+        print("  anadama help <task-name>                  show task usage")
+
+
+    @staticmethod
+    def print_pipeline_help(pipeline_class):
+        message = StringIO()
+        spec = inspect.getargspec(pipeline_class.__init__)
+        args = [a for a in spec.args if a != "self"] #filter out self
+        print >> message, "Arguments: "
+        print >> message, pprint.pformat(args)
+
+        print >> message, "Default options: "
+        print >> message, pprint.pformat(pipeline_class.default_options)
+
+        print >> message, "" #newline
+        print >> message, pipeline_class.__doc__
+
+        print >> message, ""
+        print >> message, pipeline_class.__init__.__doc__
+        
+        print message.getvalue()
+
+
+    def execute(self, params, args):
+        """execute cmd 'help' """
+        cmds = self.doit_app.sub_cmds
+        if len(args) == 0 or len(args) > 2:
+            self.print_usage(cmds)
+        elif args[0] == 'task':
+            self.print_task_help()
+        elif args == ['pipeline']:
+            six.print_(cmds['pipeline'].help())
+        elif args[0] == 'pipeline':
+            cls = PipelineLoader._import(args[1])
+            self.print_pipeline_help(cls)
+        elif args[0] in cmds:
+            # help on command
+            six.print_(cmds[args[0]].help())
+        else:
+            # help of specific task
+            try:
+                if not DoitCmdBase.execute(self, params, args):
+                    self.print_usage(cmds)
+            except InvalidDodoFile as e:
+                self.print_usage(cmds)
+                raise InvalidCommand("Unable to retrieve task help: "+e.message)
+        return 0
+
 
 
 class BinaryProvenance(Command):
