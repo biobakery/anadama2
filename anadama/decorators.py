@@ -40,6 +40,7 @@ class requires(object):
             raise ValueError("Unable to continue, please install the "
                              "following binaries: %s" %(str(missing)))
 
+
     def __call__(self, fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
