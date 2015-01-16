@@ -9,3 +9,4 @@ pipelines
 .. automodule:: anadama.pipelines
    :members:
    :undoc-members:
+   :special-members:
