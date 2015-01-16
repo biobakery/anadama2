@@ -8,12 +8,16 @@ from doit.action import PythonAction as DoitPythonAction
 from doit.action import Writer
 from doit.exceptions import TaskFailed, TaskError
 
-"""
-AnADAMA's CmdAction has the option of being verbose.
-Just do something like this: my_action = CmdAction(..., verbose=True)
-"""
 
 class CmdAction(DoitCmdAction):
+    """
+    AnADAMA's CmdAction has the option of being verbose.
+    Just do something like this:: 
+     
+        my_action = CmdAction(..., verbose=True)
+
+    """
+
     def __init__(self, *args, **kwargs):
         self.verbose = kwargs.pop('verbose', False)
         super(CmdAction, self).__init__(*args, **kwargs)
@@ -30,10 +34,14 @@ class PythonAction(DoitPythonAction):
         """Execute command action
         both stdout and stderr from the command are captured and saved
         on self.out/err. Real time output is controlled by parameters
-        @param out: None - no real time output
-                    a file like object (has write method)
-        @param err: idem
-        @return failure: see CmdAction.execute
+
+        :param out: None - no real time output a file like object (has
+                    write method)
+        
+        :param err: idem
+        
+        :return failure: see CmdAction.execute
+
         """
         # set std stream
         old_stdout = sys.stdout
