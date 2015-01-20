@@ -75,7 +75,7 @@ class AnadamaCmdBase(DoitCmdBase):
 class Run(AnadamaCmdBase, DoitRun):
     my_opts = (opt_runner, opt_pipeline_name)
 
-    def _execute(self, outfile,
+    def _execute(self, outfile=sys.stdout,
                  verbosity=None, always=False, continue_=False,
                  reporter='default', num_process=0, par_type='process',
                  single=False, pipeline_name="Custom Pipeline"):
@@ -178,10 +178,12 @@ class ListDag(Run):
     doc_usage = "[TASK ...]"
 
 
-    def _execute(self,
+    def _execute(self, 
                  verbosity=None, always=False, continue_=False,
                  reporter='default', num_process=0,
-                 single=False, pipeline_name="Custom Pipeline"):
+                 single=False, pipeline_name="Custom Pipeline",
+                 **kwargs):
+        # **kwargs are thrown away
         self.opt_values['runner'] = 'jenkins'
         dag.TMP_FILE_DIR = self.opt_values["tmpfiledir"]
         return super(ListDag, self)._execute(outfile=sys.stdout, verbosity=verbosity,
@@ -305,7 +307,9 @@ class RunPipeline(Run):
 
     def _execute(self, verbosity=None, always=False, continue_=False,
                  reporter='default', num_process=0, single=False, 
-                 pipeline_name="Custom Pipeline"):
+                 pipeline_name="Custom Pipeline", 
+                 **kwargs):
+        # **kwargs are thrown away    
         return super(RunPipeline, self)._execute(
             outfile=sys.stdout, verbosity=verbosity,
             always=always, continue_=continue_,
@@ -315,10 +319,11 @@ class RunPipeline(Run):
             pipeline_name=pipeline_name
         )
         
-class DagPipeline(ListDag, RunPipeline):
+class DagPipeline(RunPipeline, ListDag):
     name = "pipeline_dag"
     doc_purpose = "print dag from pipeline"
     doc_usage = "<some_module.SomePipeline> [options]"
+
 
 
 all = (Run, ListDag, Help, BinaryProvenance, RunPipeline, DagPipeline)
