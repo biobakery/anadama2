@@ -7,5 +7,8 @@ Introduction and Guides
 .. toctree::
    :maxdepth: 2
 
-   getting_started
    example_workflows
+   getting_started
+   scale_up_scale_out
+   tracking_external_resources
+   your_own_pipeline
