@@ -151,7 +151,7 @@ class PipelineLoader(TaskLoader):
         ret = defaultdict(dict)
         for workflow_opt_str in opt_values['pipeline_option']:
             workflow_name, key_value = self._workflow_option_split(workflow_opt_str)
-            if workflow_name in pipe_cls.options:
+            if workflow_name in pipe_cls.default_options:
                 ret[workflow_name].update(key_value)
 
         return dict(ret)
