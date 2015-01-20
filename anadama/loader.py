@@ -118,7 +118,11 @@ class PipelineLoader(TaskLoader):
             optional_pipeline = cls(*args, **kwargs)
             pipeline.append(optional_pipeline)
 
-        config = pipeline.configure()
+        try:
+            config = pipeline.configure()
+        except TypeError as e:
+            raise InvalidCommand("Pipeline improperly configured: "+e.message)
+
         return pipeline.tasks(), config
 
 
@@ -150,7 +154,8 @@ class PipelineLoader(TaskLoader):
     def _parse_workflow_options(self, opt_values, pipe_cls):
         ret = defaultdict(dict)
         for workflow_opt_str in opt_values['pipeline_option']:
-            workflow_name, key_value = self._workflow_option_split(workflow_opt_str)
+            workflow_name, key_value = self._workflow_option_split(
+                workflow_opt_str)
             if workflow_name in pipe_cls.default_options:
                 ret[workflow_name].update(key_value)
 
