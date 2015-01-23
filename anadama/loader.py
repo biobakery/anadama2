@@ -57,13 +57,14 @@ opt_skiptasks = {
     "short"   : "k",
     "type"    : list,
     "default" : [],
-    "help"    : ("defines criterion by which AnADAMA will filter out or skip when \n"
-                 "executing tasks in 'key: value' format. Add multiple filters with \n"
-                 "multiple -k flags. Children skipped tasks will also be skipped\n"
-                 "Example: 'name: humann' will skip any tasks that contain 'humann' \n"
-                 "in the task 'name' attribute and any tasks that depend on those \n"
-                 "tasks.")
-}
+    "help"    : (
+        "defines criterion by which AnADAMA will filter out or skip when \n"
+        "executing tasks in 'key: value' format. Add multiple filters with \n"
+        "multiple -k flags. Children skipped tasks will also be skipped\n"
+        "Example: 'name: humann' will skip any tasks that contain 'humann' \n"
+        "in the task 'name' attribute and any tasks that depend on those \n"
+        "tasks."
+)}
 
 opt_data_directory = {    
     "name"    : "data_directory",
@@ -169,12 +170,14 @@ class PipelineLoader(TaskLoader):
             try:
                 key, regex = s.split(': ', 1)
             except:
-                raise InvalidCommand("Unable to parse skip_task pattern."
-                                     "Be sure to split keys and values with ': '.")
+                raise InvalidCommand(
+                    "Unable to parse skip_task pattern."
+                    "Be sure to split keys and values with ': '.")
             try:
                 regex = re.compile(regex)
             except Exception as e:
-                raise InvalidCommand("Unable to parse regular expression: "+e.message)
+                raise InvalidCommand(
+                    "Unable to parse regular expression: "+e.message)
 
             the_filter = lambda task_dict: regex.search(task_dict[key])
             ret.append(the_filter)
@@ -193,9 +196,10 @@ class PipelineLoader(TaskLoader):
 
         packed = name_key.split('.')
         if len(packed) < 2:
-            raise InvalidCommand(("Unable to determine workflow name in option %s. "
-                                  "Remember to prefix workflow options with the "
-                                  "workflow name e.g. humann2.pick_frames")%(opt_str))
+            raise InvalidCommand(
+                ("Unable to determine workflow name in option %s. "
+                 "Remember to prefix workflow options with the "
+                 "workflow name e.g. humann2.pick_frames")%(opt_str))
         elif len(packed) == 2:
             name, key = packed
             key_value = {key: value}
