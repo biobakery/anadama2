@@ -83,6 +83,10 @@ opt_products_directory = {
     "help"    : "Base directory to save data products."
 }
 
+
+RE_COLON = re.compile(r':\s*')
+
+
 class PipelineLoader(TaskLoader):
 
     cmd_options = (opt_pipeline_argument, opt_data_directory, 
@@ -168,7 +172,7 @@ class PipelineLoader(TaskLoader):
         ret = []
         for s in filter_strs:
             try:
-                key, regex = s.split(': ', 1)
+                key, regex = re.split(RE_COLON, s, 1)
             except:
                 raise InvalidCommand(
                     "Unable to parse skip_task pattern."
@@ -188,7 +192,7 @@ class PipelineLoader(TaskLoader):
     @staticmethod
     def _workflow_option_split(opt_str):
         try:
-            name_key, value = opt_str.split(":", 1)
+            name_key, value = re.split(RE_COLON, opt_str, 1)
             if ',' in value: 
                 value = value.split(",")
         except ValueError:
@@ -224,7 +228,7 @@ class PipelineLoader(TaskLoader):
     @staticmethod
     def _pipeline_option_split(option):
         try:
-            key, val = option.split(": ", 1)
+            key, val = re.split(RE_COLON, option, 1)
         except ValueError:
             raise InvalidCommand(
                 ("Unable to parse pipeline option %s."
@@ -236,7 +240,7 @@ class PipelineLoader(TaskLoader):
     @staticmethod
     def _import(pipeline_name):
         try:
-            mod, pipeline_name = pipeline_name.split(":")
+            mod, pipeline_name = re.split(RE_COLON, pipeline_name, 1)
             module = importlib.import_module(mod)
             return getattr(module, pipeline_name)
         except (ImportError, AttributeError) as e:
