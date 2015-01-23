@@ -162,7 +162,7 @@ class PipelineLoader(TaskLoader):
             workflow_name, key_value = self._workflow_option_split(
                 workflow_opt_str)
             if workflow_name in pipe_cls.default_options:
-                ret[workflow_name].update(key_value)
+                self._workflow_option_update(ret[workflow_name], key_value)
 
         return dict(ret)
         
@@ -206,13 +206,10 @@ class PipelineLoader(TaskLoader):
                  "workflow name e.g. humann2.pick_frames")%(opt_str))
         elif len(packed) == 2:
             name, key = packed
-            key_value = {key: value}
+            key_value = (key, value)
         else:
-            name, to_be_nested = packed[0], packed[1:]
-            items = reversed(to_be_nested)
-            key_value = {items.next(): value}
-            for item in items:
-                key_value = {item: key_value}
+            name = packed[0]
+            key_value = packed[1:] + [value]
                 
         return name, key_value
 
@@ -235,6 +232,23 @@ class PipelineLoader(TaskLoader):
                  "Keys must be separated with ': ' from values.")%(option)
             )
         return key, val
+
+
+    @staticmethod
+    def _workflow_option_update(option_dict, key_value):
+        lead, key, value = key_value[:-2], key_value[-2], key_value[-1]
+        prev = option_dict
+        last = option_dict
+        for level in lead:
+            nesteddict = prev.get(level)
+            if nesteddict:
+                last = prev[level]
+                prev = last
+            else:
+                last = prev[level] = dict()
+                
+        last[key] = value
+        return
 
 
     @staticmethod
