@@ -1,4 +1,5 @@
 import sys
+import os.path
 from operator import add, attrgetter, itemgetter
 from collections import defaultdict, deque
 
@@ -171,7 +172,7 @@ def filter_tree(task_dicts, filters, hash_key="name"):
         def __eq__(self, other):
             return self[hash_key] == other[hash_key]
 
-    task_dicts = [ HashDict(task_dict) for task_dict in task_dicts ]
+    task_dicts = [ HashDict(_normalize(task_dict)) for task_dict in task_dicts ]
     dag = _assemble_task_dicts(task_dicts)
     for task_dict in task_dicts:
         if any( filter_(task_dict) for filter_ in filters ):
@@ -179,6 +180,17 @@ def filter_tree(task_dicts, filters, hash_key="name"):
 
     return dag.nodes()
             
+
+def _normalize(task_dict):
+    """We're going to need those files in deps and targets to match up, so
+    let's normalize them to full paths
+
+    """
+    for item in ('file_dep', 'targets'):
+        task_dict[item] = map(os.path.realpath, task_dict.get(item, []))
+
+    return task_dict
+
 
 def _assemble_task_dicts(task_dicts):
     by_dep = indexby(task_dicts, attr="file_dep", using=item_or_list)
