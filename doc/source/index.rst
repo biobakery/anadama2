@@ -44,9 +44,7 @@ those resources, too.
 * :ref:`getting-started`
 * :ref:`scale-up-scale-out`
 * :ref:`your-own-pipeline`
-* :ref:`tracking-external-resources`
 * :ref:`example-workflows`
-
 
 
 Table of contents
