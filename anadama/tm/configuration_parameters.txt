@@ -1,0 +1,22 @@
+{
+    "TEMP_PATH": "/tmp/batch_output",
+    "SOURCE_PATH": "/aux/deploy6/bin/activate"
+    "GOVERNOR" : 10,
+    "PORT" : 8888,
+    "HOOKS" : "/aux/deploy6/tmp/ccfa/mibc/tm/hooks",
+    "CLUSTER": "LSF", 
+    "CLUSTER_OUTPUT_PARAM": "-o", 
+    "CLUSTER_JOB": "bsub",
+    "CLUSTER_PROJECT": " -P unspecified--broadfolk",
+    "CLUSTER_MEMORY": [ 
+        " -R rusage[mem=4]",
+        " -R rusage[mem=8]" ],
+    "CLUSTER_QUEUE": [
+        " -q bhour",
+        " -q bweek" ],
+    "CLUSTER_JOBNAME": " -J ",
+    "CLUSTER_QUERY": "bjobs -noheader -w", 
+    "CLUSTER_STATS": "bjobs -l ",
+    "CLUSTER_JOBID_POS": 2,
+    "CLUSTER_STATUS_POS": 3
+}

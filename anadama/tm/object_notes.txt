@@ -1,0 +1,33 @@
+globals.py - contains globally set configuration
+ parameters (in json format)
+
+tm.py - the actually task manager containing
+ algorithms to process the dag in the correct order.
+
+parser.py - the algorithm that parses the dag and
+ creates 'tasks' (one per step or 'workflow' in AnADAMA speak)
+
+task.py - contains the algorithm to parse the
+ individual dag portion related to the individual step
+ or 'workflow'.  Also contains the algorithms needed
+ to run the workflow either locally, or on the LSF
+ cluster, or on the SLURM cluster (tbd).
+
+cli.py - contains code parsing the individual options.
+ This module gets called by the mibc_tm command.
+ It is given a DAG and calls the other objects in
+ order to process it (either a single time as for the
+ desktop deployment) or in a daemon for a deployment
+ specific to a project.  If the option for daemon is
+ given, it calls the daemon using a supervisord 
+ wrapper.
+
+tm_daemon.py - contains code necessary to run a python
+ tornado web service take requests either via its web
+ interface and/or via a websocket.
+
+cli_daemon.py - contains code parsing the individual
+ options for running the daemon.  Basically a stub
+ file the calls tm_daemon with a optional port number.
+
+
