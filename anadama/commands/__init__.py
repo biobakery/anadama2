@@ -10,16 +10,16 @@ from doit.cmd_help import Help as DoitHelp
 from doit.task import Task
 from doit.control import TaskControl
 from doit.runner import Runner, MRunner, MThreadRunner
-from doit.cmd_base import DoitCmdBase, Command
+from doit.cmd_base import DoitCmdBase
 from doit.cmdparse import CmdOption
 from doit.exceptions import InvalidCommand, InvalidDodoFile
 
 from .. import dag
 from ..runner import RUNNER_MAP
 from ..reporter import REPORTERS
-from ..provenance import find_versions
 
-from . import RunPipeline, DagPipeline
+from .pipelines import RunPipeline, DagPipeline
+from .provenance import BinaryProvenance
 
 opt_runner = dict(
     name    = "runner",
@@ -230,27 +230,6 @@ class Help(DoitHelp):
                 self.print_usage(cmds)
                 raise InvalidCommand("Unable to retrieve task help: "+e.message)
         return 0
-
-
-
-class BinaryProvenance(Command):
-    name = "binary_provenance"
-    doc_purpose = "print versions for required dependencies"
-    doc_usage = "<module> [<module> [<module...]]"
-    
-    def execute(self, opt_values, pos_args):
-        """Import workflow modules as specified from positional arguments and
-        determine versions of installed executables and other
-        dependencies via py:ref:`provenance.find_versions`.
-
-        For each external dependency installed, print the name of the
-        dependency and the version of the dependency.
-
-        """
-
-        for mod_name in pos_args:
-            for binary, version in find_versions(mod_name):
-                print binary, "\t", version
 
 
 
