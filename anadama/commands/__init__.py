@@ -1,19 +1,12 @@
 import sys
 import six
 import codecs
-import inspect
-import pprint
-from cStringIO import StringIO
 from functools import partial
 from operator import attrgetter
 
 from doit.cmd_run import Run as DoitRun
-from doit.cmd_run import (
-    opt_always, opt_continue, opt_verbosity, 
-    opt_reporter, opt_num_process, opt_single,
-)
+from doit.cmd_run import opt_reporter
 from doit.cmd_help import Help as DoitHelp
-from doit.cmd_list import List as DoitList
 from doit.task import Task
 from doit.control import TaskControl
 from doit.runner import Runner, MRunner, MThreadRunner
@@ -21,11 +14,12 @@ from doit.cmd_base import DoitCmdBase, Command
 from doit.cmdparse import CmdOption
 from doit.exceptions import InvalidCommand, InvalidDodoFile
 
-from . import dag
-from .runner import RUNNER_MAP
-from .reporter import REPORTERS
-from .provenance import find_versions
-from .loader import PipelineLoader
+from .. import dag
+from ..runner import RUNNER_MAP
+from ..reporter import REPORTERS
+from ..provenance import find_versions
+
+from . import RunPipeline, DagPipeline
 
 opt_runner = dict(
     name    = "runner",
@@ -213,26 +207,6 @@ class Help(DoitHelp):
         print("  anadama help <task-name>                  show task usage")
 
 
-    @staticmethod
-    def print_pipeline_help(pipeline_class):
-        message = StringIO()
-        spec = inspect.getargspec(pipeline_class.__init__)
-        args = [a for a in spec.args if a != "self"] #filter out self
-        print >> message, "Arguments: "
-        print >> message, pprint.pformat(args)
-
-        print >> message, "Default options: "
-        print >> message, pprint.pformat(pipeline_class.default_options)
-
-        print >> message, "" #newline
-        print >> message, pipeline_class.__doc__
-
-        print >> message, ""
-        print >> message, pipeline_class.__init__.__doc__
-        
-        print message.getvalue()
-
-
     def execute(self, params, args):
         """execute cmd 'help' """
         cmds = self.doit_app.sub_cmds
@@ -243,8 +217,7 @@ class Help(DoitHelp):
         elif args == ['pipeline']:
             six.print_(cmds['pipeline'].help())
         elif args[0] == 'pipeline':
-            cls = PipelineLoader._import(args[1])
-            self.print_pipeline_help(cls)
+            print_pipeline_help(args[1])
         elif args[0] in cmds:
             # help on command
             six.print_(cmds[args[0]].help())
@@ -278,51 +251,6 @@ class BinaryProvenance(Command):
         for mod_name in pos_args:
             for binary, version in find_versions(mod_name):
                 print binary, "\t", version
-
-
-class RunPipeline(Run):
-    name = "pipeline"
-    doc_purpose = "run an AnADAMA pipeline"
-    doc_usage = "<module.Pipeline> [options]"
-
-    cmd_options = (opt_always, opt_continue, opt_verbosity, 
-                   opt_reporter, opt_num_process, opt_single)
-
-    my_opts = (opt_runner, opt_tmpfiles, opt_pipeline_name)
-
-    def __init__(self, *args, **kwargs):
-        kwargs['task_loader'] = PipelineLoader()
-        super(RunPipeline, self).__init__(*args, **kwargs)
-
-
-    def execute(self, opt_values, pos_args, *args, **kwargs):
-        if not pos_args:
-            raise InvalidCommand("No pipeline specified. Try pipeline -h")
-        pipeline_name = pos_args.pop()
-        self._loader.pipeline_cls = pipeline_name
-
-        return super(RunPipeline, self).execute(opt_values, pos_args,
-                                                *args, **kwargs)
-
-
-    def _execute(self, verbosity=None, always=False, continue_=False,
-                 reporter='default', num_process=0, single=False, 
-                 pipeline_name="Custom Pipeline", 
-                 **kwargs):
-        # **kwargs are thrown away    
-        return super(RunPipeline, self)._execute(
-            outfile=sys.stdout, verbosity=verbosity,
-            always=always, continue_=continue_,
-            reporter=reporter,
-            num_process=num_process,
-            par_type="process", single=single,
-            pipeline_name=pipeline_name
-        )
-        
-class DagPipeline(RunPipeline, ListDag):
-    name = "pipeline_dag"
-    doc_purpose = "print dag from pipeline"
-    doc_usage = "<some_module.SomePipeline> [options]"
 
 
 
