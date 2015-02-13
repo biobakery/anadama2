@@ -18,9 +18,6 @@ from .. import dag
 from ..runner import RUNNER_MAP
 from ..reporter import REPORTERS
 
-from .pipelines import RunPipeline, DagPipeline
-from .provenance import BinaryProvenance
-
 opt_runner = dict(
     name    = "runner",
     long    = "runner",
@@ -232,5 +229,9 @@ class Help(DoitHelp):
         return 0
 
 
+from .pipelines import RunPipeline, DagPipeline
+from .provenance import BinaryProvenance
+from .task_manager import RunTaskManager
 
-all = (Run, ListDag, Help, BinaryProvenance, RunPipeline, DagPipeline)
+all = (Run, ListDag, Help, BinaryProvenance, 
+       RunPipeline, DagPipeline, RunTaskManager)
