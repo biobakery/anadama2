@@ -1,6 +1,11 @@
 import os
+import sys
+import inspect
+import json
+import signal
 
 import networkx
+from doit.cmd_run import Run as DoitRun
 from doit.exceptions import InvalidCommand
 
 from .. import dag
@@ -13,13 +18,14 @@ from . import opt_runner, opt_tmpfiles, opt_pipeline_name
 from . import AnadamaCmdBase
 
 
-HELP="""%prog -t type [-i <json encoded inputfile>] [-l location] [-D] [-g governor] [-p port][-k hooks dir]
+HELP=""" 
 
-%prog - TM (Task Manager) parses the tasks contained in the given 
-json encoded directed acyclic graph (DAG) file.  This command
-is designed to read the json encoded DAG from stdin.  However, a filename 
-may be specified for input (-i filename.json) if that method is preferred.
-type currently can be one of three values: local, slurm, or lsf.
+%prog - TM (Task Manager) parses the tasks contained in the given
+json encoded directed acyclic graph (DAG) file.  This command is
+designed to read the json encoded DAG from stdin.  However, a filename
+may be specified for input (--tasks_json filename.json) if that method
+is preferred.  type currently can be one of three values: local,
+slurm, or lsf.
 
 User supplied 'hooks' are called for the given events:
     post_pipeline_failure.sh  
@@ -28,13 +34,7 @@ User supplied 'hooks' are called for the given events:
     post_task_success.sh  
     pre_pipeline.sh  
     pre_pipeline_restart.sh
-    
 
-NOTE:
--D indicates that the task_manager daemon should be started and will 
-process all DAGs sent via a websocket interface to the daemon listening 
-on the given '-p' port.  If no daemon is listening on that port, a new
-daemon will be started.
 """
 
 RUN_LOCAL = 'local'
@@ -45,8 +45,8 @@ PAR_TYPES = {'local': RUN_LOCAL,
              'lsf': 'lsf'}
 
 opt_flowdb_path = {
-    "name": "flows_path",
-    "long": "flows_path",
+    "name": "flowdb_path",
+    "long": "flowdb_path",
     "default": "./anadama_flows",
     "help": ("Specify directory where all tasks and logfiles are stored."
              "  Default is the current working directory."),
@@ -77,15 +77,6 @@ opt_hooks_path = {
     "type": str,
 }
 
-opt_governor = {
-    "name": "governor",
-    "long": "governor",
-    "default": 2,
-    "help": ("Rate limit the number of concurrent tasks."
-             "  Useful for limited resource on local desktops / laptops"),
-    "type": int,
-}
-
 # This option needs to go away
 opt_source_path = {
     "name": "source_path",
@@ -95,16 +86,15 @@ opt_source_path = {
     "type": int,
 }
 
-class RunTaskManager(AnadamaCmdBase):
+class RunTaskManager(AnadamaCmdBase, DoitRun):
     name = "task_manager"
     doc_purpose = "run tasks with web GUI"
     doc_usage = "[TASK ...]"
 
     my_opts = (opt_pipeline_name, opt_flowdb_path, opt_tasks_json,
-               opt_webgui_port, opt_hooks_path, opt_governor)
+               opt_webgui_port, opt_hooks_path, opt_source_path)
 
     def __init__(self, *args, **kwargs):
-
         self.hashdirectory = ""
         self.rundirectory = ""
         super(RunTaskManager, self).__init__(*args, **kwargs)
@@ -123,18 +113,26 @@ class RunTaskManager(AnadamaCmdBase):
         return { key: ordered_nodes }
 
 
+    def execute(self, params, *args, **kwargs):
+        if params['tasks_json']:
+            # short circuit task loading from dodo file if
+            # deserializing from json
+            params['pos_args'] = args # hack
+            params['continue_'] = params.get('continue') # hack
+            args_name = inspect.getargspec(self._execute)[0]
+            exec_params = dict((n, params[n]) for n in args_name if n != 'self')
+            return self._execute(**exec_params)
+        else:
+            return super(RunTaskManager, self).execute(params, *args, **kwargs)
+
+
     def _execute(self, 
                  verbosity=None, always=False, continue_=False,
                  reporter='default', num_process=0, par_type="local",
                  single=False, pipeline_name="Custom Pipeline",
                  **kwargs):
         # **kwargs are thrown away
-        if self.opt_values['tasks_json']:
-            the_dag = json.loads(self.opt_values['tasks_json'])
-        else:
-            dag.TMP_FILE_DIR = self.opt_values["tmpfiledir"]
-            the_dag = self.generate_dag(self.pipeline_name)
-        
+        the_dag = self._find_dag()
         self._handle_options(par_type)
         self._handle_files(the_dag)
         tm_globals.config.update(self.opt_values.iteritems())
@@ -142,15 +140,28 @@ class RunTaskManager(AnadamaCmdBase):
         # create json to send to server
         sigtermSetup()
         daemon = tm_daemon.Tm_daemon()
-        daemon.setupTm({ 'dag': data,
+        daemon.setupTm({ 'dag': the_dag,
                          'type': self.opt_values['par_type'], 
                          'rundirectory': self.rundirectory,
                          'location': self.opt_values['flowdb_path'],
                          'hooks': self.opt_values['hooks_path'],
-                         'governor': self.opt_values['governor'],
+                         'governor': self.opt_values['GOVERNOR'],
                          'hashdirectory': self.hashdirectory })
-        daemon.run()
+        daemon.run(self.opt_values['webgui_port'])
 
+
+    def _find_dag(self):
+        tasks_json = self.opt_values['tasks_json']
+        if tasks_json == '-': 
+            the_dag = json.load(sys.stdin)
+        elif tasks_json:
+             with open(tasks_json) as f:
+                 the_dag = json.load(f)
+        else:
+            dag.TMP_FILE_DIR = self.opt_values["tmpfiledir"]
+            the_dag = self.generate_dag(self.pipeline_name)
+
+        return the_dag
 
 
     def _handle_options(self, par_type):
@@ -160,13 +171,17 @@ class RunTaskManager(AnadamaCmdBase):
                 par_type, ", ".join(PAR_TYPES.keys()))
             raise InvalidCommand(msg)
 
-        if not os.access(os.path.dirname(self.opt_values['flowdb_path']), os.W_OK):
-            raise InvalidCommand("directory %s is not writable." % (
-                self.opt_values['flowdb_path']))
+        flowdb_path = os.path.dirname(self.opt_values['flowdb_path'])
+        if not os.access(flowdb_path, os.W_OK):
+            raise InvalidCommand(
+                "directory %s is not writable." % (flowdb_path))
+
+        if self.opt_values['num_process'] == 0:
+            self.opt_values['num_process'] += 1
 
         # make names match up between anadama and task_manager
         mapping = [ ("CLUSTER", "par_type"), ("SOURCE_PATH", "source_path"),
-                    ("PORT", "webgui_port"), ("GOVERNOR", "governor"),
+                    ("PORT", "webgui_port"), ("GOVERNOR", "num_process"),
                     ("HOOKS", "hooks_path"), ("TEMP_PATH", "flowdb_path") ]
         for a, b in mapping:
             self.opt_values[a] = self.opt_values[b]
@@ -195,7 +210,7 @@ class RunTaskManager(AnadamaCmdBase):
         os.makedirs(self.rundirectory)
 
         # create link to directory if it doesn't exist
-        symlinkdir = opts.location + "/by_task_name"
+        symlinkdir = self.opt_values['TEMP_PATH'] + "/by_task_name"
         if not os.path.exists(symlinkdir):
             os.makedirs(symlinkdir)
 
@@ -207,9 +222,9 @@ class RunTaskManager(AnadamaCmdBase):
 
 
 
-    @staticmethod
-    def help():
-        return HELP.replace("%prog", RunTaskManager.name)
+    def help(self):
+        text = super(RunTaskManager, self).help()
+        return text + HELP.replace("%prog", RunTaskManager.name)
 
 
 def sigtermSetup():

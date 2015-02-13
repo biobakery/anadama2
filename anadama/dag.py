@@ -66,6 +66,10 @@ class DagNode(SerializableMixin):
         ret._orig_task = task
         return ret
 
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
     def __hash__(self):
         return hash(self.name)
         
