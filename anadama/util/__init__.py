@@ -205,9 +205,12 @@ def serialize_map_file(namedtuples, output_fname):
 
 
 def _defaultfunc(obj):
-    if hasattr(obj, '_serializable_attrs'):
+    try:
         return obj._serializable_attrs
-    elif hasattr(obj, 'isoformat'):
+    except AttributeError:
+        pass
+
+    if hasattr(obj, 'isoformat'):
         return obj.isoformat()
         
     raise SerializationError("Unable to serialize object %s" %(obj))
@@ -240,6 +243,7 @@ class SerializableMixin(object):
                 (key, getattr(self, key))
                 for key in self.serializable_attrs
             ])
+
 
 def islambda(func):
     return getattr(func,'func_name') == '<lambda>'
