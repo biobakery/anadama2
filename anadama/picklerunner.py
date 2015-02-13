@@ -1,12 +1,13 @@
 """Save a task to a script for running by other programs"""
 
 import os
+import sys
 from tempfile import NamedTemporaryFile
 
 from .pickler import cloudpickle
 
 template = \
-"""#!/usr/bin/env python
+"""#!{python_bin}
 
 import os
 import sys
@@ -69,8 +70,13 @@ class PickleScript(object):
             self.render(to_fp=to_fp)
 
             
-    def render(self, to_fp=None):
-        rendered = template.format(pickle=repr(cloudpickle.dumps(self.task)))
+    def render(self, python_bin=None, to_fp=None):
+        if not python_bin:
+            python_bin = os.path.join(sys.prefix, "bin", "python")
+        rendered = template.format(
+            python_bin = python_bin,
+            pickle     = repr(cloudpickle.dumps(self.task))
+        )
         if not to_fp:
             return rendered
         else:
