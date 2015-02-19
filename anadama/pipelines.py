@@ -2,10 +2,10 @@ import re
 from itertools import chain
 
 from doit.task import dict_to_task
-from doit.loader import flat_generator
 from doit.control import no_none
 
 from . import dag
+from .util import generator_flatten
 
 def Matcher(str_or_callable):
     if type(str_or_callable) is str:
@@ -138,7 +138,7 @@ class Pipeline(object):
         self.task_dicts = list()
         self._configure = no_none(self._configure)
         nested_dicts = self._configure()
-        flat_dicts = iter( d for d, _ in flat_generator(nested_dicts) )
+        flat_dicts = generator_flatten(nested_dicts)
         for d in self.filter_tasks(flat_dicts):
             default_tasks.append(d["name"])
             self.task_dicts.append( d )

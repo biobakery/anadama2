@@ -17,7 +17,7 @@ biopython_to_metaphlan = {
 
 def generator_flatten(gen):
     for item in gen:
-        if inspect.isgenerator(item):
+        if inspect.isgenerator(item) or type(item) in (list, tuple):
             for value in generator_flatten(item):
                 yield value
         else:
@@ -268,4 +268,3 @@ def find_on_path(bin_str):
             return candidate
 
     return False
-
