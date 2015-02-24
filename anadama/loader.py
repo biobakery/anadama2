@@ -171,7 +171,7 @@ class PipelineLoader(TaskLoader):
                 match = matcher.find_match(workflow_name, 
                                            pipe_cls.default_options.keys())
                 raise InvalidCommand(
-                    "Invalid argument: `%s'. Possibly you meant: `%s'"%(
+                    "Invalid option key: `%s'. Possibly you meant: `%s'"%(
                         workflow_name, match)
                 )
 
