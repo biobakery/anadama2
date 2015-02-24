@@ -1,4 +1,5 @@
 import re
+from os.path import abspath
 from itertools import chain
 
 from doit.task import dict_to_task
@@ -138,7 +139,8 @@ class Pipeline(object):
         self.task_dicts = list()
         self._configure = no_none(self._configure)
         nested_dicts = self._configure()
-        flat_dicts = generator_flatten(nested_dicts)
+        flat_dicts = iter( clean_paths(d) for d in 
+                           generator_flatten(nested_dicts) )
         for d in self.filter_tasks(flat_dicts):
             default_tasks.append(d["name"])
             self.task_dicts.append( d )
@@ -200,3 +202,10 @@ class Pipeline(object):
         )
 
         return self
+
+
+def clean_paths(task_dict):
+    for attr in ("file_dep", "targets"):
+        normalized = map(abspath, task_dict.get(attr, []))
+        task_dict[attr] = normalized
+    return task_dict
