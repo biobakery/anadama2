@@ -189,10 +189,12 @@ def filter_tree(task_dicts, filters, hash_key="name"):
     dag = _assemble_task_dicts(task_dicts)
     for task_dict in task_dicts:
         if any( filter_(task_dict) for filter_ in filters ):
-            dag.remove_nodes_from([task_dict]+dag.successors(task_dict))
+            if task_dict in dag:
+                dag.remove_nodes_from([task_dict]+dag.successors(task_dict))
+            continue
+        else:
+            yield task_dict
 
-    return dag.nodes()
-            
 
 def _normalize(task_dict):
     """We're going to need those files in deps and targets to match up, so
