@@ -187,11 +187,14 @@ def filter_tree(task_dicts, filters, hash_key="name"):
 
     task_dicts = [ HashDict(_normalize(task_dict)) for task_dict in task_dicts ]
     dag = _assemble_task_dicts(task_dicts)
-    for task_dict in task_dicts:
+    task_dicts = set(task_dicts)
+    while task_dicts:
+        task_dict = task_dicts.pop() 
         if any( filter_(task_dict) for filter_ in filters ):
             if task_dict in dag:
-                dag.remove_nodes_from([task_dict]+dag.successors(task_dict))
-            continue
+                successors = dag.successors(task_dict)
+                dag.remove_edges_from([task_dict]+successors)
+                map(task_dicts.remove, successors)
         else:
             yield task_dict
 
