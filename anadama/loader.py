@@ -5,7 +5,7 @@ from collections import defaultdict
 from doit.cmd_base import TaskLoader
 from doit.exceptions import InvalidCommand
 
-from .util import filespec
+from .util import filespec, matcher
 from .pipelines import Pipeline
         
 opt_pipeline_argument = { 
@@ -154,6 +154,10 @@ class PipelineLoader(TaskLoader):
             if key in pipe_cls.products:
                 files = self._parse_file_pattern(val, self.data_dir)
                 yield key, files
+            else:
+                msg = "Invalid argument: `%s'. Possibly you meant: `%s'"%(
+                    key, matcher.find_match(key, pipe_cls.products.keys()))
+                raise InvalidCommand(msg)
 
 
     def _parse_workflow_options(self, opt_values, pipe_cls):
@@ -163,6 +167,14 @@ class PipelineLoader(TaskLoader):
                 workflow_opt_str)
             if workflow_name in pipe_cls.default_options:
                 self._workflow_option_update(ret[workflow_name], key_value)
+            else:
+                match = matcher.find_match(workflow_name, 
+                                           pipe_cls.default_options.keys())
+                raise InvalidCommand(
+                    "Invalid argument: `%s'. Possibly you meant: `%s'"%(
+                        workflow_name, match)
+                )
+
 
         return dict(ret)
         
