@@ -118,6 +118,18 @@ def taskiter(nodes, idx_by_dep, idx_by_tgt, root_node):
 
 
 def indexby(task_list, attr, using=attrgetter):
+    """Make a dictionary-based index of the list of tasks. `attr` is the
+    attribute used in the index's key. Lookup tasks in the index by giving
+    this attr to the index in getitem form. Queries look something like
+    this::
+    
+      maybe_list_of_tasks = idx[attr]
+
+    Where `attr` is something like one of the members of the
+    'file_dep' attribute, whatever was used to build the index.
+
+    """
+
     key_func = using(attr)
     idx = defaultdict(list)
     for task in task_list:
@@ -165,6 +177,7 @@ def prune(dag, nodes_to_prune):
 
 
 def filter_tree(task_dicts, filters, hash_key="name"):
+    """Drop some tasks according to the filter functions in `filters`."""
 
     class HashDict(dict):
         def __hash__(self):
