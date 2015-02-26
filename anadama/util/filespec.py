@@ -8,7 +8,7 @@ def parse(pattern_str, data_dir=DEFAULT_DATA_DIR):
     if pattern_str.startswith("glob:"):
         pattern = os.path.join(data_dir,
                                pattern_str.split("glob:", 1)[1])
-        files = map(os.path.basename, glob.glob(pattern))
+        files = map(os.path.abspath, glob.glob(pattern))
         return files
     elif pattern_str.startswith("re:"):
         matcher = lambda s: re.search(pattern_str.split("re:", 1)[1], s)
