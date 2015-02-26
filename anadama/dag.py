@@ -193,7 +193,7 @@ def filter_tree(task_dicts, filters, hash_key="name"):
         if any( filter_(task_dict) for filter_ in filters ):
             if task_dict in dag:
                 successors = dag.successors(task_dict)
-                dag.remove_edges_from([task_dict]+successors)
+                dag.remove_nodes_from([task_dict]+successors)
                 map(task_dicts.remove, successors)
         else:
             yield task_dict
