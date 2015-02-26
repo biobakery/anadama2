@@ -12,7 +12,7 @@ def parse(pattern_str, data_dir=DEFAULT_DATA_DIR):
         return files
     elif pattern_str.startswith("re:"):
         matcher = lambda s: re.search(pattern_str.split("re:", 1)[1], s)
-        files = filter(matcher, os.listdir(data_dir))
+        files = filter(matcher, os.walk(data_dir))
         return files
     elif ',' in pattern_str:
         files = pattern_str.split(',')
