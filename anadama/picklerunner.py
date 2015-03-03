@@ -19,7 +19,7 @@ task = pickle.loads(the_pickle)
 task.__init__(task.name, task.some_actions)
 
 def remove_myself():
-    myself = os.path.realpath(__file__)
+    myself = os.path.abspath(__file__)
     os.remove(myself)
 
 def be_verbose():

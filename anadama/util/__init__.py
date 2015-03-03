@@ -99,7 +99,7 @@ def _new_file(*names, **opts):
     basedir = opts.get("basedir")
     for name in names:
         if basedir:
-            name = os.path.realpath(
+            name = os.path.abspath(
                 os.path.join(
                     basedir, os.path.basename(name)
                 )
