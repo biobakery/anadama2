@@ -205,7 +205,7 @@ def _normalize(task_dict):
 
     """
     for item in ('file_dep', 'targets'):
-        task_dict[item] = map(os.path.realpath, task_dict.get(item, []))
+        task_dict[item] = map(os.path.abspath, task_dict.get(item, []))
 
     return task_dict
 
