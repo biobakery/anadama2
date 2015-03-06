@@ -1,5 +1,6 @@
 import re
 import importlib
+import inspect
 from collections import defaultdict
 
 from doit.cmd_base import TaskLoader
@@ -116,11 +117,11 @@ class PipelineLoader(TaskLoader):
 
     def load_tasks(self, cmd, opt_values, pos_args):
         args, kwargs = self._parse_args(self.pipeline_cls, opt_values, pos_args)
-        pipeline = self.pipeline_cls(*args, **kwargs)
+        pipeline = self._init_pipeline(self.pipeline_cls, args, kwargs)
         for pipeline_name in opt_values['append_pipeline']:
             cls = self._import(pipeline_name)
             args, kwargs = self._parse_args(cls, opt_values, pos_args)
-            optional_pipeline = cls(*args, **kwargs)
+            optional_pipeline = self._init_pipeline(cls, args, kwargs)
             pipeline.append(optional_pipeline)
 
         try:
@@ -276,3 +277,15 @@ class PipelineLoader(TaskLoader):
                 "Unable to understand module name. "
                 "Try something like 'anadama_workflows.pipelines:WGSPipeline'"
             )
+
+
+    @staticmethod
+    def _init_pipeline(cls, args, kwargs):
+        try:
+            return cls(*args, **kwargs)
+        except TypeError as e:
+            spec = inspect.getargspec(cls.__init__)
+            required_args = spec.args[1:-len(spec.defaults)]
+            raise InvalidCommand("%s. Required arguments: %s"
+                                 %(str(e), required_args))
+
