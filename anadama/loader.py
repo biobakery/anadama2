@@ -120,7 +120,8 @@ class PipelineLoader(TaskLoader):
         pipeline = self._init_pipeline(self.pipeline_cls, args, kwargs)
         for pipeline_name in opt_values['append_pipeline']:
             cls = self._import(pipeline_name)
-            args, kwargs = self._parse_args(cls, opt_values, pos_args)
+            args, kwargs = self._parse_args(cls, opt_values, pos_args,
+                                            optional=True)
             optional_pipeline = self._init_pipeline(cls, args, kwargs)
             pipeline.append(optional_pipeline)
 
@@ -132,12 +133,13 @@ class PipelineLoader(TaskLoader):
         return pipeline.tasks(), config
 
 
-    def _parse_args(self, pipe_cls, opt_values, pos_args):
+    def _parse_args(self, pipe_cls, opt_values, pos_args, optional=False):
         self.data_dir = opt_values['data_directory']
 
         keyword_arguments = dict()
         keyword_arguments['products_dir'] = opt_values['products_directory']
-        file_options = self._parse_file_arguments(opt_values, pipe_cls)
+        file_options = self._parse_file_arguments(opt_values,
+                                                  pipe_cls, optional=optional)
         keyword_arguments.update(file_options)
 
         wf_options = self._parse_workflow_options(opt_values, pipe_cls)
@@ -149,13 +151,13 @@ class PipelineLoader(TaskLoader):
         return [], keyword_arguments
 
 
-    def _parse_file_arguments(self, opt_values, pipe_cls):
+    def _parse_file_arguments(self, opt_values, pipe_cls, optional=False):
         for opt in opt_values['pipeline_arg']:
             key, val = self._pipeline_option_split(opt)
             if key in pipe_cls.products:
                 files = self._parse_file_pattern(val, self.data_dir)
                 yield key, files
-            else:
+            elif not optional:
                 msg = "Invalid argument: `%s'. Possibly you meant: `%s'"%(
                     key, matcher.find_match(key, pipe_cls.products.keys()))
                 raise InvalidCommand(msg)
@@ -231,7 +233,7 @@ class PipelineLoader(TaskLoader):
     def _parse_file_pattern(pattern_str, data_dir):
         try:
             return filespec.parse(pattern_str, data_dir=data_dir)
-        except OSError as e:
+        except (OSError, ValueError) as e:
             raise InvalidCommand("Unable to expand %s: %s"%(pattern_str, e))
 
 
