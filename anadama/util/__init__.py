@@ -27,16 +27,24 @@ def addext(name_str, tag_str):
     return name_str + "." + tag_str
 
 
-def rmext(name_str):
-    """removes file extensions"""
-    path, name_str = os.path.split(name_str)
-    match = re.match(r'(.+)(\..*)', name_str)
-    if match:
-        noext = match.group(1)
-    else:
-        noext = name_str
+def rmext(name_str, all=False):
+    """removes file extensions 
 
-    return os.path.join(path, noext)
+    :keyword all: Boolean; removes all extensions if True, else just
+    the outside one
+
+    """
+
+    _match = lambda name_str: re.match(r'(.+)(\..*)', name_str)
+    path, name_str = os.path.split(name_str)
+    match = _match(name_str)
+    while match:
+        name_str = match.group(1)
+        match = _match(name_str)
+        if not all:
+            break
+
+    return os.path.join(path, name_str)
 
 
 def addtag(name_str, tag_str):
