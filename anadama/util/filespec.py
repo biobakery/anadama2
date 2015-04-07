@@ -1,8 +1,12 @@
 import re
 import os
 import glob
+from itertools import chain, imap, ifilter
+from operator import itemgetter
 
 DEFAULT_DATA_DIR = "./"
+
+third = itemgetter(2)
 
 def parse(pattern_str, data_dir=DEFAULT_DATA_DIR):
     if pattern_str.startswith("glob:"):
@@ -11,7 +15,8 @@ def parse(pattern_str, data_dir=DEFAULT_DATA_DIR):
         files = map(os.path.abspath, glob.glob(pattern))
     elif pattern_str.startswith("re:"):
         matcher = lambda s: re.search(pattern_str.split("re:", 1)[1], s)
-        files = filter(matcher, os.walk(data_dir))
+        allfiles = chain.from_iterable( imap(third, os.walk(data_dir)) )
+        files = ifilter(matcher, allfiles)
     elif ',' in pattern_str:
         files = pattern_str.split(',')
         nonexistent = [ not os.path.exists(f) for f in files ]
