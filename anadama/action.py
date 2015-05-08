@@ -24,7 +24,8 @@ class CmdAction(DoitCmdAction):
 
     def execute(self, *args, **kwargs):
         # Hope calling expand_action() has no side effects!
-        print >> sys.stderr, self.expand_action()
+        if self.verbose:
+            print >> sys.stderr, self.expand_action()
         return super(CmdAction, self).execute(*args, **kwargs)
 
 
