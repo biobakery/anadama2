@@ -2,7 +2,6 @@
 Execution strategies for workflows.
 """
 import sys
-
 from doit.exceptions import TaskError, TaskFailed
 
 default_conditions = [
@@ -15,10 +14,16 @@ class Group(list):
     def __init__(self, *args, **kwargs):
         super(list, self).__init__()
         self.extend(args)
+        self.out = ""
+        self.err = ""
 
     def execute(self):
         for action in self:
             ret = action.execute()
+            if action.out and action.out.strip():
+                self.out += action.out
+            if action.err and action.err.strip():
+                self.err += action.err
             if any( c(ret) for c in default_conditions ):
                 return ret
 
@@ -55,6 +60,10 @@ def backup(actions,
     conditions = default_conditions+extra_conditions
     for action in actions:
         ret = action.execute()
+        if action.out and action.out.strip():
+            print action.out
+        if action.err and action.err.strip():
+            print >> sys.stderr, action.err
         if not any( c(ret, *args, **kwargs) for c in conditions ):
             return ret
 
