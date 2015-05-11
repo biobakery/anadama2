@@ -46,8 +46,10 @@ def _pipeline_skiptasks():
     while os.path.exists(SKIPTASKS_FILE):
         with open(SKIPTASKS_FILE) as skip_f:
             for key, regex in map(split, skip_f):
-                 func = lambda task_dict: re.search(regex, task_dict[key])
-                 yield func
+                regex = regex.strip()
+                func = lambda task_dict: re.search(regex, task_dict[key])
+                yield func
+        break
 
     
 def task_main():
