@@ -8,9 +8,6 @@ from .. import dag
 from ..runner import RUNNER_MAP
 from ..provenance import find_versions
 
-from .help import Help
-from .run import Run
-from .pipeline import RunPipeline, DagPipeline
 
 opt_runner = dict(
     name    = "runner",
@@ -56,7 +53,13 @@ class AnadamaCmdBase(DoitCmdBase):
                     self.cmd_options)
         return [CmdOption(opt) for opt in opt_list]
 
+    def help(self):
+        text = super(Skeleton, self).help()
+        return text.replace("doit", "anadama")
 
+
+
+from .run import Run
 class ListDag(Run):
     my_opts = (opt_runner, opt_tmpfiles, opt_pipeline_name)
     name = "dag"
@@ -101,5 +104,7 @@ class BinaryProvenance(Command):
 
 
 
+from .help import Help
+from .pipeline import RunPipeline, DagPipeline, Skeleton
 
-all = (Run, ListDag, Help, BinaryProvenance, RunPipeline, DagPipeline)
+all = (Run, ListDag, Help, BinaryProvenance, RunPipeline, DagPipeline, Skeleton)
