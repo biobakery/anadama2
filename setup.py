@@ -14,7 +14,8 @@ setup(
     zip_safe=False,
     install_requires=[
         'doit==0.25.0',
-        'networkx==1.9'
+        'networkx==1.9',
+        'pyyamml'
     ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha"
