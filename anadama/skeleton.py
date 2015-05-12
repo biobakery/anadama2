@@ -30,7 +30,8 @@ skel_funcs = {
 
 def write_options(options_dict, fname):
     with open(fname, 'w') as f:
-        yaml.safe_dump(options_dict, stream=f)
+        if options_dict:
+            yaml.safe_dump(options_dict, stream=f)
 
 
 _default_template = None
@@ -75,8 +76,6 @@ def make_pipeline_skeleton(pipeline_name, verbose=True, template=None):
         product_dirs.append(skel_dir)
 
     for name, opt_dict in PipelineClass.default_options.iteritems():
-        if not opt_dict: #empty default options
-            continue
         options_fname = join(options_dir, name+".txt")
         log("Writing default options for {}.{} into {}...",
             pipeline_name, name, options_fname)

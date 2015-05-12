@@ -15,8 +15,7 @@ KNOWN_INPUT_DIRECTORIES = filter(os.path.exists, KNOWN_INPUT_DIRECTORIES)
 OPTIONS_DIRECTORY = {options_dir}
 SKIPTASKS_FILE = "_skip.txt"
 
-IGNORE = [ r'^\.',
-           r'^_']
+IGNORE = [ r'^\.', r'^_', r'~$', r'^#']
 
 def ignored(fname):
     return not any( re.compile(r).search(fname) for r in IGNORE )
@@ -39,7 +38,7 @@ def _pipeline_opts():
     for fname in option_files:
         with open(os.path.join(OPTIONS_DIRECTORY, fname)) as opt_f:
             name = os.path.splitext(fname)[0]
-            yield name, yaml.safe_load(opt_f)
+            yield name, yaml.safe_load(opt_f) or dict()
 
 
 def _pipeline_skiptasks():
