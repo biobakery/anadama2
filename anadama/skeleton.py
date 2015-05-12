@@ -7,7 +7,7 @@ import yaml
 from doit.exceptions import InvalidCommand
 
 from .loader import PipelineLoader
-
+from .commands.help import print_pipeline_help
 
 OPTIONS_DIR = "_options"
 
@@ -21,10 +21,12 @@ def logger_init(verbose=True):
 def skel_list(pipeline, the_dir):
     os.mkdir(the_dir)
 
+
 skel_funcs = {
     list: skel_list,
     str: skel_list
 }
+
 
 def write_options(options_dict, fname):
     with open(fname, 'w') as f:
@@ -88,6 +90,12 @@ def make_pipeline_skeleton(pipeline_name, verbose=True, template=None):
             pipeline_class=PipelineClass,
             known_input_directories=pformat(product_dirs),
             options_dir=repr(options_dir))
-
     log("Done.\n")
+
+    help_fname = "README.rst"
+    log("Writing help file to {}...", help_fname)
+    with open(help_fname, 'w') as help_f:
+        print_pipeline_help(PipelineClass, stream=help_f)
+    log("Done.\n")
+
     log("Complete.\n")
