@@ -1,3 +1,4 @@
+import sys
 import pprint
 import inspect
 from cStringIO import StringIO
@@ -31,26 +32,6 @@ class Help(DoitHelp):
         print("  anadama help <task-name>                  show task usage")
 
 
-    @staticmethod
-    def print_pipeline_help(pipeline_class):
-        message = StringIO()
-        spec = inspect.getargspec(pipeline_class.__init__)
-        args = [a for a in spec.args if a != "self"] #filter out self
-        print >> message, "Arguments: "
-        print >> message, pprint.pformat(args)
-
-        print >> message, "Default options: "
-        print >> message, pprint.pformat(pipeline_class.default_options)
-
-        print >> message, "" #newline
-        print >> message, pipeline_class.__doc__
-
-        print >> message, ""
-        print >> message, pipeline_class.__init__.__doc__
-        
-        print message.getvalue()
-
-
     def execute(self, params, args):
         """execute cmd 'help' """
         cmds = self.doit_app.sub_cmds
@@ -62,7 +43,7 @@ class Help(DoitHelp):
             six.print_(cmds['pipeline'].help())
         elif args[0] == 'pipeline':
             cls = PipelineLoader._import(args[1])
-            self.print_pipeline_help(cls)
+            print_pipeline_help(cls)
         elif args[0] in cmds:
             # help on command
             six.print_(cmds[args[0]].help())
@@ -77,3 +58,19 @@ class Help(DoitHelp):
         return 0
 
 
+def print_pipeline_help(pipeline_class, stream=sys.stdout):
+    spec = inspect.getargspec(pipeline_class.__init__)
+    args = [a for a in spec.args if a != "self"] #filter out self
+    print >> stream, "Arguments: "
+    print >> stream, pprint.pformat(args)
+
+    print >> stream, "Default options: "
+    print >> stream, pprint.pformat(pipeline_class.default_options)
+
+    print >> stream, "" #newline
+    print >> stream, pipeline_class.__doc__
+
+    print >> stream, ""
+    print >> stream, pipeline_class.__init__.__doc__
+
+    return stream
