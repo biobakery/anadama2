@@ -13,6 +13,65 @@ module
   * :py:class:`anadama_workflows.pipelines.sixteen.SixteenSPipeline`
 
 
+Using pipelines via the directory skeleton
+==========================================
+
+Use the ``skeleton`` command. This command creates a skeleton of input
+directories for a pipeline and a working dodo.py file. Place your
+input files into the appropriate directories, then run ``anadama run``
+or ``doit run``. Workflow options can be changed by editing the files
+under the ``input/_options`` directory.
+
+The option files are written in YAML_. Here's an example of specifying
+an option like ``-o 'pick_otus_closed_ref.qiime_opts.jobs_to_start:
+6'``::
+
+  # Edit a file named input/_options/pick_otus_closed_ref.txt
+  
+  qiime_opts:
+      jobs_to_start: 6
+
+
+An example of a true/false option like
+``-o 'pick_otus_closed_ref.qiime_opts.a: '``::
+
+  #Edit a file named input/_options/pick_otus_closed_ref.txt
+
+  qiime_opts:
+      a: true
+
+
+Let's put both options together::
+
+  #Edit a file named input/_options/pick_otus_closed_ref.txt
+
+  qiime_opts:
+      jobs_to_start: 6
+      a: true
+  
+
+Here's an example usage::
+
+  $ anadama skeleton anadama_workflows.pipelines:WGSPipeline
+
+  Constructing input skeleton at /tmp/input.
+  Creating input directory /tmp/input/sample_metadata for <type 'list'>...Done.
+  Creating input directory /tmp/input/intermediate_fastq_files for <type 'list'>...Done.
+  Creating input directory /tmp/input/raw_seq_files for <type 'list'>...Done.
+  Creating input directory /tmp/input/metaphlan_results for <type 'list'>...Done.
+  Creating input directory /tmp/input/otu_tables for <type 'list'>...Done.
+  Creating input directory /tmp/input/decontaminated_fastq_files for <type 'list'>...Done.
+  Writing default options for anadama_workflows.pipelines:WGSPipeline.infer_pairs into /tmp/input/_options/infer_pairs.txt...Done.
+  Writing dodo.py file...Done.
+  Writing help file to README.rst...Done.
+  Complete.
+
+  $ anadama
+  ...
+
+
+.. _yaml: http://yaml.org/spec/1.1/#id857168
+
 Using pipelines via the command line interface
 ==============================================
 
