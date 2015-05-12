@@ -81,7 +81,8 @@ def dict_to_cmd_opts_iter(opts_dict, sep="=", singlesep=" "):
         else:
             key = "-%s"% (key)
             
-        if val:
+        if val and val is not True:
+            val = str(val)
             if len(key) == 2:
                 yield key+singlesep+val
             else:
