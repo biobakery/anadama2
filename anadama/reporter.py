@@ -1,3 +1,5 @@
+import os
+
 from doit.reporter import ConsoleReporter
 from doit.reporter import REPORTERS as doit_REPORTERS
 from doit.action import CmdAction
@@ -34,9 +36,9 @@ class VerboseConsoleReporter(ConsoleReporter):
         fbase = task.targets[0]+"."
         outs, errs = zip(*_alltext(task))
         out_f, err_f = None, None
-        if any(outs):
+        if any(outs) and os.path.exists(fbase+"out"):
             out_f = open(fbase+"out", 'w')
-        if any(errs):
+        if any(errs) and os.path.exists(fbase+"err"):
             err_f = open(fbase+"err", 'w')
         return (out_f, err_f)
 
@@ -58,6 +60,8 @@ class VerboseConsoleReporter(ConsoleReporter):
                 for f, attr in ((out_f, action.out), (err_f, action.err)):
                     if attr and f:
                         print >> f, attr
+                    elif attr and not f:
+                        print attr
         finally:
             if out_f:
                 out_f.close()
