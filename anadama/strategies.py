@@ -1,6 +1,7 @@
 """
 Execution strategies for workflows.
 """
+import os
 import sys
 from doit.exceptions import TaskError, TaskFailed
 
@@ -59,12 +60,30 @@ def backup(actions,
     """
     conditions = default_conditions+extra_conditions
     for action in actions:
-        ret = action.execute()
-        if action.out and action.out.strip():
-            print action.out
-        if action.err and action.err.strip():
-            print >> sys.stderr, action.err
+        ret = action_execute(action)
         if not any( c(ret, *args, **kwargs) for c in conditions ):
             return ret
 
     return ret
+
+
+def if_exists_run(hopefully_exists_fname, cmd, output_fname_list,
+                  verbose=True):
+    if issubclass(cmd, str):
+        cmd = CmdAction(cmd, verbose=verbose)
+    def action():
+        if os.path.exists(hopefully_exists_fname) \
+           and os.stat(hopefully_exists_fname).st_size > 1:
+            return action_execute(cmd)
+        else:
+            for fname in output_fname_list:
+                open(fname, 'w').close()
+    return action
+        
+
+def action_execute(action):
+    ret = action.execute()
+    if action.out and action.out.strip():
+        print action.out
+    if action.err and action.err.strip():
+        print >> sys.stderr, action.err
