@@ -87,6 +87,8 @@ def dict_to_cmd_opts_iter(opts_dict, sep="=", singlesep=" "):
                 yield key+singlesep+val
             else:
                 yield key+sep+val
+        elif val is False:
+            pass
         else:
             yield key
 
