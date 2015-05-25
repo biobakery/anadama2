@@ -28,10 +28,39 @@ skel_funcs = {
 }
 
 
-def write_options(options_dict, fname):
+YAML_HELP = \
+"""#  Options are defined as key: value pairs. 
+#  For example, to set the ``nproc`` option to ``16``, do
+#  nproc: 16
+#  
+#  If a workflow expects a boolean value, just write in true or false. i.e:
+#  parallel: true
+#  
+#  Nested mappings or dictionaries are specified with indents, like so:
+#  qiime_opts: 
+#      a: true
+#      jobs_to_start: 6
+#
+#  For more information, check out:
+#    - http://pyyaml.org/wiki/PyYAMLDocumentation#YAMLsyntax
+#    - http://rschwager-hsph.bitbucket.org/documentation/anadama/your_own_pipeline.html#your-own-pipeline
+"""
+
+
+def commented(doc_str):
+    return "\n".join([
+        "#  "+line for line in doc_str.split("\n")
+    ])
+    
+def write_options(options_dict, fname, workflow_func=None):
     with open(fname, 'w') as f:
+        print >> f, YAML_HELP
+        if workflow_func:
+            print >> f, "#  Workflow Documentation:"
+            print >> f, commented(workflow_func.__doc__)
         if options_dict:
-            yaml.safe_dump(options_dict, stream=f)
+            yaml.safe_dump(options_dict, stream=f,
+                           default_flow_style=False)
 
 
 _default_template = None
@@ -39,8 +68,8 @@ def default_template():
     global _default_template
     if not _default_template:
         here = os.path.abspath(os.path.dirname(__file__))
-        with open(join(here, "default_skel_template.txt")) as f:
-            _default_template = f.read()
+        with open(join(here, "default_skel_template.txt")) as f: 
+           _default_template = f.read()
     return _default_template
 
 
@@ -79,7 +108,8 @@ def make_pipeline_skeleton(pipeline_name, verbose=True, template=None):
         options_fname = join(options_dir, name+".txt")
         log("Writing default options for {}.{} into {}...",
             pipeline_name, name, options_fname)
-        write_options(opt_dict, options_fname)
+        workflow_func = PipelineClass.workflows.get(name)
+        write_options(opt_dict, options_fname, workflow_func)
         log("Done.\n")
 
     log("Writing dodo.py file...")
