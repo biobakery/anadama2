@@ -79,6 +79,7 @@ class Pipeline(object):
     name = None
     products = dict()
     default_options = dict()
+    workflows = dict()
 
     def __init__(self, skipfilters=None):
         """Instantiate the Pipeline. Doesn't do too much in the base
