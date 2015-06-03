@@ -162,14 +162,19 @@ class PipelineLoader(TaskLoader):
 
     def _parse_workflow_options(self, opt_values, pipe_cls):
         ret = defaultdict(dict)
+        default_options = set(self.pipeline_cls.default_options.keys())
+        for opt_pipe in opt_values['append_pipeline']:
+            cls = self._import(opt_pipe)
+            default_options.update(cls.default_options.keys())
+
         for workflow_opt_str in opt_values['pipeline_option']:
             workflow_name, key_value = self._workflow_option_split(
                 workflow_opt_str)
-            if workflow_name in pipe_cls.default_options:
+            if workflow_name in default_options:
                 self._workflow_option_update(ret[workflow_name], key_value)
             else:
                 match = matcher.find_match(workflow_name, 
-                                           pipe_cls.default_options.keys())
+                                           list(default_options))
                 raise InvalidCommand(
                     "Invalid option key: `%s'. Possibly you meant: `%s'"%(
                         workflow_name, match)
