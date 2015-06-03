@@ -195,11 +195,12 @@ class Pipeline(object):
 
         self._configure = _new_configure
         self.name += ", "+other_pipeline.name
-        self.products.update(
-            (key, value) 
-            for key, value in other_pipeline.products.iteritems() 
-            if key not in self.products
-        )
+        for attr in ("products", "default_options", "workflows"):
+            getattr(self, attr).update(
+                (key, value) 
+                for key, value in other_pipeline.products.iteritems() 
+                if key not in self.products
+            )
 
         return self
 
