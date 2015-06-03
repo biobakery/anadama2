@@ -125,10 +125,7 @@ class PipelineLoader(TaskLoader):
             optional_pipeline = self._init_pipeline(cls, args, kwargs)
             pipeline.append(optional_pipeline)
 
-        try:
-            config = pipeline.configure()
-        except TypeError as e:
-            raise InvalidCommand("Pipeline improperly configured: "+e.message)
+        config = pipeline.configure()
 
         return pipeline.tasks(), config
 
