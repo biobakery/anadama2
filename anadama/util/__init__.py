@@ -4,7 +4,11 @@ import json
 import errno
 import inspect
 import mimetypes
+from multiprocessing import cpu_count
 from collections import namedtuple
+
+
+max_cpus = cpu_count()-1
 
 class SparseMetadataException(ValueError):
     pass
@@ -22,6 +26,7 @@ def generator_flatten(gen):
                 yield value
         else:
             yield item
+
 
 def addext(name_str, tag_str):
     return name_str + "." + tag_str
@@ -56,6 +61,7 @@ def addtag(name_str, tag_str):
     else:
         return os.path.join(path, name_str + "_" + tag_str)
         
+
 def guess_seq_filetype(guess_from):
     guess_from = os.path.split(guess_from)[-1]
     if re.search(r'\.f.*q(\.gz|\.bz2)?$', guess_from): #fastq, fnq, fq
@@ -106,6 +112,7 @@ def mkdirp(path):
         else:
             raise
 
+
 def _new_file(*names, **opts):
     basedir = opts.get("basedir")
     for name in names:
@@ -130,18 +137,20 @@ def new_file(*names, **opts):
     else:
         return list(iterator)
 
+
 def is_compressed(fname):
     recognized_compression_types = ("gzip", "bzip2")
     return mimetypes.guess_type(fname)[1] in recognized_compression_types
 
+
 def filter_compressed(fname_list):
     """Return only files that are known to be compressed and in a
     recognized compression format"""
-
     return [
         (i,fname) for i,fname in enumerate(fname_list)
         if is_compressed(fname)
     ]
+
 
 def which_compressed_idxs(fname_mtx):
     for i, raw_tuple in enumerate(fname_mtx):
@@ -160,6 +169,7 @@ def take(raw_seq_files, index_list):
 class SerializationError(TypeError):
     pass
 
+
 def deserialize_csv(file_handle):
     for i, line in enumerate(file_handle):
         cols = line.split('\t')
@@ -176,6 +186,7 @@ def deserialize_csv(file_handle):
             cols[0], 
             [ col.strip() for col in cols[1:] ] 
             )
+
         
 def deserialize_map_file(file_handle):
     """Returns a list of namedtuples according to the contents of the
@@ -233,11 +244,13 @@ def serialize(obj, to_fp=None):
     else:
         return json.dumps(obj, default=_defaultfunc)
 
+
 def deserialize(s=None, from_fp=None):
     if s:
         return json.loads(s)
     elif from_fp:
         return json.load(from_fp)
+
 
 class SerializableMixin(object):
     """Mixin that defines a few methods to simplify serializing objects
@@ -258,6 +271,7 @@ class SerializableMixin(object):
 
 def islambda(func):
     return getattr(func,'func_name') == '<lambda>'
+
 
 _PATH_list = None
 
