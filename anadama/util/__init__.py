@@ -8,7 +8,7 @@ from multiprocessing import cpu_count
 from collections import namedtuple
 
 
-max_cpus = cpu_count()-1
+max_cpus = max(1, cpu_count()-1)
 
 class SparseMetadataException(ValueError):
     pass
