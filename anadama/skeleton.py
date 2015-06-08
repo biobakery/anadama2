@@ -55,9 +55,9 @@ def commented(doc_str):
 def write_options(options_dict, fname, workflow_func=None):
     with open(fname, 'w') as f:
         print >> f, YAML_HELP
-        if all(workflow_func,
-               hasattr("__doc__", workflow_func),
-               workflow_func.__doc__):
+        if all((workflow_func,
+                hasattr(workflow_func, "__doc__"),
+                workflow_func.__doc__)):
             print >> f, "#  Workflow Documentation:"
             print >> f, commented(workflow_func.__doc__)
         if options_dict:
