@@ -54,7 +54,7 @@ class AnadamaCmdBase(DoitCmdBase):
         return [CmdOption(opt) for opt in opt_list]
 
     def help(self):
-        text = super(Skeleton, self).help()
+        text = super(AnadamaCmdBase, self).help()
         return text.replace("doit", "anadama")
 
 
