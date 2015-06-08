@@ -91,7 +91,7 @@ def dict_to_cmd_opts_iter(opts_dict,
         if val is False:
             continue
         elif val is True:
-            yield kv(key, "")
+            yield longdash+key if len(key) > 1 else shortdash+key
         elif type(val) is str:
             yield kv(key, val)
         elif type(val) in (tuple, list):
