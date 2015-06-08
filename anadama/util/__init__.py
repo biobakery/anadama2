@@ -75,33 +75,33 @@ def guess_seq_filetype(guess_from):
     elif guess_from.endswith('.sam'):
         return 'sam'
 
-def dict_to_cmd_opts_iter(opts_dict, sep="=", singlesep=" "):
+
+def dict_to_cmd_opts_iter(opts_dict,
+                          shortsep=" ",  longsep="=",
+                          shortdash="-", longdash="--"):
     """sep separates long options and their values, singlesep separates
     short options and their values e.g. --long=foobar vs -M 2
 
     """
+    longkv = lambda k, v: longdash + k + longsep + v
+    shortkv = lambda k, v: shortdash + k + shortsep + v
 
     for key, val in opts_dict.iteritems():
-        if len(key) > 1:
-            key = "--%s"% (key)
-        else:
-            key = "-%s"% (key)
-            
-        if val and val is not True:
-            val = str(val)
-            if len(key) == 2:
-                yield key+singlesep+val
-            else:
-                yield key+sep+val
-        elif val is False:
-            pass
-        else:
-            yield key
+        kv = longkv if len(key) > 1 else shortkv
+        if val is False:
+            continue
+        elif val is True:
+            yield kv(key, "")
+        elif type(val) is str:
+            yield kv(key, val)
+        elif type(val) in (tuple, list):
+            for subval in val:
+                yield kv(key, subval)
 
         
-def dict_to_cmd_opts(opts_dict, sep="=", singlesep=" "):
-    return " ".join(dict_to_cmd_opts_iter(
-        opts_dict, sep=sep, singlesep=singlesep))
+def dict_to_cmd_opts(*args, **kwds):
+    return " ".join(dict_to_cmd_opts_iter(*args, **kwds))
+
 
 def mkdirp(path):
     try:
