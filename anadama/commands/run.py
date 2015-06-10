@@ -10,15 +10,33 @@ from doit.control import TaskControl
 from doit.runner import Runner, MRunner, MThreadRunner
 from doit.cmd_run import Run as DoitRun
 
+from .. import performance
 from ..reporter import REPORTERS
-from ..runner import RUNNER_MAP
+from ..runner import RUNNER_MAP, GRID_RUNNER_MAP
 
 from . import AnadamaCmdBase
-from . import opt_runner, opt_pipeline_name
+from . import opt_runner, opt_pipeline_name, opt_tmpfiles
+
+opt_grid_part = {
+    "name": "partition",
+    "long": "partition",
+    "help": "Select what queue to submit tasks; For use with a grid runner",
+    "type": str,
+    "default": ""
+}
+
+opt_perf_url = {
+    "name": "perf_url",
+    "long": "perf_url",
+    "help": "Where to save grid job performance",
+    "type": str,
+    "default": performance.DEFAULT_URL
+}
 
 
 class Run(AnadamaCmdBase, DoitRun):
-    my_opts = (opt_runner, opt_pipeline_name)
+    my_opts = (opt_runner, opt_pipeline_name,
+               opt_grid_part, opt_perf_url, opt_tmpfiles)
 
     def _execute(self, outfile=sys.stdout,
                  verbosity=None, always=False, continue_=False,
@@ -83,12 +101,21 @@ class Run(AnadamaCmdBase, DoitRun):
 
             run_args = [self.dep_class, self.dep_file, reporter_obj,
                         continue_, always, verbosity]
+            run_kwargs = {}
             RunnerClass = RUNNER_MAP.get(self.opt_values["runner"])
             if not RunnerClass:
                 RunnerClass = self._discover_runner_class(
                     num_process, par_type)
+            elif self.opt_values['runner'] in GRID_RUNNER_MAP:
+                if not self.opt_values['partition']:
+                    raise InvalidCommand("--partition option is required "
+                                         "when using a grid runner")
+                run_args = [self.opt_values['partition'],
+                            self.opt_values['perf_url'],
+                            self.opt_values['tmpfiledir']]+run_args
+                run_kwargs['num_process'] = num_process if num_process else 1
 
-            runner = RunnerClass(*run_args)
+            runner = RunnerClass(*run_args, **run_kwargs)
             runner.pipeline_name = pipeline_name
             return runner.run_all(self.control.task_dispatcher())
         finally:
