@@ -1,13 +1,14 @@
 import os
 import sys
 
-from doit.runner import Runner, MRunner, MThreadRunner
 from doit.dependency import get_file_md5
+from doit.runner import Runner
 
 import networkx
 
-from . import dag
-from .util import serialize
+from .. import dag
+from ..util import serialize
+
 
 class JenkinsRunner(Runner):
     
@@ -72,10 +73,3 @@ class JenkinsRunner(Runner):
         ]
         return serialize({ key: nodes }, to_fp=sys.stdout)
 
-
-RUNNER_MAP = {
-    'jenkins': JenkinsRunner,
-    'mrunner': MRunner,
-    'runner': Runner,
-    'mthreadrunner': MThreadRunner
-}
