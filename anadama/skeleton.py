@@ -81,11 +81,13 @@ def format_optimports(optpipe_classes):
         for c in optpipe_classes
     ])
 
+
 def format_optappends(optpipe_classes):
     return "\n    ".join([
         "pipeline.append({cls.__name__})".format(cls=c)
         for c in optpipe_classes
     ])
+
 
 def make_pipeline_skeleton(pipeline_name,
                            optional_pipelines=list(),
@@ -97,6 +99,15 @@ def make_pipeline_skeleton(pipeline_name,
     here = os.getcwd()
     input_dir = join(here, "input")
     options_dir = join(input_dir, OPTIONS_DIR)
+
+    def _combine(attr):
+        orig = list( getattr(PipelineClass, attr).items() )
+        for p in optpipe_classes:
+            orig += list( getattr(p, attr).items() )
+        return dict(orig)
+    attrs_to_combine = ("products", "default_options", "workflows")
+    allprods, allopts, allworks = map(_combine, attrs_to_combine)
+
     opt_import_stmts, append_stmts = str(), str()
     if optpipe_classes:
         opt_import_stmts = format_optimports(optpipe_classes)
@@ -112,7 +123,7 @@ def make_pipeline_skeleton(pipeline_name,
         template = default_template()
     
     product_dirs = list()
-    for name, prod in PipelineClass.products.iteritems():
+    for name, prod in allprods.iteritems():
         skel_func = skel_funcs.get(type(prod))
         if not skel_func:
             msg = "Unable to handle products of type {}"
@@ -125,11 +136,11 @@ def make_pipeline_skeleton(pipeline_name,
         log("Done.\n")
         product_dirs.append(skel_dir)
 
-    for name, opt_dict in PipelineClass.default_options.iteritems():
+    for name, opt_dict in allopts.iteritems():
         options_fname = join(options_dir, name+".txt")
         log("Writing default options for {}.{} into {}...",
             pipeline_name, name, options_fname)
-        workflow_func = PipelineClass.workflows.get(name)
+        workflow_func = allworks.get(name)
         write_options(opt_dict, options_fname, workflow_func)
         log("Done.\n")
 
@@ -148,7 +159,7 @@ def make_pipeline_skeleton(pipeline_name,
     help_fname = "README.rst"
     log("Writing help file to {}...", help_fname)
     with open(help_fname, 'w') as help_f:
-        print_pipeline_help(PipelineClass, stream=help_f)
+        print_pipeline_help(PipelineClass, optpipe_classes, stream=help_f)
     log("Done.\n")
 
     log("Complete.\n")
