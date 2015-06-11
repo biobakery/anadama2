@@ -75,14 +75,33 @@ def default_template():
     return _default_template
 
 
-def make_pipeline_skeleton(pipeline_name, verbose=True, template=None):
+def format_optimports(optpipe_classes):
+    return "\n".join([
+        "from {cls.__module__} import {cls.__name__}".format(cls=c)
+        for c in optpipe_classes
+    ])
+
+def format_optappends(optpipe_classes):
+    return "\n    ".join([
+        "pipeline.append({cls.__name__})".format(cls=c)
+        for c in optpipe_classes
+    ])
+
+def make_pipeline_skeleton(pipeline_name,
+                           optional_pipelines=list(),
+                           verbose=True, template=None):
     log = logger_init(verbose)
     PipelineClass = PipelineLoader._import(pipeline_name)
+    optpipe_classes = map(PipelineLoader._import, optional_pipelines)
 
     here = os.getcwd()
     input_dir = join(here, "input")
     options_dir = join(input_dir, OPTIONS_DIR)
-    
+    opt_import_stmts, append_stmts = str(), str()
+    if optpipe_classes:
+        opt_import_stmts = format_optimports(optpipe_classes)
+        append_stmts = format_optappends(optpipe_classes)
+
     if os.path.exists(input_dir):
         raise InvalidCommand("Input directory already exists: "+input_dir)
     log("Constructing input skeleton at {}.\n", input_dir)
@@ -120,7 +139,10 @@ def make_pipeline_skeleton(pipeline_name, verbose=True, template=None):
         print >> dodo_f, template.format(
             pipeline_class=PipelineClass,
             known_input_directories=pformat(product_dirs),
-            options_dir=repr(options_dir))
+            options_dir=repr(options_dir),
+            append_imports=opt_import_stmts,
+            append_statements=append_stmts
+        )
     log("Done.\n")
 
     help_fname = "README.rst"
