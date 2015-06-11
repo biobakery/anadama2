@@ -4,6 +4,7 @@ import json
 import errno
 import inspect
 import mimetypes
+from itertools import izip_longest
 from multiprocessing import cpu_count
 from collections import namedtuple
 
@@ -293,3 +294,8 @@ def find_on_path(bin_str):
             return candidate
 
     return False
+
+
+def partition(it, binsize, pad=None):
+    iters = [iter(it)]*binsize
+    return izip_longest(fillvalue=pad, *iters)    
