@@ -8,6 +8,7 @@ from doit.cmd_run import (
 )
 
 from ..loader import PipelineLoader
+from ..loader import opt_append_pipeline
 from ..skeleton import make_pipeline_skeleton
 
 from . import opt_runner, opt_tmpfiles, opt_pipeline_name
@@ -66,13 +67,16 @@ class Skeleton(Command):
     doc_usage = "<some_module:SomePipeline>"
 
     my_opts = ()
-    cmd_options = ()
+    cmd_options = (opt_append_pipeline,)
 
     def execute(self, opt_values, pos_args, *args, **kwargs):
         if not pos_args:
             raise InvalidCommand("No pipeline specified")
         pipeline_name = pos_args.pop()
-        return make_pipeline_skeleton(pipeline_name)
+        return make_pipeline_skeleton(
+            pipeline_name,
+            optional_pipelines=opt_values['append_pipeline']
+        )
 
 
     def help(self):
