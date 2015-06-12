@@ -4,10 +4,8 @@ import json
 from collections import namedtuple
 
 DEFAULT_URL = "./.anadama_performance_history.json"
-DEFAULT_MEM = 100 #DELETEME
-# DEFAULT_MEM = 10 * 1024 # 10GB in MB
-DEFAULT_TIME = 2 #DELETEME
-# DEFAULT_TIME = 20 * 60 # 20 hrs in mins
+DEFAULT_MEM = 1024 # 1GB in MB
+DEFAULT_TIME = 2*60# 2 hrs in mins
 DEFAULT_THREADS = 1
 
 Prediction = namedtuple("Prediction", "mem time threads")
@@ -15,8 +13,6 @@ Prediction = namedtuple("Prediction", "mem time threads")
 default_prediction = Prediction(DEFAULT_MEM, DEFAULT_TIME, DEFAULT_THREADS)
 
 field_set = set(default_prediction._fields)
-
-# TODO: actually implement history
 
 # TODO: perform regression with variable selection to get accurate
 #       performance predictions
