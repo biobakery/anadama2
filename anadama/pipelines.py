@@ -81,7 +81,7 @@ class Pipeline(object):
     default_options = dict()
     workflows = dict()
 
-    def __init__(self, skipfilters=None):
+    def __init__(self, skipfilters=None, *args, **kwargs):
         """Instantiate the Pipeline. Doesn't do too much in the base
         class. Subclass this to put your own options and pipeline
         inputs.
@@ -99,16 +99,26 @@ class Pipeline(object):
         """
         self.task_dicts = None
         self.skipfilters = skipfilters
+        self.unrecognized_args = args
         self.products = self.products.copy()
+        self.__dict__.update(self.products)
+
+        for name, value in kwargs.iteritems():
+            if not self.products.get(name, None):
+                self.products[name] = value
+            if not getattr(self, name, None):
+                setattr(self, name, value)
 
         if not self.name:
             self.name = self.__class__.__name__
-            
+
+
     def __iter__(self):
         if self.task_dicts:
             return iter(self.task_dicts)
         else:
             return iter([])
+
 
     def _configure(self):
         """Configures a pipeline, yielding doit task_dicts as a
@@ -120,8 +130,8 @@ class Pipeline(object):
 
 
     def add_products(self, **kwargs):
-        self.products.update(kwargs)
         for name, value in kwargs.iteritems():
+            self.products[name] = value
             setattr(self, name, value)
 
 
@@ -166,6 +176,7 @@ class Pipeline(object):
             return dag.filter_tree(task_dicts, self.skipfilters)
         else:
             return task_dicts
+
             
     @classmethod
     def _chain(cls, other_pipeline, workflow_options=dict()):
@@ -186,12 +197,18 @@ class Pipeline(object):
 
     
     def append(self, other_pipeline_cls):
+        #  The already initialized pipeline, the main pipeline, does
+        #  append. This function should really only operate on the
+        #  main pipeline (aka self). The _chain classmethod should
+        #  operate on the other (optional) pipeline
+
         other_pipeline = other_pipeline_cls._chain(self)
         self._old_configure = self._configure
         def _new_configure():
-            first = self._old_configure()
-            second = other_pipeline._configure()
-            return chain(first, second)
+            for item in self._old_configure():
+                yield item
+            for item in other_pipeline._configure():
+                yield item
 
         self._configure = _new_configure
         self.name += ", "+other_pipeline.name
