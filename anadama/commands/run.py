@@ -33,10 +33,20 @@ opt_perf_url = {
     "default": performance.DEFAULT_URL
 }
 
+opt_grid_args = {
+    "name": "grid_args",
+    "long": "gridargs",
+    "help": ("Extra arguments to give to the grid"
+             " runner command (srun, bsub, etc)"),
+    "type": str,
+    "default": ""
+}
+
 
 class Run(AnadamaCmdBase, DoitRun):
     my_opts = (opt_runner, opt_pipeline_name,
-               opt_grid_part, opt_perf_url, opt_tmpfiles)
+               opt_grid_part, opt_perf_url, opt_tmpfiles, 
+               opt_grid_args)
 
     def _execute(self, outfile=sys.stdout,
                  verbosity=None, always=False, continue_=False,
@@ -112,7 +122,8 @@ class Run(AnadamaCmdBase, DoitRun):
                                          "when using a grid runner")
                 run_args = [self.opt_values['partition'],
                             self.opt_values['perf_url'],
-                            self.opt_values['tmpfiledir']]+run_args
+                            self.opt_values['tmpfiledir'],
+                            self.opt_values['grid_args']]+run_args
                 run_kwargs['num_process'] = num_process if num_process else 1
 
             runner = RunnerClass(*run_args, **run_kwargs)

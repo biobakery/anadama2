@@ -1,9 +1,9 @@
+import os
 import re
 import tempfile
 import operator
 import subprocess
 from math import exp
-from collections import namedtuple
 
 from doit.exceptions import CatchedException
 from doit.runner import MThreadRunner
@@ -20,11 +20,13 @@ class GridRunner(MThreadRunner):
     def __init__(self, partition,
                  performance_url=None,
                  tmpdir="/tmp",
+                 extra_grid_args="",
                  *args, **kwargs):
         super(GridRunner, self).__init__(*args, **kwargs)
         self.partition = partition
         self.tmpdir = tmpdir
         self.performance_predictor = PerformancePredictor(performance_url)
+        self.extra_grid_args = extra_grid_args
         self.id_task_map = dict()
 
 
@@ -56,14 +58,15 @@ class GridRunner(MThreadRunner):
         task_id = None
         while keep_going:
             keep_going, maybe_exc = False, None
-            out, err, retcode = self._grid_run_task(task, self.partition, 
-                                                    mem, time, 
-                                                    threads=threads, 
-                                                    tmpdir=self.tmpdir)
+            cmd, (out, err, retcode) = self._grid_run_task(
+                task, self.partition, 
+                mem, time, 
+                threads=threads, 
+                tmpdir=self.tmpdir,
+                extra_grid_args=self.extra_grid_args)
             if retcode:
-                packed = self._handle_grid_fail(srun_cmd, out, err,
-                                                proc.returncode,
-                                                tries, mem, time)
+                packed = self._handle_grid_fail(cmd, out, err,
+                                                retcode, tries, mem, time)
                 maybe_exc, keep_going, mem, time = packed
             else:
                 task_id = self._find_job_id(out, err)
@@ -97,7 +100,7 @@ class GridRunner(MThreadRunner):
 
     @staticmethod
     def _grid_run_task(task, partition, mem, time, 
-                       tmpdir='/tmp', threads=1, **lsf_kwds):
+                       tmpdir='/tmp', threads=1, extra_grid_args=""):
         raise NotImplementedError()
 
 
@@ -119,20 +122,19 @@ class GridRunner(MThreadRunner):
 class SlurmRunner(GridRunner):
     @staticmethod
     def _grid_run_task(task, partition, mem, time,
-                       tmpdir="/tmp", threads=1, **srun_kwds):
-        opts = dict([
-            ("mem", mem),
-            ("time", time),
-            ("export", "ALL"),
-            ("partition", partition),
-            ("cpus-per-task", threads),
-        ]+list(srun_kwds.items()))
+                       tmpdir="/tmp", threads=1, extra_grid_args=""):
+        opts = { "mem": mem,   
+                 "time": time,
+                 "export": "ALL", 
+                 "partition": partition,
+                 "cpus-per-task": threads }
 
         cmd = ( "srun -v "
                 +" "+dict_to_cmd_opts(opts)
+                +" "+extra_grid_args+" "
                 +" "+picklerunner.tmp(task, dir=tmpdir).path+" -r" )
 
-        return self._grid_dispatch(cmd, task)
+        return cmd, SlurmRunner._grid_dispatch(cmd, task)
 
 
     @staticmethod
@@ -194,21 +196,18 @@ class LSFRunner(GridRunner):
 
     @staticmethod
     def _grid_run_task(task, partition, mem, time, 
-                       tmpdir='/tmp', threads=1, **lsf_kwds):
+                       tmpdir='/tmp', threads=1, extra_grid_args=""):
         rusage = "rusage[mem={}:duration={}]".format(mem, int(time)),
         tmpout = tempfile.mktemp(dir=tmpdir)
-        opts = dict([
-                ('R', rusage),
-                ('o', tmpout),
-                ('n', threads),
-                ('q', partition),
-        ]+list(lsf_kwds.items()))
+        opts ={ 'R': rusage, 'o': tmpout,
+                'n': threads,'q': partition }
         
         cmd = ( "bsub -K -r"
                 +" "+dict_to_cmd_opts(opts)
+                +" "+extra_grid_args+" "
                 +" "+picklerunner.tmp(task, dir=tmpdir).path+" -r" )
         out, err, retcode = LSFRunner._grid_dispatch(cmd, task)
-        
+
         try:
             with open(tmpout) as f:
                 task.actions[0].err += f.read()
@@ -216,7 +215,7 @@ class LSFRunner(GridRunner):
         except Exception as e:
             err += "Anadama error: "+str(e)
 
-        return out, err, retcode
+        return cmd, (out, err, retcode)
 
 
     @staticmethod
@@ -227,7 +226,8 @@ class LSFRunner(GridRunner):
     @staticmethod
     def _jobstats(ids):
         def _fields():
-            proc = subprocess.Popen(['bjobs', '-noheader', '-o ', self.fmt]+ids,
+            proc = subprocess.Popen(['bjobs', '-noheader',
+                                     '-o ', LSFRunner.fmt]+ids,
                                     stdout=subprocess.PIPE)
             for line in proc.stdout:
                 fields = line.strip().split("|")
@@ -239,7 +239,7 @@ class LSFRunner(GridRunner):
 
         for id, mem, time in _fields():
             key, mem_str = mem.split()
-            mem = self.multipliers[key](float(mem_str))
+            mem = LSFRunner.multipliers[key](float(mem_str))
             time = int(time.split()[0])
             yield id, mem, time
 
