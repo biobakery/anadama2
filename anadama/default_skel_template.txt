@@ -30,7 +30,8 @@ def _pipeline_args():
     for input_dir in KNOWN_INPUT_DIRECTORIES:
         inputs = [ os.path.join(input_dir, f)
                    for f in filter(ignored, os.listdir(input_dir)) ]
-        yield basename(input_dir), inputs
+        if inputs:
+            yield basename(input_dir), inputs
 
 
 def _pipeline_opts():

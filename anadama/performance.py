@@ -23,7 +23,7 @@ def parse_title_hints(task):
     kwargs = dict()
     if task.title:
         kwargs.update([ (k, v) for k, v in
-                        re.findall(r'([a-z]+)\s*:\s*(\d+)', task.title())
+                        re.findall(r'([a-z]+)\s*=\s*(\d+)', task.title())
                         if k in field_set ])
     return default_prediction._replace(**kwargs)
 
