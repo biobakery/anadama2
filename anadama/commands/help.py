@@ -71,15 +71,21 @@ def _maybe_doc(func, key):
 
 
 def _print_doc(cls, stream, key="Pipeline"):
+    msg = key+" general documentation"
+    print >> stream, "#" * len(msg)
+    print >> stream, msg
+    print >> stream, "#" * len(msg)
     print >> stream, "" #newline
-    print >> stream, key+" general documentation"
-    print >> stream, "" 
     print >> stream, _maybe_doc(cls, "pipeline")
+    print >> stream, ""
 
-    print >> stream, "" 
-    print >> stream, key+" argument documentation"
+    msg = key+" argument documentation"
+    print >> stream, "#" * len(msg) 
+    print >> stream, msg
+    print >> stream, "#" * len(msg) 
     print >> stream, ""
     print >> stream, _maybe_doc(cls.__init__, "pipeline argument")
+    print >> stream, ""
 
     
 def print_pipeline_help(pipeline_class,
