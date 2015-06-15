@@ -9,7 +9,6 @@ from . import commands
 from . import monkey
 
 class Main(DoitMain):
-    
     def __init__(self, extra_cmds, *args, **kwargs):
         self._extra_cmds = extra_cmds
         super(Main, self).__init__(*args, **kwargs)
@@ -24,6 +23,7 @@ class Main(DoitMain):
                 extra_cmd = extra_cmd_cls()
             cmds[extra_cmd.name] = extra_cmd
         return cmds
+
 
 def main(cmds=commands.all):
     monkey.patch_all()
