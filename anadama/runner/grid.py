@@ -227,7 +227,7 @@ class LSFRunner(GridRunner):
     def _jobstats(ids):
         def _fields():
             proc = subprocess.Popen(['bjobs', '-noheader',
-                                     '-o ', LSFRunner.fmt]+ids,
+                                     '-o ', LSFRunner.fmt]+list(ids),
                                     stdout=subprocess.PIPE)
             for line in proc.stdout:
                 fields = line.strip().split("|")
