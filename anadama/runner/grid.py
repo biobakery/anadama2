@@ -197,12 +197,13 @@ class LSFRunner(GridRunner):
     @staticmethod
     def _grid_run_task(task, partition, mem, time, 
                        tmpdir='/tmp', threads=1, extra_grid_args=""):
-        rusage = "rusage[mem={}:duration={}]".format(mem, int(time)),
+        rusage = "span[hosts=1] rusage[mem={}:duration={}]".format(
+            mem, int(time))
         tmpout = tempfile.mktemp(dir=tmpdir)
         opts ={ 'R': rusage, 'o': tmpout,
                 'n': threads,'q': partition }
         
-        cmd = ( "bsub -K -r"
+        cmd = ( "bsub -K -r "
                 +" "+dict_to_cmd_opts(opts)
                 +" "+extra_grid_args+" "
                 +" "+picklerunner.tmp(task, dir=tmpdir).path+" -r" )
