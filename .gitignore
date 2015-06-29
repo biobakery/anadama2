@@ -1,6 +1,6 @@
 *~
 *.pyc
 *.egg-info
-.fuse_hidden
+*.fuse_hidden*
 *#
 doc/build/*
