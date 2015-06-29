@@ -117,7 +117,7 @@ class Run(AnadamaCmdBase, DoitRun):
                 RunnerClass = self._discover_runner_class(
                     num_process, par_type)
             elif self.opt_values['runner'] in GRID_RUNNER_MAP:
-                if not self.opt_values['partition']:
+                if not self.opt_values.get('partition', None):
                     raise InvalidCommand("--partition option is required "
                                          "when using a grid runner")
                 run_args = [self.opt_values['partition'],
