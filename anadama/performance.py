@@ -3,6 +3,8 @@ import os
 import json
 from collections import namedtuple
 
+import requests
+
 DEFAULT_URL = "./.anadama_performance_history.json"
 DEFAULT_MEM = 1024 # 1GB in MB
 DEFAULT_TIME = 2*60# 2 hrs in mins
@@ -27,13 +29,17 @@ def parse_title_hints(task):
                         if k in field_set ])
     return default_prediction._replace(**kwargs)
 
+def hash_n_size(files_list):
+    return [
+        (str(hash(f)), os.stat(f).st_size/1024./1024)
+        for f in files_list
+    ]
 
-class PerformancePredictor(object):
+
+class DummyPerformancePredictor(object):
     """Just make something that works, then do regression later"""
 
-    def __init__(self, url=DEFAULT_URL):
-        if not url:
-            url = DEFAULT_URL
+    def __init__(self, url):
         self.url = url
         self.state = dict()
         if os.path.exists(url):
@@ -49,4 +55,37 @@ class PerformancePredictor(object):
     def save(self):
         with open(self.url, 'w') as f:
             json.dump(self.state, f)
-    
+
+
+class LocalPerformancePredictor(DummyPerformancePredictor):
+    pass
+
+
+class WebPerformancePredictor(DummyPerformancePredictor):
+    def __init__(self, url):
+        self.url = url
+        self.messages = list()
+        
+    def update(self, task, max_rss_mb, cpu_hrs, clock_hrs):
+        self._send({
+            "name": task.name, "max_rss_mb": max_rss_mb,
+            "cpu_hrs": cpu_hrs, "clock_hrs": clock_hrs,
+            "targets": hash_n_size(task.targets),
+            "file_dep": hash_n_size(task.file_dep)
+        })
+
+    def _send(self, perf_dict):
+        requests.post(self.url, data=json.dumps(perf_dict))
+
+    def save(self):
+        pass
+
+
+def new_predictor(url=DEFAULT_URL):
+    if url.startswith('http://'):
+        return WebPerformancePredictor(url)
+    elif url == "dummy":
+        return DummyPerformancePredictor(url)
+    else:
+        return LocalPerformancePredictor(url)
+

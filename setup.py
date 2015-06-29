@@ -15,7 +15,8 @@ setup(
     install_requires=[
         'doit==0.25.0',
         'networkx==1.9',
-        'PyYAML'
+        'PyYAML',
+        'requests'
     ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha"
