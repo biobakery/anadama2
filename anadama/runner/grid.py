@@ -1,20 +1,22 @@
 import os
 import re
+import time
 import tempfile
 import operator
+import itertools
 import subprocess
 from math import exp
 
 from doit.exceptions import CatchedException
 from doit.runner import MThreadRunner
 
-from .. import picklerunner
+from .. import picklerunner, performance
 from ..util import dict_to_cmd_opts, partition
-from ..performance import PerformancePredictor
 
 
 sigmoid = lambda t: 1/(1-exp(-t))
 first = operator.itemgetter(0)
+
 
 class GridRunner(MThreadRunner):
     def __init__(self, partition,
@@ -25,7 +27,7 @@ class GridRunner(MThreadRunner):
         super(GridRunner, self).__init__(*args, **kwargs)
         self.partition = partition
         self.tmpdir = tmpdir
-        self.performance_predictor = PerformancePredictor(performance_url)
+        self.performance_predictor = performance.new_predictor(performance_url)
         self.extra_grid_args = extra_grid_args
         self.id_task_map = dict()
 
@@ -36,7 +38,7 @@ class GridRunner(MThreadRunner):
         if not task.actions:
             return None
 
-        maybe_exc, task_id = self._grid_execute(task, perf)
+        maybe_exc, task_id = self._grid_execute_task(task, perf)
         if task_id:
             self.id_task_map[task_id] = task
 
@@ -51,14 +53,13 @@ class GridRunner(MThreadRunner):
         return super(GridRunner, self).finish()
     
 
-    # TODO: better naming of grid_execute, grid_dispatch and grid_run_task
-    def _grid_execute(self, task, perf_obj):
+    def _grid_execute_task(self, task, perf_obj):
         keep_going, maybe_exc, tries = True, None, 1
         mem, time, threads = perf_obj
         task_id = None
         while keep_going:
             keep_going, maybe_exc = False, None
-            cmd, (out, err, retcode) = self._grid_run_task(
+            cmd, (out, err, retcode) = self._grid_communicate(
                 task, self.partition, 
                 mem, time, 
                 threads=threads, 
@@ -74,7 +75,7 @@ class GridRunner(MThreadRunner):
 
 
     @staticmethod
-    def _grid_dispatch(cmd, task):
+    def _grid_popen(cmd, task):
         proc = subprocess.Popen([cmd], shell=True,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
@@ -85,6 +86,13 @@ class GridRunner(MThreadRunner):
             task.actions[0].err = str()
         task.actions[0].out += out
         task.actions[0].err += err
+
+        if proc.returncode == 0:
+            for _ in range(3):
+                if all(map(os.path.exists, task.targets)):
+                    break
+                time.sleep(1)
+
         return out, err, proc.returncode
 
 
@@ -99,17 +107,15 @@ class GridRunner(MThreadRunner):
     # own grid runner
 
     @staticmethod
-    def _grid_run_task(task, partition, mem, time, 
-                       tmpdir='/tmp', threads=1, extra_grid_args=""):
+    def _grid_communicate(task, partition, mem, time, 
+                          tmpdir='/tmp', threads=1, extra_grid_args=""):
         raise NotImplementedError()
 
 
-    @staticmethod
-    def _find_job_id(out, err):
+    def _find_job_id(self, out, err):
         raise NotImplementedError()
 
-    @staticmethod
-    def _jobstats(ids):
+    def _jobstats(self, ids):
         raise NotImplementedError()
 
     @staticmethod
@@ -117,11 +123,45 @@ class GridRunner(MThreadRunner):
         raise NotImplementedError()
 
 
+class DummyGridRunner(GridRunner):
+    def __init__(self, *args, **kwargs):
+        self.task_id_counter = itertools.count(1)
+        self.task_performance_info = dict()
+        return super(DummyGridRunner, self).__init__(*args, **kwargs)
+
+
+    @staticmethod
+    def _grid_communicate(task, partition, mem, time,
+                          tmpdir="/tmp", threads=1, extra_grid_args=""):
+        cmd = ( "/usr/bin/time -f 'TASK_PERFORMANCE %e %M %S %U' "
+                +picklerunner.tmp(task, dir=tmpdir).path+" -r" )
+        return cmd, DummyGridRunner._grid_popen(cmd, task)
+
+
+    def _find_job_id(self, out, err):
+        id = next(self.task_id_counter)
+        c_sec, mem_k, k_sec, u_sec = map(float, re.search(
+            r'TASK_PERFORMANCE ([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+)',
+            err).groups())
+        cpu_hrs = (k_sec+u_sec)/3600
+        self.task_performance_info[id] = (mem_k/1024, cpu_hrs, c_sec/3600)
+        return id
+
+
+    def _jobstats(self, ids):
+        return map(self.task_performance_info.__getitem__, ids)
+
+
+    @staticmethod
+    def _handle_grid_fail(cmd, out, err, retcode, tries, mem, time):
+        exc = CatchedException("Command failed: "+cmd+"\n"+out+"\n"+err)
+        keep_going = False
+        return exc, keep_going, int(mem), int(time)
 
 
 class SlurmRunner(GridRunner):
     @staticmethod
-    def _grid_run_task(task, partition, mem, time,
+    def _grid_communicate(task, partition, mem, time,
                        tmpdir="/tmp", threads=1, extra_grid_args=""):
         opts = { "mem": mem,   
                  "time": time,
@@ -134,7 +174,7 @@ class SlurmRunner(GridRunner):
                 +" "+extra_grid_args+" "
                 +" "+picklerunner.tmp(task, dir=tmpdir).path+" -r" )
 
-        return cmd, SlurmRunner._grid_dispatch(cmd, task)
+        return cmd, SlurmRunner._grid_popen(cmd, task)
 
 
     @staticmethod
@@ -149,7 +189,7 @@ class SlurmRunner(GridRunner):
         def _fields():
             proc = subprocess.Popen(
                 ["sacct",
-                 "--format", "jobid,MaxRSS,Elapsed,ExitCode,State",
+                 "--format", "MaxRSS,TotalCPU,Elapsed,ExitCode,State",
                  "-P", "-j", ids],
                 stdout=subprocess.PIPE)
             for line in proc.stdout:
@@ -159,11 +199,13 @@ class SlurmRunner(GridRunner):
                 yield fields[:-2]
             proc.wait()
 
-        for id, rss, clocktime in _fields():
+        for rss, cputime, clocktime in _fields():
             rss = float(rss.replace("K", ""))/1024,
             clockparts = map(float, clocktime.split(":"))
             clocktime = clockparts[0] + clockparts[1]/60 + clockparts[2]/3600
-            yield id, rss, clocktime
+            cpuparts = map(float, cputime.split(":"))
+            cputime = cpuparts[0] + cpuparts[1]/60 + cpuparts[2]/3600
+            yield rss, cputime, clocktime
                     
 
     @staticmethod
@@ -195,8 +237,8 @@ class LSFRunner(GridRunner):
 
 
     @staticmethod
-    def _grid_run_task(task, partition, mem, time, 
-                       tmpdir='/tmp', threads=1, extra_grid_args=""):
+    def _grid_communicate(task, partition, mem, time, 
+                          tmpdir='/tmp', threads=1, extra_grid_args=""):
         rusage = "span[hosts=1] rusage[mem={}:duration={}]".format(
             mem, int(time))
         tmpout = tempfile.mktemp(dir=tmpdir)
@@ -207,7 +249,7 @@ class LSFRunner(GridRunner):
                 +" "+dict_to_cmd_opts(opts)
                 +" "+extra_grid_args+" "
                 +" "+picklerunner.tmp(task, dir=tmpdir).path+" -r" )
-        out, err, retcode = LSFRunner._grid_dispatch(cmd, task)
+        out, err, retcode = LSFRunner._grid_popen(cmd, task)
 
         try:
             with open(tmpout) as f:
