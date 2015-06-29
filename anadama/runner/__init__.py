@@ -1,12 +1,13 @@
 from doit.runner import Runner, MRunner, MThreadRunner
 
 from .jenkins import JenkinsRunner
-from .grid import SlurmRunner, LSFRunner
+from .grid import SlurmRunner, LSFRunner, DummyGridRunner
 
 RUNNER_MAP = {
     'jenkins': JenkinsRunner,
     'slurm': SlurmRunner,
     'lsf': LSFRunner,
+    'dummy': DummyGridRunner,
     'mrunner': MRunner,
     'runner': Runner,
     'mthreadrunner': MThreadRunner,
@@ -14,5 +15,6 @@ RUNNER_MAP = {
 
 GRID_RUNNER_MAP = {
     'slurm': SlurmRunner,
-    'lsf': LSFRunner
+    'lsf': LSFRunner,
+    'dummy': DummyGridRunner
 }
