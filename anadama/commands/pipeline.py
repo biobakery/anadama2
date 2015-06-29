@@ -23,8 +23,6 @@ class RunPipeline(Run):
     cmd_options = (opt_always, opt_continue, opt_verbosity, 
                    opt_reporter, opt_num_process, opt_single)
 
-    my_opts = (opt_runner, opt_tmpfiles, opt_pipeline_name)
-
     def __init__(self, *args, **kwargs):
         kwargs['task_loader'] = PipelineLoader()
         super(RunPipeline, self).__init__(*args, **kwargs)
