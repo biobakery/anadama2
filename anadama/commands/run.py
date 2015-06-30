@@ -27,7 +27,7 @@ opt_grid_part = {
 
 opt_perf_url = {
     "name": "perf_url",
-    "long": "perf_url",
+    "long": "perf-url",
     "help": "Where to save grid job performance",
     "type": str,
     "default": performance.DEFAULT_URL
