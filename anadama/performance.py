@@ -5,7 +5,7 @@ from collections import namedtuple
 
 import requests
 
-DEFAULT_URL = "./.anadama_performance_history.json"
+DEFAULT_URL = "http://huttenhower.sph.harvard.edu/apl"
 DEFAULT_MEM = 1024 # 1GB in MB
 DEFAULT_TIME = 2*60# 2 hrs in mins
 DEFAULT_THREADS = 1
