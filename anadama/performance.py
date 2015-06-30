@@ -1,7 +1,9 @@
 import re
 import os
+import sys
 import json
 from collections import namedtuple
+from os.path import basename
 
 import requests
 
@@ -9,12 +11,13 @@ DEFAULT_URL = "http://huttenhower.sph.harvard.edu/apl"
 DEFAULT_MEM = 1024 # 1GB in MB
 DEFAULT_TIME = 2*60# 2 hrs in mins
 DEFAULT_THREADS = 1
+MESSAGE_BUNDLE_SIZE = 20
 
 Prediction = namedtuple("Prediction", "mem time threads")
 
 default_prediction = Prediction(DEFAULT_MEM, DEFAULT_TIME, DEFAULT_THREADS)
 
-field_set = set(default_prediction._fields)
+field_set = tuple(default_prediction._fields)
 
 # TODO: perform regression with variable selection to get accurate
 #       performance predictions
@@ -31,7 +34,7 @@ def parse_title_hints(task):
 
 def hash_n_size(files_list):
     return [
-        (str(hash(f)), os.stat(f).st_size/1024./1024)
+        (str(hash(basename(f))), os.stat(f).st_size/1024./1024)
         for f in files_list
     ]
 
@@ -66,19 +69,33 @@ class WebPerformancePredictor(DummyPerformancePredictor):
         self.url = url
         self.messages = list()
         
+
     def update(self, task, max_rss_mb, cpu_hrs, clock_hrs):
-        self._send({
+        self.messages.append({
             "name": task.name, "max_rss_mb": max_rss_mb,
             "cpu_hrs": cpu_hrs, "clock_hrs": clock_hrs,
             "targets": hash_n_size(task.targets),
             "file_dep": hash_n_size(task.file_dep)
         })
+        if len(self.messages) >= MESSAGE_BUNDLE_SIZE:
+            self._flush()
 
-    def _send(self, perf_dict):
-        requests.post(self.url, data=json.dumps(perf_dict))
+
+    def _flush(self):
+        self._send(self.messages)
+        self.messages = []
+
+
+    def _send(self, perf_dicts):
+        try:
+            requests.post(self.url, timeout=.5,
+                          data=json.dumps(perf_dicts),
+                          headers={"Content-Type": "application/json"})
+        except Exception as e:
+            print >> sys.stderr, "Error posting performance info: "+str(e)
 
     def save(self):
-        pass
+        self._flush()
 
 
 def new_predictor(url=DEFAULT_URL):
