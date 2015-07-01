@@ -227,7 +227,7 @@ class SlurmRunner(GridRunner):
 
 
 class LSFRunner(GridRunner):
-    fmt = ('jobid max_mem run_time exit_code'
+    fmt = ('cpu_used max_mem run_time exit_code'
            ' exit_reason stat delimiter="|"')
     multipliers = {
         "gbytes": lambda f: f/1024,
@@ -270,7 +270,7 @@ class LSFRunner(GridRunner):
     def _jobstats(ids):
         def _fields():
             proc = subprocess.Popen(['bjobs', '-noheader',
-                                     '-o ', LSFRunner.fmt]+list(ids),
+                                     '-o '+LSFRunner.fmt]+list(ids),
                                     stdout=subprocess.PIPE)
             for line in proc.stdout:
                 fields = line.strip().split("|")
@@ -280,11 +280,12 @@ class LSFRunner(GridRunner):
                     continue
                 yield fields[:3]
 
-        for id, mem, time in _fields():
+        for ctime, mem, time in _fields():
             key, mem_str = mem.split()
             mem = LSFRunner.multipliers[key](float(mem_str))
-            time = int(time.split()[0])
-            yield id, mem, time
+            clocktime = int(time.split()[0])
+            cputime = int(ctime.split()[0])
+            yield mem, cputime, clocktime
 
 
     @staticmethod
