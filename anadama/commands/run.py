@@ -33,6 +33,14 @@ opt_perf_url = {
     "default": performance.DEFAULT_URL
 }
 
+opt_reporter_url = {
+    "name": "reporter_url",
+    "long": "reporter-url",
+    "help": "URL for posting job updates",
+    "type": str,
+    "default": None
+}
+
 opt_grid_args = {
     "name": "grid_args",
     "long": "gridargs",
@@ -46,7 +54,7 @@ opt_grid_args = {
 class Run(AnadamaCmdBase, DoitRun):
     my_opts = (opt_runner, opt_pipeline_name,
                opt_grid_part, opt_perf_url, opt_tmpfiles, 
-               opt_grid_args)
+               opt_grid_args, opt_reporter_url)
 
     def _execute(self, outfile=sys.stdout,
                  verbosity=None, always=False, continue_=False,
@@ -103,8 +111,10 @@ class Run(AnadamaCmdBase, DoitRun):
         try:
             # FIXME stderr will be shown twice in case of task error/failure
             if isinstance(reporter_cls, type):
-                reporter_obj = reporter_cls(outstream, {'show_out':show_out,
-                                                        'show_err': True})
+                reporter_obj = reporter_cls(
+                    outstream, {'show_out':show_out,
+                                'show_err': True,
+                                'reporter_url': self.opt_values['reporter_url']})
             else: # also accepts reporter instances
                 reporter_obj = reporter_cls
 

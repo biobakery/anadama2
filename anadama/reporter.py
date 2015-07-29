@@ -1,9 +1,15 @@
 import os
+import time
+import json
+from functools import partial
 
 from doit.reporter import ConsoleReporter
 from doit.reporter import REPORTERS as doit_REPORTERS
 from doit.action import CmdAction
 
+import requests
+
+from .util import partition
 
 def _maybestrip(maybe_str):
     if type(maybe_str) is str:
@@ -69,5 +75,68 @@ class VerboseConsoleReporter(ConsoleReporter):
                 err_f.close()
 
 
+
+class WebReporter(ConsoleReporter):
+    def __init__(self, outstream, options, *args, **kwargs):
+        super(WebReporter, self).__init__(outstream, options, *args, **kwargs)
+        self.url = options.get("reporter_url", None)
+        self.send = lambda *args, **kwargs: None
+        self.times = {}
+        if self.url:
+            self.send = lambda resource, d: requests.post(
+                self.url+"/"+resource,
+                headers={"Content-Type": "Application/json"},
+                data=d)
+
+    
+    def write(self, text):
+        pass
+    
+
+    def initialize(self, tasks):
+        for chunk in partition(tasks.itervalues(), 20000):
+            self.send("init", json.dumps(
+                [ {"name": t.name, "task_dep": t.task_dep}
+                  for t in filter(bool, chunk) ]
+            ))
+
+
+    def execute_task(self, task):
+        if not task.actions or task.name.startswith("_"):
+            return
+        self.times[task.name] = time.time()
+        self.send("execute", json.dumps({"name": task.name,
+                                         "file_dep": list(task.file_dep),
+                                         "targets": list(task.targets)}))
+
+    def skip_uptodate(self, task):
+        self.send("skip", json.dumps({"name": task.name}))
+
+
+    def add_success(self, task):
+        to_send = {"name": task.name}
+        to_send['targets'] = [(f, os.stat(f).st_size) for f in task.targets]
+        to_send['outs'], to_send['errs'] = zip(*_alltext(task))
+        if task.name in self.times:
+            to_send['time'] = time.time() - self.times[task.name]
+            self.times.pop(task.name)
+        self.send("success", json.dumps(to_send))
+
+
+    def add_failure(self, task, exception):
+        to_send = {"name": task.name, "exc": str(exception)}
+        to_send['outs'], to_send['errs'] = zip(*_alltext(task))
+        if task.name in self.times:
+            to_send['time'] = time.time() - self.times[task.name]
+            self.times.pop(task.name)
+        self.send("fail", json.dumps(to_send))
+
+
+    def complete_run(self):
+        self.send("finish", "{}")
+
+
+                
 REPORTERS = doit_REPORTERS
 REPORTERS['verbose'] = VerboseConsoleReporter
+REPORTERS['web'] = WebReporter

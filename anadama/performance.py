@@ -22,8 +22,6 @@ field_set = tuple(default_prediction._fields)
 # TODO: perform regression with variable selection to get accurate
 #       performance predictions
 
-# TODO: implement web url not just local url
-
 def parse_title_hints(task):
     kwargs = dict()
     if task.title:
@@ -31,6 +29,7 @@ def parse_title_hints(task):
                         re.findall(r'([a-z]+)\s*=\s*(\d+)', task.title())
                         if k in field_set ])
     return default_prediction._replace(**kwargs)
+
 
 def hash_n_size(files_list):
     return [
