@@ -24,6 +24,14 @@ def _alltext(task):
         for action in task.actions
     ]
 
+
+def is_lame_task(task):
+    return (not task
+            or not task.actions
+            or task.name.startswith("_"))
+
+is_not_lame_task = lambda t: not is_lame_task(t)
+
             
 class VerboseConsoleReporter(ConsoleReporter):
     def execute_task(self, task, *args, **kwargs):
@@ -97,12 +105,12 @@ class WebReporter(ConsoleReporter):
         for chunk in partition(tasks.itervalues(), 20000):
             self.send("init", json.dumps(
                 [ {"name": t.name, "task_dep": t.task_dep}
-                  for t in filter(bool, chunk) ]
+                  for t in filter(is_not_lame_task, chunk) ]
             ))
 
 
     def execute_task(self, task):
-        if not task.actions or task.name.startswith("_"):
+        if is_lame_task(task):
             return
         self.times[task.name] = time.time()
         self.send("execute", json.dumps({"name": task.name,
@@ -110,10 +118,14 @@ class WebReporter(ConsoleReporter):
                                          "targets": list(task.targets)}))
 
     def skip_uptodate(self, task):
+        if is_lame_task(task):
+            return
         self.send("skip", json.dumps({"name": task.name}))
 
 
     def add_success(self, task):
+        if is_lame_task(task):
+            return
         to_send = {"name": task.name}
         to_send['targets'] = [(f, os.stat(f).st_size) for f in task.targets]
         to_send['outs'], to_send['errs'] = zip(*_alltext(task))
@@ -124,6 +136,8 @@ class WebReporter(ConsoleReporter):
 
 
     def add_failure(self, task, exception):
+        if is_lame_task(task):
+            return
         to_send = {"name": task.name, "exc": str(exception)}
         to_send['outs'], to_send['errs'] = zip(*_alltext(task))
         if task.name in self.times:

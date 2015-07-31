@@ -4,6 +4,7 @@ import json
 import errno
 import inspect
 import mimetypes
+from functools import wraps
 from itertools import izip_longest
 from multiprocessing import cpu_count
 from collections import namedtuple
@@ -274,8 +275,18 @@ def islambda(func):
     return getattr(func,'func_name') == '<lambda>'
 
 
-_PATH_list = None
+def memoized(func):
+    cache = func.cache = {}
 
+    @wraps(func)
+    def memoizer(*args, **kwargs):
+        if args not in cache:
+            cache[args] = func(*args, **kwargs)
+        return cache[args]
+    return memoizer
+
+_PATH_list = None
+@memoized
 def find_on_path(bin_str):
     """ Finds an executable living on the shells PATH variable.
     :param bin_str: String; executable to find

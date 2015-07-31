@@ -1,10 +1,11 @@
 """
 Decorators to extend workflow functions
 """
+import collections
 from functools import wraps
 
-from util import find_on_path
-from provenance import BINARY_PROVENANCE as bin_provenance_registry
+from .util import find_on_path
+from .provenance import BINARY_PROVENANCE as bin_provenance_registry
 
 class requires(object):
     """Convenience wrapper for tracking binaries used to perform tasks
@@ -59,4 +60,3 @@ class requires(object):
         return wrapper
 
     
-        
