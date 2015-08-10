@@ -20,6 +20,7 @@ def logger_init(verbose=True):
 
 def skel_list(pipeline, the_dir):
     os.mkdir(the_dir)
+    open(join(the_dir,".placeholder"), 'w').close()
 
 
 skel_funcs = {
