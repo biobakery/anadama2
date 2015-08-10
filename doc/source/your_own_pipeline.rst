@@ -13,6 +13,8 @@ module
   * :py:class:`anadama_workflows.pipelines.sixteen.SixteenSPipeline`
 
 
+.. _directory-skeleton-howto:
+
 Using pipelines via the directory skeleton
 ==========================================
 
