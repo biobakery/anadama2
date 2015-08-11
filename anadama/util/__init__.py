@@ -21,6 +21,9 @@ biopython_to_metaphlan = {
     "bam"  : "bam",
 }
 
+def first(iterable):
+    return next(iter(iterable))
+
 def generator_flatten(gen):
     for item in gen:
         if inspect.isgenerator(item) or type(item) in (list, tuple):
