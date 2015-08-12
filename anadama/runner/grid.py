@@ -162,7 +162,7 @@ class DummyGridRunner(GridRunner):
 class SlurmRunner(GridRunner):
     @staticmethod
     def _grid_communicate(task, partition, mem, time,
-                       tmpdir="/tmp", threads=1, extra_grid_args=""):
+                          tmpdir="/tmp", threads=1, extra_grid_args=""):
         opts = { "mem": mem,   
                  "time": time,
                  "export": "ALL", 
@@ -291,4 +291,111 @@ class LSFRunner(GridRunner):
     @staticmethod
     def _handle_grid_fail(cmd, out, err, retcode, tries, mem, time):
         return None, False, mem, time
+
+
+
+class SGERunner(GridRunner):
+    useful_qacct_keys = ("mem", "cpu", "wallclock")
+
+    def __init__(self, *args, **kwargs):
+        self.task_performance_info = dict()
+        self._pe_name = None
+        return super(SGERunner, self).__init__(*args, **kwargs)
+
+    def find_suitable_pe(self):
+        if self._pe_name:
+            return self._pe_name
+
+        names, _ = subprocess.Popen(['qconf', '-spl'], 
+                                    stdout=subprocess.PIPE).communicate()
+        if not names:
+            raise InvalidCommand(
+                "Unable to find any SGE parallel environment names. \n"
+                "Ensure that SGE tools like qconf are installed, \n"
+                "ensure that this node can talk to the cluster, \n"
+                "and ensure that parallel environments are enabled.")
+
+        pe_name = None
+        for name in names.strip().split():
+            if pe_name:
+                break
+            out, _ = subprocess.Popen(["qconf", "-sp", name], 
+                                   stdout=subprocess.PIPE).communicate()
+            for line in out.split('\n'):
+                if ["allocation_rule", "$pe_slots"] == line.split():
+                    pe_name = name
+        
+        if not pe_name:
+            raise InvalidCommand(
+                "Unable to find a suitable parallel environment. "
+                "Please talk with your systems administrator to enable "
+                "a parallel environment that has an `allocation_rule` "
+                "set to `$pe_slots`.")
+        else:
+            self._pe_name = pe_name
+            return pe_name
+            
+
+    def _grid_communicate(self, task, partition, mem, time, 
+                          tmpdir='/tmp', threads=1, extra_grid_args=""):
+        pe_name = self.find_suitable_pe()
+        mem = float(mem)/float(threads) # SGE spreads mem over requested num slots
+        tmpout = tempfile.mktemp(dir=tmpdir)
+        tmperr = tempfile.mktemp(dir=tmpdir)
+        script = picklerunner.tmp(task, dir=tmpdir)
+
+        cmd = ("qsub -R y -b y -sync y -pe {pe_name} {threads} -cwd "
+               "-l 'm_mem_free={mem}M' -q {partition} -V "
+               "-o {tmpout} -e {tmperr} "
+               "{script} -r").format(pe_name=pe_name, threads=threads, 
+                                     mem=max(1, int(mem)), partition=partition,
+                                     tmpout=tmpout, tmperr=tmperr,
+                                     script=script.path)
+
+        out, err, retcode = SGERunner._grid_popen(cmd, task)
+        
+        try:
+            if os.path.exists(tmpout):
+                with open(tmpout) as f_out:
+                    task.actions[0].out = f_out.read()
+                os.unlink(tmpout)
+            if os.path.exists(tmperr):
+                with open(tmperr) as f_err:
+                    task.actions[0].err = f_err.read()
+                os.unlink(tmperr)
+        except Exception as e:
+            err += "Anadama error: "+str(e)
+
+        return cmd, (out, err, retcode)
+
+
+    @staticmethod
+    def _find_job_id(out, err):
+        return re.search(r'Your job (\d+) ', out).group(1)
+
+
+    def _jobstats(self, ids):
+        for job_id in ids:
+            output = subprocess.Popen(
+                ["qacct", "-j", str(job_id)], 
+                stdout=subprocess.PIPE).communicate()[0]
+            output = output.strip().split("\n")
+            if not output:
+                continue
+            ret = dict([(k, 0) for k in self.useful_qacct_keys])
+            for line in output:
+                kv = line.split()
+                if len(kv) < 2 or kv[0] not in ret:
+                    continue
+                k, v = kv
+                ret[k] = float(v)
+
+            yield map(ret.get, self.useful_qacct_keys)
+                
+
+    @staticmethod
+    def _handle_grid_fail(cmd, out, err, retcode, tries, mem, time):
+        exc = CatchedException("Command failed: "+cmd+"\n"+out+"\n"+err)
+        keep_going = False
+        return exc, keep_going, int(mem), int(time)
 
