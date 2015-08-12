@@ -24,6 +24,9 @@ biopython_to_metaphlan = {
 def first(iterable):
     return next(iter(iterable))
 
+def intatleast1(n):
+    return max(1, int(n))
+
 def generator_flatten(gen):
     for item in gen:
         if inspect.isgenerator(item) or type(item) in (list, tuple):
