@@ -100,11 +100,11 @@ def dict_to_cmd_opts_iter(opts_dict,
             continue
         elif val is True:
             yield longdash+key if len(key) > 1 else shortdash+key
-        elif type(val) is str:
-            yield kv(key, val)
         elif type(val) in (tuple, list):
             for subval in val:
                 yield kv(key, subval)
+        else:
+            yield kv(key, str(val))
 
         
 def dict_to_cmd_opts(*args, **kwds):
