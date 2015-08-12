@@ -11,7 +11,7 @@ from doit.exceptions import CatchedException
 from doit.runner import MThreadRunner
 
 from .. import picklerunner, performance
-from ..util import dict_to_cmd_opts, partition
+from ..util import dict_to_cmd_opts, partition, intatleast1
 
 
 sigmoid = lambda t: 1/(1-exp(-t))
@@ -55,7 +55,7 @@ class GridRunner(MThreadRunner):
 
     def _grid_execute_task(self, task, perf_obj):
         keep_going, maybe_exc, tries = True, None, 1
-        mem, time, threads = perf_obj
+        mem, time, threads = map(intatleast1, perf_obj)
         task_id = None
         while keep_going:
             keep_going, maybe_exc = False, None
