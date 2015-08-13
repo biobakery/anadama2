@@ -25,9 +25,9 @@ class Main(DoitMain):
         return cmds
 
 
-def main(cmds=commands.all):
+def main(cmds=commands.all, argv=sys.argv):
     monkey.patch_all()
-    ret = Main(cmds).run(sys.argv[1:])
+    ret = Main(cmds).run(argv[1:])
     sys.exit(ret)
 
 if __name__ == '__main__':
