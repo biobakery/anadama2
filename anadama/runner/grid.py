@@ -280,10 +280,10 @@ class LSFRunner(GridRunner):
                     continue
                 yield fields[:3]
 
-        for ctime, mem, time in _fields():
+        for ctime, mem, wtime in _fields():
             key, mem_str = mem.split()
             mem = LSFRunner.multipliers[key](float(mem_str))
-            clocktime = int(time.split()[0])
+            clocktime = int(wtime.split()[0])
             cputime = int(ctime.split()[0])
             yield mem, cputime, clocktime
 

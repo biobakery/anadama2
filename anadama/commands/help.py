@@ -1,7 +1,3 @@
-import sys
-import pprint
-import inspect
-from cStringIO import StringIO
 from operator import attrgetter
 
 import six

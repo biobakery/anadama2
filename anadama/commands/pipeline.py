@@ -11,7 +11,6 @@ from ..loader import PipelineLoader
 from ..loader import opt_append_pipeline
 from ..skeleton import make_pipeline_skeleton
 
-from . import opt_runner, opt_tmpfiles, opt_pipeline_name
 from . import ListDag
 from .run import Run
 

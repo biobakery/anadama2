@@ -5,6 +5,8 @@ import os
 import sys
 from doit.exceptions import TaskError, TaskFailed
 
+from .action import CmdAction
+
 default_conditions = [
     lambda ret, *args, **kwargs: type(ret) in (TaskError, TaskFailed),
     lambda ret, *args, **kwargs: ret is False
@@ -87,3 +89,4 @@ def action_execute(action):
         print action.out
     if action.err and action.err.strip():
         print >> sys.stderr, action.err
+    return ret
