@@ -1,11 +1,9 @@
 import os
 import time
 import json
-from functools import partial
 
 from doit.reporter import ConsoleReporter
 from doit.reporter import REPORTERS as doit_REPORTERS
-from doit.action import CmdAction
 
 import requests
 

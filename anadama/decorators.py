@@ -1,7 +1,6 @@
 """
 Decorators to extend workflow functions
 """
-import collections
 from functools import wraps
 
 from .util import find_on_path

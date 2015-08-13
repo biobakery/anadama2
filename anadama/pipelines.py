@@ -1,6 +1,4 @@
 import re
-from os.path import abspath
-from itertools import chain
 
 from doit.task import dict_to_task
 from doit.control import no_none

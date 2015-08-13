@@ -216,7 +216,7 @@ def deserialize_map_file(file_handle):
             continue
         try:
             yield cls._make([ r.strip() for r in row.split('\t') ])
-        except TypeError as e:
+        except TypeError:
             raise SparseMetadataException(
                 "Unable to deserialize sample-specific metadata:"+\
                 " The file %s has missing values at row %i" %(

@@ -1,17 +1,12 @@
-import sys
 import os.path
 from operator import add, attrgetter, itemgetter
-from collections import defaultdict, deque
+from collections import defaultdict
 
 import networkx
 
-from .util import (
-    SerializableMixin, 
-    generator_flatten
-)
-from . import (
-    picklerunner
-)
+from .util import SerializableMixin
+from . import picklerunner
+
 
 TMP_FILE_DIR = "/tmp"
 
