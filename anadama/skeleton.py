@@ -164,3 +164,5 @@ def make_pipeline_skeleton(pipeline_name,
     log("Done.\n")
 
     log("Complete.\n")
+
+    return allprods, allopts, allworks
