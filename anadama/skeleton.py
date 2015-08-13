@@ -7,7 +7,7 @@ import yaml
 from doit.exceptions import InvalidCommand
 
 from .loader import PipelineLoader
-from .commands.help import print_pipeline_help
+from .util.help import print_pipeline_help
 
 OPTIONS_DIR = "_options"
 
