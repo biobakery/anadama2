@@ -70,7 +70,7 @@ class Skeleton(Command):
         if not pos_args:
             raise InvalidCommand("No pipeline specified")
         pipeline_name = pos_args.pop()
-        return make_pipeline_skeleton(
+        make_pipeline_skeleton(
             pipeline_name,
             optional_pipelines=opt_values['append_pipeline']
         )
