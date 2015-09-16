@@ -33,6 +33,15 @@ opt_perf_url = {
     "default": performance.DEFAULT_URL
 }
 
+opt_auth_info = {
+    "name": "auth_info",
+    "long": "auth-info",
+    "help": ("Authentication info for anpan."
+             "Should go like username_:_projectname_:_commit_id_:_auth_key"),
+    "type": str,
+    "default": None
+}
+
 opt_reporter_url = {
     "name": "reporter_url",
     "long": "reporter-url",
@@ -54,7 +63,7 @@ opt_grid_args = {
 class Run(AnadamaCmdBase, DoitRun):
     my_opts = (opt_runner, opt_pipeline_name,
                opt_grid_part, opt_perf_url, opt_tmpfiles, 
-               opt_grid_args, opt_reporter_url)
+               opt_grid_args, opt_reporter_url, opt_auth_info)
 
     def _execute(self, outfile=sys.stdout,
                  verbosity=None, always=False, continue_=False,
@@ -114,7 +123,8 @@ class Run(AnadamaCmdBase, DoitRun):
                 reporter_obj = reporter_cls(
                     outstream, {'show_out':show_out,
                                 'show_err': True,
-                                'reporter_url': self.opt_values['reporter_url']})
+                                'reporter_url': self.opt_values['reporter_url'],
+                                'auth_info': self.opt_values['auth_info']})
             else: # also accepts reporter instances
                 reporter_obj = reporter_cls
 

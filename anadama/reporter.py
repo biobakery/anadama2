@@ -8,6 +8,8 @@ from doit.reporter import REPORTERS as doit_REPORTERS
 import requests
 
 from .util import partition
+from .util.auth import AuthInfo
+
 
 def _maybestrip(maybe_str):
     if type(maybe_str) is str:
@@ -86,6 +88,7 @@ class WebReporter(ConsoleReporter):
     def __init__(self, outstream, options, *args, **kwargs):
         super(WebReporter, self).__init__(outstream, options, *args, **kwargs)
         self.url = options.get("reporter_url", None)
+        self.auth_info = AuthInfo.parse(options)
         self.send = lambda *args, **kwargs: None
         self.times = {}
         if self.url:
@@ -101,10 +104,13 @@ class WebReporter(ConsoleReporter):
 
     def initialize(self, tasks):
         for chunk in partition(tasks.itervalues(), 20000):
-            self.send("init", json.dumps(
-                [ {"name": t.name, "task_dep": t.task_dep}
-                  for t in filter(is_not_lame_task, chunk) ]
-            ))
+            to_send = {
+                "nodes": [ {"name": t.name, "task_dep": t.task_dep}
+                           for t in filter(is_not_lame_task, chunk) ]
+            }
+            if self.auth_info:
+                to_send['auth_info'] = self.auth_info.to_dict()
+            self.send("init", json.dumps(to_send))
 
 
     def execute_task(self, task):
