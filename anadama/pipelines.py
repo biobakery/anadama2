@@ -213,7 +213,7 @@ class Pipeline(object):
         for attr in ("products", "default_options", "workflows"):
             getattr(self, attr).update(
                 (key, value) 
-                for key, value in other_pipeline.products.iteritems() 
+                for key, value in getattr(other_pipeline, attr).iteritems() 
                 if key not in self.products
             )
 
