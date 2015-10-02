@@ -274,9 +274,13 @@ class PipelineLoader(TaskLoader):
     def _import(pipeline_name):
         
         # look for the pipeline as an entry point
+        pipeline_attribute=None
         try:
-            entry_point=next(pkg_resources.iter_entry_points("anadama.pipeline","."+pipeline_name))
-            pipeline_attribute=entry_point.load()
+            # check for an entry point that matches the name, ignore case
+            for entry_point in pkg_resources.iter_entry_points("anadama.pipeline"):
+                if entry_point.name.lower() == "."+pipeline_name.lower():
+                    pipeline_attribute=entry_point.load()
+                    break
         except (StopIteration, ImportError):
             pipeline_attribute=None
         
