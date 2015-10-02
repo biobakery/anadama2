@@ -8,6 +8,8 @@ from doit.exceptions import InvalidCommand
 
 from .util import filespec, matcher
 from .pipelines import Pipeline
+
+from . import settings
         
 opt_pipeline_argument = { 
     "name"    : "pipeline_arg",
@@ -270,8 +272,16 @@ class PipelineLoader(TaskLoader):
 
     @staticmethod
     def _import(pipeline_name):
+        split_name = re.split(RE_COLON, pipeline_name, 1)
+        if len(split_name) == 2:
+            mod, pipeline_name = split_name
+        else:
+            # try the default module path
+            mod=settings.pipelines.module
+        # add on the required tag if short name is provided
+        if not settings.pipelines.tag in pipeline_name:
+            pipeline_name=pipeline_name+settings.pipelines.tag
         try:
-            mod, pipeline_name = re.split(RE_COLON, pipeline_name, 1)
             module = importlib.import_module(mod)
             return getattr(module, pipeline_name)
         except (ImportError, AttributeError) as e:
