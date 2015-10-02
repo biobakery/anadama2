@@ -8,8 +8,8 @@ from doit.exceptions import InvalidCommand
 
 from .util import filespec, matcher
 from .pipelines import Pipeline
-
-from . import settings
+        
+import pkg_resources
         
 opt_pipeline_argument = { 
     "name"    : "pipeline_arg",
@@ -272,26 +272,28 @@ class PipelineLoader(TaskLoader):
 
     @staticmethod
     def _import(pipeline_name):
-        split_name = re.split(RE_COLON, pipeline_name, 1)
-        if len(split_name) == 2:
-            mod, pipeline_name = split_name
-        else:
-            # try the default module path
-            mod=settings.pipelines.module
-        # add on the required tag if short name is provided
-        if not settings.pipelines.tag in pipeline_name:
-            pipeline_name=pipeline_name+settings.pipelines.tag
+        
+        # look for the pipeline as an entry point
         try:
-            module = importlib.import_module(mod)
-            return getattr(module, pipeline_name)
-        except (ImportError, AttributeError) as e:
-            raise InvalidCommand(e.message)
-        except ValueError:
-            raise InvalidCommand(
-                "Unable to understand module name. "
-                "Try something like 'anadama_workflows.pipelines:WGSPipeline'"
-            )
+            entry_point=next(pkg_resources.iter_entry_points("anadama.pipeline","."+pipeline_name))
+            pipeline_attribute=entry_point.load()
+        except (StopIteration, ImportError):
+            pipeline_attribute=None
+        
+        if not pipeline_attribute:
+            try:
+                mod, pipeline_name = re.split(RE_COLON, pipeline_name, 1)
+                module = importlib.import_module(mod)
+                pipeline_attribute = getattr(module, pipeline_name)
+            except (ImportError, AttributeError) as e:
+                raise InvalidCommand(e.message)
+            except ValueError:
+                raise InvalidCommand(
+                    "Unable to understand module name. "
+                    "Try something like 'anadama_workflows.pipelines:WGSPipeline'"
+                )
 
+        return pipeline_attribute
 
     @staticmethod
     def _init_pipeline(cls, args, kwargs):
