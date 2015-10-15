@@ -7,6 +7,7 @@ from doit.cmdparse import CmdOption
 from .. import dag
 from ..runner import RUNNER_MAP
 from ..provenance import find_versions
+from ..loader import find_anadama_pipelines
 
 
 opt_runner = dict(
@@ -103,8 +104,25 @@ class BinaryProvenance(Command):
                 print binary, "\t", version
 
 
+class LsPipelines(Command):
+    name = "ls_pipelines"
+    doc_purpose = "list available AnADAMA pipelines"
+    doc_usage = ""
+
+    def execute(self, opt_values, pos_args):
+        """List available pipelines
+        """
+
+        pipeline_names = [ entry_point.name.replace(".", "", 1) for entry_point in find_anadama_pipelines() ]
+
+        if pipeline_names:
+            print "Available AnADAMA pipelines:"
+            print "\n".join(pipeline_names)
+        else:
+            print "Unable to find any AnADAMA pipelines."
+
 
 from .help import Help
 from .pipeline import RunPipeline, DagPipeline, Skeleton
 
-all = (Run, ListDag, Help, BinaryProvenance, RunPipeline, DagPipeline, Skeleton)
+all = (Run, ListDag, Help, BinaryProvenance, RunPipeline, DagPipeline, Skeleton, LsPipelines)
