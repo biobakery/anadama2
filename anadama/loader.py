@@ -89,6 +89,12 @@ opt_products_directory = {
 
 RE_COLON = re.compile(r':\s*')
 
+def find_anadama_pipelines():
+    """ Find available pipelines and return entry points
+    """
+
+    return pkg_resources.iter_entry_points("anadama.pipeline")
+
 
 class PipelineLoader(TaskLoader):
 
@@ -277,11 +283,11 @@ class PipelineLoader(TaskLoader):
         pipeline_attribute=None
         try:
             # check for an entry point that matches the name, ignore case
-            for entry_point in pkg_resources.iter_entry_points("anadama.pipeline"):
+            for entry_point in find_anadama_pipelines():
                 if entry_point.name.lower() == "."+pipeline_name.lower():
                     pipeline_attribute=entry_point.load()
                     break
-        except (StopIteration, ImportError):
+        except ImportError:
             pipeline_attribute=None
         
         if not pipeline_attribute:
