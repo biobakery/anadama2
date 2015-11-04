@@ -19,7 +19,7 @@ def parse(pattern_str, data_dir=DEFAULT_DATA_DIR):
         files = ifilter(matcher, allfiles)
     elif ',' in pattern_str:
         files = pattern_str.split(',')
-        nonexistent = [ not os.path.exists(f) for f in files ]
+        nonexistent = [ f for f in files if not os.path.exists(f) ]
         if nonexistent:
             raise OSError("No such file or directory: "+", ".join(nonexistent))
     else:
