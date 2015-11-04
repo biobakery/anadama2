@@ -131,7 +131,9 @@ class WebReporter(ConsoleReporter):
         if is_lame_task(task):
             return
         to_send = {"name": task.name}
-        to_send['targets'] = [(f, os.stat(f).st_size) for f in task.targets]
+        to_send['targets'] = [(f, os.stat(f).st_size) 
+                              for f in task.targets
+                              if os.path.exists(f)]
         to_send['outs'], to_send['errs'] = zip(*_alltext(task))
         if task.name in self.times:
             to_send['time'] = time.time() - self.times[task.name]
