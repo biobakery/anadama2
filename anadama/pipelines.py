@@ -195,6 +195,16 @@ class Pipeline(object):
 
     
     def append(self, other_pipeline_cls):
+        """Use this pipeline as the main pipeline and append another pipeline
+        to further use the inputs or products of the main pipeline.
+
+        :param other_pipeline_cls: Class; append this pipeline
+        **class** (not object) to the end of this pipeline. The
+        ``other_pipeline_cls`` is then instantiated and hooked up to
+        use the inputs and products of the main pipeline.
+
+        """
+
         #  The already initialized pipeline, the main pipeline, does
         #  append. This function should really only operate on the
         #  main pipeline (aka self). The _chain classmethod should
