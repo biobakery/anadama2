@@ -96,7 +96,7 @@ def dict_to_cmd_opts_iter(opts_dict,
 
     for key, val in opts_dict.iteritems():
         kv = longkv if len(key) > 1 else shortkv
-        if val is False:
+        if val is False or None:
             continue
         elif val is True:
             yield longdash+key if len(key) > 1 else shortdash+key
