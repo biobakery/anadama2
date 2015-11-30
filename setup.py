@@ -12,6 +12,9 @@ setup(
                  'Application'),
     packages=find_packages(exclude=['ez_setup', 'tests', 'tests.*']),
     zip_safe=False,
+    package_data={
+        'anadama': [r'*.txt']
+    },
     install_requires=[
         'doit==0.25.0',
         'networkx==1.9',
