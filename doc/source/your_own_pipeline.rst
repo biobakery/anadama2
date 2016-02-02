@@ -71,6 +71,18 @@ Here's an example usage::
   $ anadama
   ...
 
+In the course of your work you may find it necessary to pass in a
+collection of settings for your ipelines as needed.  You can use the
+following procedure::
+
+  1) Execute "anadama skeleton WGS" to create the hierarchy of directories.
+  2) Under the top-level directory, edit "input/_options/decontaminate.txt"
+     to include the location(s) of the database(s), as indicated below:
+     
+     reference-db:
+     - /path/to/my/db1
+     - /path/to/my/db2
+
 
 .. _yaml: http://yaml.org/spec/1.1/#id857168
 
