@@ -183,6 +183,17 @@ to specify the main pipeline. Here's an example::
 
   -A anadama_workflows.pipelines:VisualizationPipeline
 
+Passing settings via command line
+_________________________________
+
+In the course of your work you may find it necessary to pass in a
+collection of settings for your pipelines as needed.  You can use the
+following command line syntax::
+
+  -o 'decontaminate.reference-db: /path/to/my/db'
+
+where -o is the pipeline option and the key-value entry points to the
+location of the database.
 
 Putting it all together
 _______________________
