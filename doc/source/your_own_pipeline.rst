@@ -4,10 +4,10 @@
 Using Existing Pipelines and making your own
 ############################################
 
-Some pipelines already written. These pipelines may be useful to you
-outright, or they may serve as an example for writing your own
-pipelines. Some existing pipelines are in the ``anadama_workflows``
-module
+Some pipelines have already been written. These pipelines may be
+useful to you outright, or they may serve as an example for writing
+your own pipelines. Some existing pipelines are in the
+``anadama_workflows`` module.
 
   * :py:class:`anadama_workflows.pipelines.wgs.WGSPipeline`
   * :py:class:`anadama_workflows.pipelines.sixteen.SixteenSPipeline`
@@ -72,7 +72,7 @@ Here's an example usage::
   ...
 
 In the course of your work you may find it necessary to pass in a
-collection of settings for your ipelines as needed.  You can use the
+collection of settings for your pipelines as needed.  You can use the
 following procedure::
 
   1) Execute "anadama skeleton WGS" to create the hierarchy of directories.
