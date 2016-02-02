@@ -71,6 +71,9 @@ Here's an example usage::
   $ anadama
   ...
 
+Passing settings via the directory skeleton
+===========================================
+
 In the course of your work you may find it necessary to pass in a
 collection of settings for your pipelines as needed.  You can use the
 following procedure::
