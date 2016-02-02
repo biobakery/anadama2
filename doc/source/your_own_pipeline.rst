@@ -72,7 +72,7 @@ Here's an example usage::
   ...
 
 Passing settings via the directory skeleton
-===========================================
+___________________________________________
 
 In the course of your work you may find it necessary to pass in a
 collection of settings for your pipelines as needed.  You can use the
