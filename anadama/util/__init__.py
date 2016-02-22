@@ -1,9 +1,11 @@
 import re
 import os
 import json
+import zlib
 import errno
 import inspect
 import mimetypes
+import subprocess
 from functools import wraps
 from itertools import izip_longest
 from multiprocessing import cpu_count
@@ -316,3 +318,29 @@ def find_on_path(bin_str):
 def partition(it, binsize, pad=None):
     iters = [iter(it)]*binsize
     return izip_longest(fillvalue=pad, *iters)    
+
+def _adler32(fname):
+    """Compute the adler32 checksum on a file.
+
+    :param fname: File path to the file to checksum
+    :type fname: str
+    """
+
+    with open(fname, 'r') as f:
+        prev = 1
+        buf = f.read(1024*1024*8)
+        while buf:
+            checksum = zlib.adler32(buf, prev)
+    return checksum
+
+
+def sh(cmd, **kwargs):
+    kwargs['stdout'] = kwargs.get('stdout', subprocess.PIPE)
+    kwargs['stderr'] = kwargs.get('stderr', subprocess.PIPE)
+    proc = subprocess.Popen(cmd, **kwargs)
+    ret = proc.communicate()
+    if proc.returncode:
+        raise ShellException("Command `{}' failed. \nOut: {}\nErr: {}".format(
+            cmd, ret[0], ret[1]))
+    return ret
+
