@@ -330,7 +330,7 @@ def _adler32(fname):
         prev = 1
         buf = f.read(1024*1024*8)
         while buf:
-            checksum = zlib.adler32(buf, prev)
+            checksum = prev = zlib.adler32(buf, prev)
     return checksum
 
 
