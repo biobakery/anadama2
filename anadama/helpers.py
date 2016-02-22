@@ -21,6 +21,6 @@ def sh(s, **kwargs):
 
     """
 
-    def actually_sh(ctx):
+    def actually_sh(ctx=None):
         return _sh(s, **kwargs)
     return actually_sh
