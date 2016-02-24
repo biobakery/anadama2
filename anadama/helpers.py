@@ -14,13 +14,40 @@ def sh(s, **kwargs):
     ``subprocess.Popen``
 
     :param s: The command to execute. Passed directly to a shell, so
-    be careful about doing things like 
-    ``sh('df -h > data; rm -rf /')``; both commands are executed 
-    and bad things will happen.
-    :type s:
+      be careful about doing things like ``sh('df -h > data; rm -rf
+      /')``; both commands are executed and bad things will happen.
+    :type s: str
 
     """
 
     def actually_sh(ctx=None):
+        kwargs['shell'] = True
         return _sh(s, **kwargs)
     return actually_sh
+
+
+def parse_sh(s, **kwargs):
+    """Do the same thing as :func:`helpers.sh`, but do some extra
+    interpreting and formatting of the shell command before handing it
+    over to the shell. For those familiar with python's
+    ``string.format()`` method, the list of dependencies and the list
+    of targets are given to ``.format`` like so:
+    ``.format(targs=targets, deps=depends)``. Here's a synopsis of
+    common use cases:
+
+    - ``{targs[0]}`` is formatted to the first target
+    
+    - ``{deps[2]}`` is formatted to the third dependency
+
+    :param s: The command to execute. Passed directly to a shell, so
+      be careful about doing things like 
+      ``sh('df -h > data; rm -rf /')``; both commands are executed 
+      and bad things will happen.
+    :type s: str
+
+    """
+
+    def actually_sh(ctx):
+        kwargs['shell'] = True
+        t = ctx.current_task()
+        return _sh(s.format(deps=t.depends, targs=t.targets), **kwargs)

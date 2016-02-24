@@ -2,43 +2,24 @@ import re
 import shlex
 from collections import namedtuple
 
-from .helpers import sh
-from .deps import FileDependency, StringDependency
+import networkx as nx
 
+from . import matcher, Task
+from .helpers import sh, parse_sh
 
-class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
-                               "task_no"])):
-    """A unit of work. 
-    
-    :param name: The task name; must be unique to all tasks within a runcontext.
-    :type name: str or unicode
-
-    :param actions: The actions to execute; do these and the work is done.
-    :type actions: list of callable
-
-    :param depends: The list of dependencies. 
-    :type depends: list of :class:`deps.BaseDependendency`
-
-    :param targets: The list of targets. The task must produce all of
-    these to be a successfully complete task.
-    :type targets: list of :class:`deps.BaseDependency`
-
-    :param task_no: The unique task number. Ordered by declaration,
-    not execution.
-    :type task_no: int
-
-    """
-    pass # the class definition is just for the docstring
-
+from . import deps
 
 class RunContext(object):
 
     def __init__(self):
         self.task_counter = itertools.count(1)
+        self.dag = nx.DiGraph()
+        self.tasks = list()
+        self._depidx = deps.DependencyIndex()
 
 
     def do(self, cmd, track_cmd=True, track_binaries=True):
-        """Create and add a :class:`runcontext.Task` to the runcontext using a
+        """Create and add a :class:`Task` to the runcontext using a
         convenient, shell-like syntax. 
 
         To explicitly mark task targets, wrap filenames within ``cmd``
@@ -91,19 +72,20 @@ class RunContext(object):
             deps.append(StringDependency(sh_cmd))
         if track_binaries:
             deps.extend(discover_binaries(sh_cmd))
-        return self.add_task(sh_cmd, deps, targs)
+        return self.add_task(sh_cmd, deps, targs, parse_sh=False)
 
 
-    def add_task(self, actions=None, depends=None, targets=None, name=None):
-        """Create and add a :class:`runcontext.Task` to the runcontext.  This
+    def add_task(self, actions=None, depends=None, targets=None,
+                 name=None, interpret_deps_and_targs=True):
+        """Create and add a :class:`Task` to the runcontext.  This
         function can be used as a decorator to set a function as the
         sole action.
         
         :param actions: The actions to be performed to complete the
           task. Strings or lists of strings are interpreted as shell
-          commands. If given just a string or just a callable, this
-          method treats it as a one-item list of the string or
-          callable.  
+          commands according to :func:`runcontext.parse_sh`. If given
+          just a string or just a callable, this method treats it as a
+          one-item list of the string or callable.
         :type actions: str or callable or list of str or
           list of callable
 
@@ -131,11 +113,18 @@ class RunContext(object):
           within a run context.
         :type name: str
 
+        :keyword interpret_deps_and_targs: Should I use
+          :func:`runcontext.parse_sh` to change ``{deps[0]}`` and
+          ``{targs[0]}`` into the first item in depends and the first
+          item in targets? Default is True
+        :type interpret_deps_and_targs: bool
+
         """
 
-        acts = _build_actions(actions)
         deps = _build_depends(depends)
         targs = _build_targets(targets)
+        acts = _build_actions(actions, deps, targs,
+                              use_parse_sh=interpret_deps_and_targs)
         task_no = next(self.task_counter)
         name = _build_name(name, task_no)
         if acts is None: # must be a decorator
@@ -154,12 +143,33 @@ class RunContext(object):
         pass
 
     def _add_task(self, task):
-        pass
+        """Actually add a task to the internal dependency data structure"""
+        
+        self.tasks.append(task)
+        self.dag.add_node(task.task_no)
+        for dep in task.depends:
+            try:
+                parent_task = self._depidx[dep.key()]
+            except KeyError:
+                self._handle_nosuchdep(self, dep, task)
+            else:
+                self.dag.add_edge(parent_task.task_no, task.task_no)
+        
+                
+
+    def _handle_nosuchdep(self, dep, task):
+        self.tasks.pop()
+        self.dag.remove_node(task.task_no)
 
 
-def _build_actions(actions):
+
+def _build_actions(actions, deps, targs, use_parse_sh=True):
     actions = _sugar_list(actions)
-    return [ a if callable(a) else sh(a) for a in actions ]
+    if use_parse_sh:
+        mod = parse_sh
+    else:
+        mod = lambda cmd, *args, **kwargs: sh(cmd)
+    return [ a if callable(a) else mod(a, deps, targs) for a in actions ]
         
 
 def _build_depends(depends):
@@ -179,7 +189,6 @@ def _build_name(name, task_no):
         return "Step "+str(task_no)
     else:
         return name
-
 
 
 def _sugar_list(x):
@@ -218,3 +227,5 @@ def discover_binaries(s):
             deps.append(dep)
 
     return deps
+
+    
