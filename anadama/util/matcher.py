@@ -52,15 +52,22 @@ def min_with_ties(iterable, key=None):
     return ret
     
 
-def closest(needle_str, haystack, kmer_lengths=(2,)):
-    distances = [ (distance(needle_str, s, kmer_lengths), s)
-                  for s in haystack ]
+def closest(needle, haystack, kmer_lengths=(2,), key=None):
+    if key:
+        distances = [ (distance(key(needle), key(s), kmer_lengths), s)
+                      for s in haystack ]
+    else:
+        distances = [ (distance(needle, s, kmer_lengths), s)
+                      for s in haystack ]
     return min_with_ties(distances, key=first)
 
 
-def find_match(needle_str, haystack_strs, kmer_lengths=(2,)):
-    haystack = set(haystack_strs)
-    distances = [ (distance(needle_str, s, kmer_lengths), s)
-                  for s in haystack ]
+def find_match(needle, haystack, kmer_lengths=(2,), key=None):
+    if key:
+        distances = [ (distance(key(needle), key(s), kmer_lengths), s)
+                      for s in haystack ]
+    else:
+        distances = [ (distance(needle, s, kmer_lengths), s)
+                      for s in haystack ]
     d, match = min(distances, key=first)
     return match

@@ -38,10 +38,47 @@ def auto(x):
 
 class DependencyIndex(object):
 
-    # TODO: doc?
+    """Keeps track of what dependencies belong to what class and provides
+    efficient lookups of what task produces what dependency. Use
+    ``DependencyIndex[dependency_obj]`` to get the task that makes that
+    dependency.
+
+    """
+
+    def __init__(self):
+        self._taskidx = dict([(k, dict()), for k in _singleton_idx.iterkeys()])
+
+        
+    def link(self, dep, task_or_none):
+        """Link a dependency to a task. Used later for lookups with
+        __getitem__.
+
+        :param dep: The dependency to track
+        :type dep: subclass of :class:`deps.BaseDependency`
+
+        :param task_or_none: The task that's supposed to create this
+          dependency. Use None if the dependency isn't created by a
+          task but exists prior to any tasks running.
+        :type task_or_none: :class:`Task` or None
+
+        """
+        self._taskidx[dep.__class__.__name__][dep._key] = task_or_none
+
 
     def __contains__(self, dep):
         return dep._key in _singleton_idx[dep.__class__.__name__]
+
+
+    def __getitem__(self, dep):
+        if not isinstance(dep, BaseDependency):
+            raise TypeError(
+                "DependencyIndex can only use subclasses of"
+                " BaseDependency to perform lookups."
+                " Received type `{}'".format(type(dep))
+            )
+        deptype = dep.__class__.__name__
+        dep = _singleton_idx[deptype][dep._key]
+        return self._taskidx[deptype][dep._key]
 
 
 
@@ -183,6 +220,24 @@ class FileDependency(BaseDependency):
 
     def __str__(self):
         return self.fname
+
+
+
+class HugeFileDependency(FileDependency):
+    """Track a large file. Large being large enough that you don't want to
+    read through the entire file to create a checksum of its contents.
+
+    This dependency class is the fastest option for tracking file
+    changes for large files. Speed comes at the cost of safety; only
+    the size and the modification time are used to determine
+    freshness.
+
+    """
+
+    def compare(self):
+        stat = os.stat(self.fname)
+        yield stat.st_size
+        yield stat.st_mtime
 
 
 
