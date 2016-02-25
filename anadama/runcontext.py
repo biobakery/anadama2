@@ -1,13 +1,15 @@
 import re
+import itertools
 import shlex
+from operator import attrgetter
 from collections import namedtuple
 
 import networkx as nx
 
-from . import matcher, Task
-from .helpers import sh, parse_sh
-
+from . import Task
 from . import deps
+from .helpers import sh, parse_sh
+from .util import matcher
 
 class RunContext(object):
 
@@ -69,9 +71,12 @@ class RunContext(object):
         deps = _parse_wrapper(cmd, metachar="#")
         sh_cmd = re.sub(r'[@#]{([^{}]+)}', r'\1', cmd)
         if track_cmd:
+            self.already_exists(sh_cmd)
             deps.append(StringDependency(sh_cmd))
         if track_binaries:
-            deps.extend(discover_binaries(sh_cmd))
+            for binary in discover_binaries(sh_cmd):
+                self.already_exists(binary)
+                deps.append(binary)
         return self.add_task(sh_cmd, deps, targs, parse_sh=False)
 
 
@@ -138,9 +143,28 @@ class RunContext(object):
             return the_task
 
 
-    def go(self):
-        """Kick off execution of all previously configured tasks."""
+    def go(self, run_them_all=False, dry_run=False, runner=None, reporter=None,
+           storage_backend=None, processes=1):
+        """Kick off execution of all previously configured tasks. """
+
+
         pass
+
+
+    def already_exists(self, *depends):
+        """Declare a dependency as pre-existing. That means that no task
+        creates these dependencies, they're already there before any
+        tasks run.
+
+        :param *depends: One or many dependencies to mark as pre-existing.
+        :type *depends: any argument recognized by :func:`deps.auto`
+
+        """
+
+        deps = map(deps.auto, depends)
+        for dep in deps:
+            self._depidx.link(dep, None)
+
 
     def _add_task(self, task):
         """Actually add a task to the internal dependency data structure"""
@@ -153,13 +177,29 @@ class RunContext(object):
             except KeyError:
                 self._handle_nosuchdep(self, dep, task)
             else:
-                self.dag.add_edge(parent_task.task_no, task.task_no)
-        
+                # check to see if the dependency exists but doesn't
+                # link to a task. This would happen if someone defined
+                # a preexisting dependency
+                if parent_task is not None:
+                    self.dag.add_edge(parent_task.task_no, task.task_no)
+        for targ in task.targets: 
+            # add targets to the DependencyIndex after looking up
+            # dependencies for the current task. Hopefully this avoids
+            # circular references
+            self._depidx.link(targ, task)
                 
 
     def _handle_nosuchdep(self, dep, task):
         self.tasks.pop()
         self.dag.remove_node(task.task_no)
+        alldeps = itertools.chain.from_iterable(
+            [list(t.depends) + list(t.targets) for t in self.tasks]
+        )
+        closest = matcher.find_match(dep, alldeps, key=attrgetter("key"))
+        msg = ("Unable to find dependency of type `{}'. "
+               "Perhaps you meant `{}' of type `{}'?")
+        msg.format(type(dep), closest, type(closest))
+        raise KeyError(msg)
 
 
 
@@ -174,14 +214,12 @@ def _build_actions(actions, deps, targs, use_parse_sh=True):
 
 def _build_depends(depends):
     depends = _sugar_list(depends)
-    return [ d if isinstance(d, basestring) else FileDependency(d)
-             for d in depends ]
+    return map(deps.auto, depends)
 
 
 def _build_targets(targets):
     targets = _sugar_list(targets)
-    return [ t if isinstance(t, basestring) else FileDependency(t)
-             for t in depends ]
+    return map(deps.auto, targets)
 
 
 def _build_name(name, task_no):
