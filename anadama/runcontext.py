@@ -1,15 +1,27 @@
+import os
 import re
-import itertools
 import shlex
-from operator import attrgetter
-from collections import namedtuple
+import itertools
+import multiprocessing
+from operator import attrgetter, eq
+from collections import deque
 
 import networkx as nx
 
 from . import Task
 from . import deps
+from . import reporters
+from . import runners
+from . import backends
 from .helpers import sh, parse_sh
-from .util import matcher
+from .util import matcher, HasNoEqual
+from .pickler import cloudpickle
+
+MAX_QSIZE = 1000
+
+class RunFailed(ValueError):
+    pass
+
 
 class RunContext(object):
 
@@ -72,7 +84,7 @@ class RunContext(object):
         sh_cmd = re.sub(r'[@#]{([^{}]+)}', r'\1', cmd)
         if track_cmd:
             self.already_exists(sh_cmd)
-            deps.append(StringDependency(sh_cmd))
+            deps.append(deps.StringDependency(sh_cmd))
         if track_binaries:
             for binary in discover_binaries(sh_cmd):
                 self.already_exists(binary)
@@ -147,13 +159,103 @@ class RunContext(object):
            storage_backend=None, processes=1):
         """Kick off execution of all previously configured tasks. """
 
+        self.failed_tasks = failed = set()
+        self.completed_tasks = done = set()
 
-        pass
+        wqueue = multiprocessing.Queue(MAX_QSIZE)
+        rqueue = multiprocessing.Queue(MAX_QSIZE)
+        self._reporter = reporter or reporters.default(self)
+        _runner = runner or runners.default()
+        _backend = storage_backend or backends.default()
+        workers = [
+            multiprocessing.Process(target=_runner, args=(wqueue, rqueue))
+            for _ in range(processes)
+        ]
+
+        task_idxs = nx.algorithms.dag.topological_sort(self.dag)
+        task_idxs = deque(self._filter_skipped_tasks(task_idxs, _backend))
+        
+        while len(self.tasks) < len(failed)+len(done):
+            for _ in range(min(MAX_QSIZE, len(task_idxs))):
+                task_idx = task_idxs.popleft()
+                undone = set(self.dag.predecessors()).difference(done+failed)
+                if undone:
+                    task_idxs.append()
+                    break # come back again later
+                try:
+                    pkl = cloudpickle.dumps(self.tasks[task_idx])
+                except Exception as e:
+                    msg = ("Unable to serialize task `{}'. "
+                           "Original error was `{}'.")
+                    raise ValueError(msg.format(self.tasks[task_idx], e))
+                wqueue.put(pkl)
+
+            while True:
+                try:
+                    result = rqueue.get()
+                    self._handle_task_result(result, _backend)
+                    rqueue.task_done()
+                except (SystemExit, KeyboardInterrupt, Exception):
+                    for worker in workers:
+                        worker.terminate()
+                    raise
+                except multiprocessing.queues.Empty:
+                    break
+        wqueue.join()
+        rqueue.join()
+        self._handle_finished()
+
+
+    def _handle_task_result(self, result, backend):
+        self._reporter.task_done(result.task_no)
+        if any(result.errors):
+            self.failed_tasks.add(result.task_no)
+            self._reporter.task_failed(result.task_no)
+        else:
+            backend.save(result.dep_keys, result.dep_compares)
+            self.completed_tasks.add(result.task_no)
+            self._reporter.task_completed(result.task_no)
+
+
+    def _handle_finished(self):
+        self._reporter.finished()
+        if any(self.failed_tasks):
+            raise RunFailed()
+
+
+    def _filter_skipped_tasks(self, task_idxs, backend):
+        ret = list()
+        for idx in task_idxs:
+            if self._should_skip_task(idx, backend):
+                self._handle_skipped_task(idx)
+            else:
+                ret.append(idx)
+        return ret
+
+    
+    def _should_skip_task(self, task_no, backend):
+        task = self.tasks[task_no]
+        for targ in task.targets:
+            past_targ_compare = backend.lookup(targ)
+            if not past_targ_compare:
+                return False
+
+            compares = itertools.izip_longest(
+                targ.compare(), past_targ_compare, HasNoEqual())
+            the_same = itertools.starmap(eq, compares)
+            if not all(the_same):
+                return False
+        return True
+
+
+    def _handle_skipped_task(self, task_no):
+        self.completed_tasks.add(task_no)
+        self._reporter.task_skipped(task_no)
 
 
     def already_exists(self, *depends):
         """Declare a dependency as pre-existing. That means that no task
-        creates these dependencies, they're already there before any
+        creates these dependencies; they're already there before any
         tasks run.
 
         :param *depends: One or many dependencies to mark as pre-existing.
@@ -161,8 +263,8 @@ class RunContext(object):
 
         """
 
-        deps = map(deps.auto, depends)
-        for dep in deps:
+        ds = map(deps.auto, depends)
+        for dep in ds:
             self._depidx.link(dep, None)
 
 
@@ -258,7 +360,7 @@ def discover_binaries(s):
     deps = list()
     for term in shlex.split(s):
         try:
-            dep = ExecutableDependency(term)
+            dep = deps.ExecutableDependency(term)
         except ValueError:
             continue
         if os.stat(dep.name).st_size < 1<<20:

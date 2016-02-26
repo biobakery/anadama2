@@ -334,13 +334,21 @@ def _adler32(fname):
     return checksum
 
 
+class ShellException(OSError):
+    pass
+
+
 def sh(cmd, **kwargs):
     kwargs['stdout'] = kwargs.get('stdout', subprocess.PIPE)
     kwargs['stderr'] = kwargs.get('stderr', subprocess.PIPE)
     proc = subprocess.Popen(cmd, **kwargs)
     ret = proc.communicate()
     if proc.returncode:
-        raise ShellException("Command `{}' failed. \nOut: {}\nErr: {}".format(
-            cmd, ret[0], ret[1]))
+        msg = "Command `{}' failed. \nOut: {}\nErr: {}"
+        raise ShellException(proc.returncode, msg.format(cmd, ret[0], ret[1]))
     return ret
 
+
+class HasNoEqual(object):
+    def __eq__(self, other):
+        return False
