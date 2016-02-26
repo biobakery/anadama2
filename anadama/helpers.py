@@ -20,7 +20,7 @@ def sh(s, **kwargs):
 
     """
 
-    def actually_sh(ctx=None):
+    def actually_sh(task=None):
         kwargs['shell'] = True
         return _sh(s, **kwargs)
     return actually_sh
@@ -47,7 +47,7 @@ def parse_sh(s, **kwargs):
 
     """
 
-    def actually_sh(ctx):
+    def actually_sh(task):
         kwargs['shell'] = True
-        t = ctx.current_task()
-        return _sh(s.format(deps=t.depends, targs=t.targets), **kwargs)
+        return _sh(s.format(deps=task.depends, targs=task.targets), **kwargs)
+    return actually_sh

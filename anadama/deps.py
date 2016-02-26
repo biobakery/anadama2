@@ -1,7 +1,7 @@
 import os
 
 from . import Task
-from .util import _adler32, find_on_path
+from .util import _adler32, find_on_path, sh
 
 
 def auto(x):
@@ -46,7 +46,7 @@ class DependencyIndex(object):
     """
 
     def __init__(self):
-        self._taskidx = dict([(k, dict()), for k in _singleton_idx.iterkeys()])
+        self._taskidx = dict([(k, dict()) for k in _singleton_idx.iterkeys()])
 
         
     def link(self, dep, task_or_none):
@@ -203,7 +203,7 @@ class FileDependency(BaseDependency):
         :param fname: The filename to keep track of
         :type fname: str
         """
-        self.fname = fname
+        self.fname = self.__class__.key(fname)
 
 
     def compare(self):
@@ -215,7 +215,7 @@ class FileDependency(BaseDependency):
 
     @staticmethod
     def key(fname):
-        return fname
+        return os.path.abspath(fname)
 
 
     def __str__(self):
