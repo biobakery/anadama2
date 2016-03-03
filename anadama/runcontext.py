@@ -155,10 +155,12 @@ class RunContext(object):
             return the_task
 
 
-    def go(self, run_them_all=False, dry_run=False, runner=None, reporter=None,
-           storage_backend=None, processes=1):
+    def go(self, run_them_all=False, dry_run=False, quit_early=False,
+           runner=None, reporter=None, storage_backend=None,
+           processes=1):
         """Kick off execution of all previously configured tasks. """
 
+        self._reporter.started()
         self.failed_tasks = failed = set()
         self.completed_tasks = done = set()
 
@@ -173,14 +175,16 @@ class RunContext(object):
         ]
 
         task_idxs = nx.algorithms.dag.topological_sort(self.dag)
-        task_idxs = deque(self._filter_skipped_tasks(task_idxs, _backend))
+        if not run_them_all:
+            task_idxs = self._filter_skipped_tasks(task_idxs, _backend)
+        task_idxs = deque(task_idxs)
         
         while len(self.tasks) < len(failed)+len(done):
             for _ in range(min(MAX_QSIZE, len(task_idxs))):
                 task_idx = task_idxs.popleft()
                 undone = set(self.dag.predecessors()).difference(done+failed)
                 if undone:
-                    task_idxs.append()
+                    task_idxs.append(task_idx)
                     break # come back again later
                 try:
                     pkl = cloudpickle.dumps(self.tasks[task_idx])
@@ -208,13 +212,13 @@ class RunContext(object):
 
     def _handle_task_result(self, result, backend):
         self._reporter.task_done(result.task_no)
-        if any(result.errors):
+        if result.error:
             self.failed_tasks.add(result.task_no)
-            self._reporter.task_failed(result.task_no)
+            self._reporter.task_failed(result)
         else:
             backend.save(result.dep_keys, result.dep_compares)
             self.completed_tasks.add(result.task_no)
-            self._reporter.task_completed(result.task_no)
+            self._reporter.task_completed(result)
 
 
     def _handle_finished(self):
@@ -226,7 +230,11 @@ class RunContext(object):
     def _filter_skipped_tasks(self, task_idxs, backend):
         ret = list()
         for idx in task_idxs:
-            if self._should_skip_task(idx, backend):
+            try:
+                should_skip = self._should_skip_task(idx, backend)
+            except:
+                should_skip = False
+            if should_skip:
                 self._handle_skipped_task(idx)
             else:
                 ret.append(idx)
@@ -235,6 +243,9 @@ class RunContext(object):
     
     def _should_skip_task(self, task_no, backend):
         task = self.tasks[task_no]
+        if not task.targets:
+            return False
+
         for targ in task.targets:
             past_targ_compare = backend.lookup(targ)
             if not past_targ_compare:

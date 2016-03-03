@@ -4,7 +4,7 @@ from collections import namedtuple
 
 
 class TaskResult(namedtuple(
-        "TaskResult", ["task_no", "errors", "dep_keys", "dep_compares"])):
+        "TaskResult", ["task_no", "error", "dep_keys", "dep_compares"])):
     """ TODO: doc
     """
     pass
@@ -19,7 +19,7 @@ class TaskFailed(Exception):
 
 
 def default():
-    pass
+    return run_local
 
 
 def exception_result(exc):
