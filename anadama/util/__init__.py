@@ -327,10 +327,13 @@ def _adler32(fname):
     """
 
     with open(fname, 'r') as f:
-        prev = 1
-        buf = f.read(1024*1024*8)
-        while buf:
-            checksum = prev = zlib.adler32(buf, prev)
+        checksum = 1
+        while True:
+            buf = f.read(1024*1024*8)
+            if not buf:
+                break
+            checksum = zlib.adler32(buf, checksum)
+            
     return checksum
 
 
