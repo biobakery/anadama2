@@ -293,6 +293,7 @@ def memoized(func):
         return cache[args]
     return memoizer
 
+
 _PATH_list = None
 @memoized
 def find_on_path(bin_str):
@@ -355,3 +356,7 @@ def sh(cmd, **kwargs):
 class HasNoEqual(object):
     def __eq__(self, other):
         return False
+
+def noop(*args, **kwargs):
+    return None
+

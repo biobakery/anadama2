@@ -14,7 +14,7 @@ from . import reporters
 from . import runners
 from . import backends
 from .helpers import sh, parse_sh
-from .util import matcher, HasNoEqual
+from .util import matcher, HasNoEqual, memoized
 from .pickler import cloudpickle
 
 MAX_QSIZE = 1000
@@ -30,6 +30,7 @@ class RunContext(object):
         self.dag = nx.DiGraph()
         self.tasks = list()
         self._depidx = deps.DependencyIndex()
+        self.compare_cache = deps.CompareCache()
 
 
     def do(self, cmd, track_cmd=True, track_binaries=True):
@@ -222,6 +223,7 @@ class RunContext(object):
 
 
     def _handle_finished(self):
+        self.compare_cache.clear()
         self._reporter.finished()
         if any(self.failed_tasks):
             raise RunFailed()
@@ -245,17 +247,10 @@ class RunContext(object):
         task = self.tasks[task_no]
         if not task.targets:
             return False
-
-        for targ in task.targets:
-            past_targ_compare = backend.lookup(targ)
-            if not past_targ_compare:
-                return False
-
-            compares = itertools.izip_longest(
-                targ.compare(), past_targ_compare, HasNoEqual())
-            the_same = itertools.starmap(eq, compares)
-            if not all(the_same):
-                return False
+        if deps.any_different(task.depends, backend, self.compare_cache):
+            return False
+        if deps.any_different(task.targets, backend, self.compare_cache):
+            return False
         return True
 
 
@@ -274,9 +269,11 @@ class RunContext(object):
 
         """
 
-        ds = map(deps.auto, depends)
-        for dep in ds:
-            self._depidx.link(dep, None)
+        for dep in depends:
+            name = "Track pre-existing dependency `{}'"
+            d = deps.auto(dep)
+            self.add_task(noop, targets=[dep],
+                          name=name.format(os.path.basename(d._key)))
 
 
     def _add_task(self, task):
