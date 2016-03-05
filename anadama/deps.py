@@ -1,4 +1,5 @@
 import os
+import itertools
 
 from . import Task
 from .util import _adler32, find_on_path, sh
@@ -35,6 +36,56 @@ def auto(x):
             "Not sure how to make `{}' into a dependency".format(x))
 
 
+
+def any_different(ds, backend, compare_cache=None):
+    """Determine whether any dependencies have changed since last save.
+
+    :param ds: The dependencies in question
+    :type ds: instances of any :class:`deps.BaseDependency` subclass
+
+    :param backend: Backend to query past results of a dependency object
+    :type backend: instances of any :class:`backends.BaseBackend` subclass
+
+    :param compare_cache: object to memoize compare() results temporarily
+    """
+    comparator = compare_cache or lambda d: d.compare()
+
+    for dep in ds:
+        past_dep_compare = backend.lookup(dep)
+        if not past_dep_compare:
+            return True
+
+        compares = itertools.izip_longest(
+            comparator(dep), past_dep_compare, HasNoEqual())
+        the_same = itertools.starmap(eq, compares)
+        if not all(the_same):
+            return True
+    return False
+
+
+class CompareCache(object):
+    def __init__(self):
+        self.c = {}
+
+    def clear(self):
+        del self.c
+        self.c = {}
+
+    def __call__(self, dep):
+        if dep._key not in self.c:
+            self.c[dep._key] = cached = dict()
+        compare = None
+        for i in itertools.count():
+            if i not in cached:
+                if compare is None:
+                    compare = dep.compare()
+                try:
+                    cached[i] = next(compare)
+                except StopIteration:
+                    break
+            yield cached[i]
+                
+            
 
 class DependencyIndex(object):
 

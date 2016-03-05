@@ -56,7 +56,7 @@ class ReporterGroup(BaseReporter):
     
 
 class ConsoleReporter(BaseReporter):
-    msg_str = "\r[{:4}/{:4} - {:4.2f}% complete] {:51.51}"
+    msg_str = "[{:4}/{:4} - {:4.2f}% complete] {:.51}"
 
     def _msg(self, msg, fail=False):
         if fail:
