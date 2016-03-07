@@ -1,3 +1,5 @@
+from collections import namedtuple
+
 
 class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
                                "task_no"])):
@@ -26,3 +28,4 @@ class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
 
 from .runcontext import RunContext
 
+RunContext # pyflakes

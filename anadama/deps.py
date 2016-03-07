@@ -1,8 +1,9 @@
 import os
 import itertools
+from operator import eq
 
 from . import Task
-from .util import _adler32, find_on_path, sh
+from .util import _adler32, find_on_path, sh, HasNoEqual
 
 
 def auto(x):
@@ -48,7 +49,7 @@ def any_different(ds, backend, compare_cache=None):
 
     :param compare_cache: object to memoize compare() results temporarily
     """
-    comparator = compare_cache or lambda d: d.compare()
+    comparator = compare_cache or (lambda d: d.compare())
 
     for dep in ds:
         past_dep_compare = backend.lookup(dep)

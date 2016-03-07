@@ -6,28 +6,37 @@ import leveldb
 
 from .util import mkdirp
 
+ENV_VAR = "ANADAMA_BACKEND_DIR"
+
 
 def default():
     return LevelDBBackend()
 
+
 def discover_data_directory():
-    if "HOME" in os.environ:
-        maybe_datadir = os.path.join(os.environ['HOME'], ".config",
-                                     "anadama", "db")
-        if not os.path.isdir(maybe_datadir):
-            try:
-                mkdirp(maybe_datadir)
-            except Exception as e:
-                msg = ("Unable to create anadama "
-                       "database directory `{}': "+str(e))
-                print >> sys.stderr, msg.format(maybe_datadir)
-                fallback = _fallback_datadir()
-                print >> sys.stderr, "Using fallback directory: "+fallback
-                return fallback
-        else:
-            return maybe_datadir
+    if ENV_VAR in os.environ:
+        return _try_dir(os.environ[ENV_VAR])
+    elif "HOME" in os.environ:
+        return _try_dir(os.path.join(os.environ['HOME'], ".config",
+                                     "anadama", "db"))
     else:
         return _fallback_datadir()
+
+
+def _try_dir(maybe_datadir):
+    if os.path.isdir(maybe_datadir):
+        pass
+    else:
+        try:
+            mkdirp(maybe_datadir)
+        except Exception as e:
+            msg = ("Unable to create anadama "
+                   "database directory `{}': "+str(e))
+            print >> sys.stderr, msg.format(maybe_datadir)
+            fallback = _fallback_datadir()
+            print >> sys.stderr, "Using fallback directory: "+fallback
+            return fallback
+    return maybe_datadir
 
     
 def _fallback_datadir():
@@ -35,7 +44,8 @@ def _fallback_datadir():
         mkdirp(".anadama/db")
         return os.path.abspath(".anadama/db")
     except:
-        return "/tmp/anadama"
+        mkdirp("/tmp/anadama/db")        
+        return "/tmp/anadama/db"
 
     
 class BaseBackend(object):
@@ -57,7 +67,17 @@ class BaseBackend(object):
         raise NotImplementedError()
 
     def exists(self):
-        raise NotImplementedError()        
+        raise NotImplementedError()
+
+    def keys(self):
+        raise NotImplementedError()
+
+    def delete(self, key):
+        raise NotImplementedError()
+
+    def delete_many(self, keys):
+        raise NotImplementedError()
+
 
 
 class LevelDBBackend(BaseBackend):
@@ -99,5 +119,18 @@ class LevelDBBackend(BaseBackend):
         batch = self.db.WriteBatch()
         for key, val in zip(dep_keys, dep_vals):
             batch.Put(key, json.dumps(val))
+        self.db.Write(batch)
+
+
+    def keys(self):
+        return self.db.RangeIter(include_value=False)
+
+    def delete(self, key):
+        return self.db.Delete(key)
+
+    def delete_many(self, keys):
+        batch = self.db.WriteBatch()
+        for k in keys:
+            batch.Delete(k)
         self.db.Write(batch)
 
