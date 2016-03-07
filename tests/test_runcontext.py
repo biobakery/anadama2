@@ -25,6 +25,14 @@ class TestRunContext(unittest.TestCase):
 
     def setUp(self):
         self.ctx = anadama.runcontext.RunContext()
+        self.workdir = "/tmp/anadama_testdir"
+        if not os.path.isdir(self.workdir):
+            os.mkdir(self.workdir)
+
+    def tearDown(self):
+        if os.path.isdir(self.workdir):
+            shutil.rmtree(self.workdir)
+        
 
     def test_hasattributes(self):
         self.assertIsInstance(self.ctx.dag,
@@ -130,6 +138,16 @@ class TestRunContext(unittest.TestCase):
         self.assertEqual(ret, "testvalue",
                          "the action should be the same function I gave it")
 
+
+    def test_go(self):
+        self.ctx.already_exists("/etc/hosts")
+        outf = os.path.join(self.workdir, "wordcount.txt")
+        self.ctx.add_task("wc -l {depends[0]} > {targets[0]}",
+                          depends=["/etc/hosts"], targets=[outf] )
+        self.ctx.go()
+        self.assertTrue(os.path.exists(outf), "should create wordcount.txt")
+        
+        
 
         
 

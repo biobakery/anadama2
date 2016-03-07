@@ -179,6 +179,9 @@ class BaseDependency(object):
             dep._key = real_key
             dep.init(key, *args, **kwargs)
             return dep
+
+    def __getnewargs__(self):
+        return (self._key,)
             
 
     def init(self, key):

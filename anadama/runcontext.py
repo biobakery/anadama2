@@ -167,13 +167,13 @@ class RunContext(object):
            processes=1):
         """Kick off execution of all previously configured tasks. """
 
+        self._reporter = reporter or reporters.default(self)
         self._reporter.started()
         self.failed_tasks = failed = set()
         self.completed_tasks = done = set()
 
         wqueue = multiprocessing.Queue(MAX_QSIZE)
         rqueue = multiprocessing.Queue(MAX_QSIZE)
-        self._reporter = reporter or reporters.default(self)
         _runner = runner or runners.default()
         _backend = storage_backend or backends.default()
         workers = [
@@ -186,13 +186,15 @@ class RunContext(object):
             task_idxs = self._filter_skipped_tasks(task_idxs, _backend)
         task_idxs = deque(task_idxs)
         
-        while len(self.tasks) < len(failed)+len(done):
+        import pdb; pdb.set_trace()
+        while len(self.tasks) > len(failed)+len(done):
             for _ in range(min(MAX_QSIZE, len(task_idxs))):
                 task_idx = task_idxs.popleft()
-                undone = set(self.dag.predecessors()).difference(done+failed)
-                if undone:
+                parents = set(self.dag.predecessors(task_idx))
+                if parents and parents.difference(done.union(failed)):
+                    # has undone parents, come back again later
                     task_idxs.append(task_idx)
-                    break # come back again later
+                    break 
                 try:
                     pkl = cloudpickle.dumps(self.tasks[task_idx])
                 except Exception as e:
@@ -212,8 +214,9 @@ class RunContext(object):
                     raise
                 except multiprocessing.queues.Empty:
                     break
-        wqueue.join()
-        rqueue.join()
+        for q in (wqueue, rqueue):
+            q.close()
+            q.join_thread()
         self._handle_finished()
 
 
