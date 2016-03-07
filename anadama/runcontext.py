@@ -3,7 +3,7 @@ import re
 import shlex
 import itertools
 import multiprocessing
-from operator import attrgetter, eq
+from operator import attrgetter
 from collections import deque
 
 import networkx as nx
@@ -14,7 +14,7 @@ from . import reporters
 from . import runners
 from . import backends
 from .helpers import sh, parse_sh
-from .util import matcher, HasNoEqual, memoized
+from .util import matcher, noop
 from .pickler import cloudpickle
 
 MAX_QSIZE = 1000
@@ -81,16 +81,22 @@ class RunContext(object):
         """
 
         targs = _parse_wrapper(cmd, metachar="@")
-        deps = _parse_wrapper(cmd, metachar="#")
+        ds = _parse_wrapper(cmd, metachar="#")
         sh_cmd = re.sub(r'[@#]{([^{}]+)}', r'\1', cmd)
+        pre_exist = list()
         if track_cmd:
-            self.already_exists(sh_cmd)
-            deps.append(deps.StringDependency(sh_cmd))
+            d = deps.StringDependency(sh_cmd)
+            pre_exist.append(d)
+            ds.append(d)
         if track_binaries:
             for binary in discover_binaries(sh_cmd):
-                self.already_exists(binary)
-                deps.append(binary)
-        return self.add_task(sh_cmd, deps, targs, parse_sh=False)
+                pre_exist.append(binary)
+                ds.append(binary)
+        if pre_exist:
+            self.already_exists(*pre_exist)
+        
+        return self.add_task(sh_cmd, ds, targs,
+                             interpret_deps_and_targs=False)
 
 
     def add_task(self, actions=None, depends=None, targets=None,
@@ -141,16 +147,16 @@ class RunContext(object):
 
         deps = _build_depends(depends)
         targs = _build_targets(targets)
-        acts = _build_actions(actions, deps, targs,
-                              use_parse_sh=interpret_deps_and_targs)
         task_no = next(self.task_counter)
         name = _build_name(name, task_no)
-        if acts is None: # must be a decorator
+        if not actions: # must be a decorator
             def finish_add_task(fn):
                 the_task = Task(name, [fn], deps, targs, task_no)
                 self._add_task(the_task)
             return finish_add_task
         else:
+            acts = _build_actions(actions, deps, targs,
+                                  use_parse_sh=interpret_deps_and_targs)
             the_task = Task(name, acts, deps, targs, task_no)
             self._add_task(the_task)
             return the_task
@@ -269,11 +275,8 @@ class RunContext(object):
 
         """
 
-        for dep in depends:
-            name = "Track pre-existing dependency `{}'"
-            d = deps.auto(dep)
-            self.add_task(noop, targets=[dep],
-                          name=name.format(os.path.basename(d._key)))
+        self.add_task(noop, targets=map(deps.auto, depends),
+                      name="Track pre-existing dependencies")
 
 
     def _add_task(self, task):
@@ -283,9 +286,9 @@ class RunContext(object):
         self.dag.add_node(task.task_no)
         for dep in task.depends:
             try:
-                parent_task = self._depidx[dep.key()]
+                parent_task = self._depidx[dep]
             except KeyError:
-                self._handle_nosuchdep(self, dep, task)
+                self._handle_nosuchdep(dep, task)
             else:
                 # check to see if the dependency exists but doesn't
                 # link to a task. This would happen if someone defined
@@ -305,31 +308,28 @@ class RunContext(object):
         alldeps = itertools.chain.from_iterable(
             [list(t.depends) + list(t.targets) for t in self.tasks]
         )
-        closest = matcher.find_match(dep, alldeps, key=attrgetter("key"))
+        closest = matcher.find_match(dep, alldeps, key=attrgetter("_key"))
         msg = ("Unable to find dependency of type `{}'. "
                "Perhaps you meant `{}' of type `{}'?")
-        msg.format(type(dep), closest, type(closest))
-        raise KeyError(msg)
+        raise KeyError(msg.format(type(dep), closest, type(closest)))
 
 
 
 def _build_actions(actions, deps, targs, use_parse_sh=True):
-    actions = _sugar_list(actions)
+    actions = filter(None, _sugar_list(actions))
     if use_parse_sh:
         mod = parse_sh
     else:
         mod = lambda cmd, *args, **kwargs: sh(cmd)
-    return [ a if callable(a) else mod(a, deps, targs) for a in actions ]
+    return [ a if callable(a) else mod(a) for a in actions ]
         
 
 def _build_depends(depends):
-    depends = _sugar_list(depends)
+    depends = filter(None, _sugar_list(depends))
     return map(deps.auto, depends)
 
 
-def _build_targets(targets):
-    targets = _sugar_list(targets)
-    return map(deps.auto, targets)
+_build_targets = _build_depends
 
 
 def _build_name(name, task_no):
@@ -356,7 +356,8 @@ def _parse_wrapper(s, metachar):
     :meth:`runcontext.RunContext.do`.
     """
 
-    return re.findall(metachar+r'{[^{}]+}', s)
+    start = len(metachar)+1
+    return [ term[start:-1] for term in re.findall(metachar+r'{[^{}]+}', s) ]
 
 
 def discover_binaries(s):
@@ -365,15 +366,15 @@ def discover_binaries(s):
     :class:`deps.FileDependency`.
     """
 
-    deps = list()
+    ds = list()
     for term in shlex.split(s):
         try:
             dep = deps.ExecutableDependency(term)
         except ValueError:
             continue
         if os.stat(dep.name).st_size < 1<<20:
-            deps.append(dep)
+            ds.append(dep)
 
-    return deps
+    return ds
 
     
