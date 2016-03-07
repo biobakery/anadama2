@@ -1,6 +1,7 @@
 import traceback
 import cPickle as pickle
 from collections import namedtuple
+import Queue
 
 
 class TaskResult(namedtuple(
@@ -23,7 +24,7 @@ def default():
 
 
 def exception_result(exc):
-    return TaskResult(exc.task_no, exc.msg, None, None)
+    return TaskResult(getattr(exc, "task_no", None), exc.message, None, None)
 
 
 def _run_task_locally(task_pkl):
@@ -51,13 +52,15 @@ def _run_task_locally(task_pkl):
 
 def run_local(work_q, res_q):
     while True:
-        pkl = work_q.get()
+        try:
+            pkl = work_q.get()
+        except Queue.Empty:
+            break
         try:
             result = _run_task_locally(pkl)
         except Exception as e:
-            result = exception_result(e, pkl)
+            result = exception_result(e)
         res_q.put(result)
-        work_q.task_done()
         
 
 def run_lsf(workf_q, res_q):
