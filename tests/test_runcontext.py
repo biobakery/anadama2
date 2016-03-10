@@ -1,7 +1,9 @@
 import os
+from datetime import datetime
+from datetime import timedelta
 import shutil
-
 import unittest
+from cStringIO import StringIO
 
 import networkx
 
@@ -10,6 +12,9 @@ import anadama.deps
 import anadama.runcontext
 import anadama.util
 import anadama.backends
+
+from .util import capture
+
 
 class TestRunContext(unittest.TestCase):
 
@@ -30,6 +35,8 @@ class TestRunContext(unittest.TestCase):
             os.mkdir(self.workdir)
 
     def tearDown(self):
+        if self.ctx._backend:
+            self.ctx._backend.close()
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
         
@@ -144,10 +151,35 @@ class TestRunContext(unittest.TestCase):
         outf = os.path.join(self.workdir, "wordcount.txt")
         self.ctx.add_task("wc -l {depends[0]} > {targets[0]}",
                           depends=["/etc/hosts"], targets=[outf] )
-        self.ctx.go()
+        
+        with capture(stderr=StringIO()):
+            self.ctx.go()
         self.assertTrue(os.path.exists(outf), "should create wordcount.txt")
         
         
+    def test_go_parallel(self):
+        for _ in range(10):
+            self.ctx.add_task("sleep 0.5")
+        earlier = datetime.now()
+        with capture(stderr=StringIO()):
+            self.ctx.go(n_parallel=10)
+        later = datetime.now()
+        self.assertLess(later-earlier, timedelta(seconds=5))
+
+    def test_go_quit_early(self):
+        outf = os.path.join(self.workdir, "blah.txt")
+        out2 = os.path.join(self.workdir, "shouldntexist.txt")
+        self.ctx.add_task("echo blah > {targets[0]}; exit 1", targets=[outf])
+        self.ctx.add_task("cat {depends[0]} > {targets[0]}",
+                          depends=[outf], targets=[outf])
+
+        with capture(stderr=StringIO()):
+            with self.assertRaises(anadama.runcontext.RunFailed):
+                self.ctx.go(quit_early=True)
+
+        self.assertFalse(
+            os.path.exists(out2),
+            "quit_early failed to stop before the second task was run")
 
         
 

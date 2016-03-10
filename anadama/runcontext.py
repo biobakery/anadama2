@@ -2,7 +2,6 @@ import os
 import re
 import shlex
 import itertools
-import multiprocessing
 from operator import attrgetter
 from collections import deque
 
@@ -15,9 +14,8 @@ from . import runners
 from . import backends
 from .helpers import sh, parse_sh
 from .util import matcher, noop
-from .pickler import cloudpickle
 
-MAX_QSIZE = 1000
+
 
 class RunFailed(ValueError):
     pass
@@ -26,10 +24,11 @@ class RunFailed(ValueError):
 class RunContext(object):
 
     def __init__(self):
-        self.task_counter = itertools.count(1)
+        self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         self.tasks = list()
         self._depidx = deps.DependencyIndex()
+        self._backend = None
         self.compare_cache = deps.CompareCache()
 
 
@@ -162,71 +161,35 @@ class RunContext(object):
             return the_task
 
 
-    def go(self, run_them_all=False, dry_run=False, quit_early=False,
-           runner=None, reporter=None, storage_backend=None,
-           processes=1):
+    def go(self, run_them_all=False, quit_early=False, runner=None,
+           reporter=None, storage_backend=None, n_parallel=1):
         """Kick off execution of all previously configured tasks. """
 
         self._reporter = reporter or reporters.default(self)
         self._reporter.started()
-        self.failed_tasks = failed = set()
-        self.completed_tasks = done = set()
 
-        wqueue = multiprocessing.Queue(MAX_QSIZE)
-        rqueue = multiprocessing.Queue(MAX_QSIZE)
-        _runner = runner or runners.default()
-        _backend = storage_backend or backends.default()
-        workers = [
-            multiprocessing.Process(target=_runner, args=(wqueue, rqueue))
-            for _ in range(processes)
-        ]
+        _runner = runner or runners.default(self, n_parallel)
+        _runner.quit_early = quit_early
+        if not self._backend:
+            self._backend = storage_backend or backends.default()
 
         task_idxs = nx.algorithms.dag.topological_sort(self.dag)
         if not run_them_all:
-            task_idxs = self._filter_skipped_tasks(task_idxs, _backend)
+            task_idxs = self._filter_skipped_tasks(task_idxs)
         task_idxs = deque(task_idxs)
-        
-        import pdb; pdb.set_trace()
-        while len(self.tasks) > len(failed)+len(done):
-            for _ in range(min(MAX_QSIZE, len(task_idxs))):
-                task_idx = task_idxs.popleft()
-                parents = set(self.dag.predecessors(task_idx))
-                if parents and parents.difference(done.union(failed)):
-                    # has undone parents, come back again later
-                    task_idxs.append(task_idx)
-                    break 
-                try:
-                    pkl = cloudpickle.dumps(self.tasks[task_idx])
-                except Exception as e:
-                    msg = ("Unable to serialize task `{}'. "
-                           "Original error was `{}'.")
-                    raise ValueError(msg.format(self.tasks[task_idx], e))
-                wqueue.put(pkl)
 
-            while True:
-                try:
-                    result = rqueue.get()
-                    self._handle_task_result(result, _backend)
-                    rqueue.task_done()
-                except (SystemExit, KeyboardInterrupt, Exception):
-                    for worker in workers:
-                        worker.terminate()
-                    raise
-                except multiprocessing.queues.Empty:
-                    break
-        for q in (wqueue, rqueue):
-            q.close()
-            q.join_thread()
+        self.completed_tasks = set()
+        self.failed_tasks = set()
+        _runner.run_tasks(task_idxs)
         self._handle_finished()
 
 
-    def _handle_task_result(self, result, backend):
-        self._reporter.task_done(result.task_no)
+    def _handle_task_result(self, result):
         if result.error:
             self.failed_tasks.add(result.task_no)
             self._reporter.task_failed(result)
         else:
-            backend.save(result.dep_keys, result.dep_compares)
+            self._backend.save(result.dep_keys, result.dep_compares)
             self.completed_tasks.add(result.task_no)
             self._reporter.task_completed(result)
 
@@ -234,15 +197,15 @@ class RunContext(object):
     def _handle_finished(self):
         self.compare_cache.clear()
         self._reporter.finished()
-        if any(self.failed_tasks):
+        if self.failed_tasks:
             raise RunFailed()
 
 
-    def _filter_skipped_tasks(self, task_idxs, backend):
+    def _filter_skipped_tasks(self, task_idxs):
         ret = list()
         for idx in task_idxs:
             try:
-                should_skip = self._should_skip_task(idx, backend)
+                should_skip = self._should_skip_task(idx)
             except:
                 should_skip = False
             if should_skip:
@@ -252,13 +215,13 @@ class RunContext(object):
         return ret
 
     
-    def _should_skip_task(self, task_no, backend):
+    def _should_skip_task(self, task_no):
         task = self.tasks[task_no]
         if not task.targets:
             return False
-        if deps.any_different(task.depends, backend, self.compare_cache):
+        if deps.any_different(task.depends, self.backend, self.compare_cache):
             return False
-        if deps.any_different(task.targets, backend, self.compare_cache):
+        if deps.any_different(task.targets, self.backend, self.compare_cache):
             return False
         return True
 

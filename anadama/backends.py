@@ -8,9 +8,13 @@ from .util import mkdirp
 
 ENV_VAR = "ANADAMA_BACKEND_DIR"
 
+_default_backend = None
 
 def default():
-    return LevelDBBackend()
+    global _default_backend
+    if _default_backend is None:
+        _default_backend = LevelDBBackend()
+    return _default_backend
 
 
 def discover_data_directory():
@@ -78,6 +82,9 @@ class BaseBackend(object):
     def delete_many(self, keys):
         raise NotImplementedError()
 
+    def close(self):
+        raise NotImplementedError()
+
 
 
 class LevelDBBackend(BaseBackend):
@@ -116,7 +123,9 @@ class LevelDBBackend(BaseBackend):
 
 
     def save(self, dep_keys, dep_vals):
-        batch = self.db.WriteBatch()
+        if not dep_keys:
+            return
+        batch = leveldb.WriteBatch()
         for key, val in zip(dep_keys, dep_vals):
             batch.Put(key, json.dumps(val))
         self.db.Write(batch)
@@ -129,8 +138,11 @@ class LevelDBBackend(BaseBackend):
         return self.db.Delete(key)
 
     def delete_many(self, keys):
-        batch = self.db.WriteBatch()
+        batch = leveldb.WriteBatch()
         for k in keys:
             batch.Delete(k)
         self.db.Write(batch)
 
+    def close(self):
+        del self.db
+        self.db = None
