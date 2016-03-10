@@ -49,5 +49,6 @@ def parse_sh(s, **kwargs):
 
     def actually_sh(task):
         kwargs['shell'] = True
-        return _sh(s.format(deps=task.depends, targs=task.targets), **kwargs)
+        return _sh(s.format(depends=task.depends,
+                            targets=task.targets), **kwargs)
     return actually_sh

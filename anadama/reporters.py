@@ -78,12 +78,14 @@ class ConsoleReporter(BaseReporter):
         self._msg(self.run_context.tasks[task_no].name+" (Skipped)")
 
 
-    def task_failed(self, task_no):
-        self._msg(self.run_context.tasks[task_no].name+" (Failed)", fail=True)
+    def task_failed(self, task_result):
+        n = task_result.task_no
+        self._msg(self.run_context.tasks[n].name+" (Failed)", fail=True)
 
 
-    def task_completed(self, task_no):
-        self._msg(self.run_context.tasks[task_no].name)
+    def task_completed(self, task_result):
+        n = task_result.task_no        
+        self._msg(self.run_context.tasks[n].name)
 
 
     def finished(self):
