@@ -56,9 +56,10 @@ class ReporterGroup(BaseReporter):
     
 
 class ConsoleReporter(BaseReporter):
-    msg_str = "[{:4}/{:4} - {:4.2f}% complete] {:.51}"
+    msg_str = "[{:4}/{:4} - {:5.2f}% complete] {:.51}"
 
     def _msg(self, msg, fail=False):
+        self.n_complete += 1
         if fail:
             self.failed = True
         s = self.msg_str.format(self.n_complete, self.n_tasks,
