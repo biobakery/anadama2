@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='anadama',
-    version='0.0.1',
+    version='0.1.1',
     description=('AnADAMA - '
                  'Another '
                  'Automated '
@@ -12,21 +12,11 @@ setup(
                  'Application'),
     packages=find_packages(exclude=['ez_setup', 'tests', 'tests.*']),
     zip_safe=False,
-    package_data={
-        'anadama': [r'*.txt']
-    },
     install_requires=[
-        'doit==0.25.0',
         'networkx==1.9',
-        'PyYAML',
-        'requests'
+        'leveldb==0.193'
     ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha"
     ],
-    entry_points= {
-        'console_scripts': [
-            'anadama = anadama.cli:main',
-        ],
-    }
 )
