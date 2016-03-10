@@ -333,7 +333,7 @@ class ExecutableDependency(BaseDependency):
 
         """
 
-        self.name = self.__class__.key(name)
+        self.fname = self.__class__.key(name)
         self.cmd = version_cmd
 
 
@@ -349,14 +349,13 @@ class ExecutableDependency(BaseDependency):
     @staticmethod
     def key(name):
         if os.path.exists(name):
-            return name
+            p = name
         else:
             p = find_on_path(name)
             if not p:
                 raise ValueError(
                     "Unable to find binary or script `{}'".format(name))
-            return p
-
+        return p
 
     def __str__(self):
         return self.fname
