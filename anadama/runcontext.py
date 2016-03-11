@@ -13,7 +13,7 @@ from . import reporters
 from . import runners
 from . import backends
 from .helpers import sh, parse_sh
-from .util import matcher, noop
+from .util import matcher, noop, find_on_path
 
 
 
@@ -88,13 +88,13 @@ class RunContext(object):
             pre_exist.append(d)
             ds.append(d)
         if track_binaries:
-            for binary in discover_binaries(sh_cmd):
+            for binary in discover_binaries(cmd):
                 pre_exist.append(binary)
                 ds.append(binary)
         if pre_exist:
             self.already_exists(*pre_exist)
         
-        return self.add_task(sh_cmd, ds, targs,
+        return self.add_task(sh_cmd, ds, targs, name=sh_cmd,
                              interpret_deps_and_targs=False)
 
 
@@ -165,6 +165,8 @@ class RunContext(object):
            reporter=None, storage_backend=None, n_parallel=1):
         """Kick off execution of all previously configured tasks. """
 
+        self.completed_tasks = set()
+        self.failed_tasks = set()
         self._reporter = reporter or reporters.default(self)
         self._reporter.started()
 
@@ -178,8 +180,6 @@ class RunContext(object):
             task_idxs = self._filter_skipped_tasks(task_idxs)
         task_idxs = deque(task_idxs)
 
-        self.completed_tasks = set()
-        self.failed_tasks = set()
         _runner.run_tasks(task_idxs)
         self._handle_finished()
 
@@ -204,12 +204,8 @@ class RunContext(object):
     def _filter_skipped_tasks(self, task_idxs):
         ret = list()
         for idx in task_idxs:
-            try:
-                should_skip = self._should_skip_task(idx)
-            except:
-                should_skip = False
-            if should_skip:
-                self._handle_skipped_task(idx)
+            if self._should_skip_task(idx):
+                self._handle_task_skipped(idx)
             else:
                 ret.append(idx)
         return ret
@@ -219,14 +215,17 @@ class RunContext(object):
         task = self.tasks[task_no]
         if not task.targets:
             return False
-        if deps.any_different(task.depends, self.backend, self.compare_cache):
+        if deps.any_different(task.depends, self._backend, self.compare_cache):
             return False
-        if deps.any_different(task.targets, self.backend, self.compare_cache):
+        if deps.any_different(task.targets, self._backend, self.compare_cache):
             return False
         return True
 
 
-    def _handle_skipped_task(self, task_no):
+    def _handle_task_started(self, task_no):
+        self._reporter.task_started(task_no)
+
+    def _handle_task_skipped(self, task_no):
         self.completed_tasks.add(task_no)
         self._reporter.task_skipped(task_no)
 
@@ -334,6 +333,13 @@ def discover_binaries(s):
 
     ds = list()
     for term in shlex.split(s):
+        if not os.path.exists(term):
+            term = find_on_path(term)
+        if not term:
+            continue
+        if not os.access(term, os.F_OK | os.X_OK):
+            # doesn't exist or can't execute
+            continue
         try:
             dep = deps.ExecutableDependency(term)
         except ValueError:

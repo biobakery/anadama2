@@ -1,8 +1,9 @@
 import os
-from datetime import datetime
-from datetime import timedelta
+import time
 import shutil
 import unittest
+from datetime import datetime
+from datetime import timedelta
 from cStringIO import StringIO
 
 import networkx
@@ -37,6 +38,10 @@ class TestRunContext(unittest.TestCase):
     def tearDown(self):
         if self.ctx._backend:
             self.ctx._backend.close()
+            del self.ctx._backend
+            self.ctx._backend = None
+            anadama.backends._default_backend = None
+            
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
         
@@ -72,6 +77,34 @@ class TestRunContext(unittest.TestCase):
                                    anadama.deps.ExecutableDependency))
         self.assertTrue(isinstance(t1.depends[1],
                                    anadama.deps.ExecutableDependency))
+
+
+    def test_discover_binaries(self):
+        bash_script = os.path.join(self.workdir, "test.sh")
+        with open(bash_script, 'w') as f:
+            print >> f, "#!/bin/bash"
+            print >> f, "echo hi"
+        os.chmod(bash_script, 0o755)
+        plain_file = os.path.join(self.workdir, "blah.txt")
+        with open(plain_file, 'w') as f:
+            print >> f, "nothing to see here"
+        ret = anadama.runcontext.discover_binaries("echo hi")
+        self.assertGreater(len(ret), 0, "should find /bin/echo")
+        self.assertTrue(isinstance(ret[0], anadama.deps.ExecutableDependency))
+        self.assertEqual(str(ret[0]), "/bin/echo")
+
+        ret2 = anadama.runcontext.discover_binaries("/bin/echo foo")
+        self.assertIs(ret[0], ret2[0], "should discover the same dep")
+        
+        ret = anadama.runcontext.discover_binaries(
+            bash_script+" arguments dont matter")
+        self.assertEqual(len(ret), 1, "should just find one dep")
+        self.assertTrue(isinstance(ret[0], anadama.deps.ExecutableDependency))
+        self.assertEqual(str(ret[0]), bash_script)
+
+        ret = anadama.runcontext.discover_binaries(plain_file+" blah blah")
+        self.assertEqual(len(ret), 0, "shouldn't discover unexecutable files")
+        
 
     def test_do_targets(self):
         def closure(*args, **kwargs):
@@ -181,7 +214,17 @@ class TestRunContext(unittest.TestCase):
             os.path.exists(out2),
             "quit_early failed to stop before the second task was run")
 
-        
+    def test_go_skip(self):
+        outf = os.path.join(self.workdir, "blah.txt")
+        self.ctx.add_task("touch {targets[0]}", targets=[outf])
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        ctime = os.stat(outf).st_ctime
+        time.sleep(1)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertEqual(ctime, os.stat(outf).st_ctime)
+       
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,6 +14,9 @@ class BaseReporter(object):
     def task_skipped(self, task_no):
         raise NotImplementedError()
 
+    def task_started(self, task_no):
+        raise NotImplementedError()
+
     def task_failed(self, task_result):
         raise NotImplementedError()        
 
@@ -39,6 +42,11 @@ class ReporterGroup(BaseReporter):
             r.task_skipped(task_no)
 
 
+    def task_started(self, task_no):
+        for r in self.reps:
+            r.task_started(task_no)
+
+
     def task_failed(self, task_no):
         for r in self.reps:
             r.task_failed(task_no)
@@ -56,17 +64,22 @@ class ReporterGroup(BaseReporter):
     
 
 class ConsoleReporter(BaseReporter):
-    msg_str = "[{:4}/{:4} - {:5.2f}% complete] {:.51}"
+    msg_str = "({:.1})[{:3}/{:3} - {:6.2f}% complete] {:.48}"
 
-    def _msg(self, msg, fail=False):
-        self.n_complete += 1
-        if fail:
-            self.failed = True
-        s = self.msg_str.format(self.n_complete, self.n_tasks,
+    class stats:
+        skip = "s"
+        fail = "!"
+        done = "+"
+        start = " "
+
+    def _msg(self, status, msg, c_r=False):
+        if c_r:
+            self.n_complete += 1
+        s = self.msg_str.format(status, self.n_complete, self.n_tasks,
                                 (float(self.n_complete)/self.n_tasks)*100, msg)
-        if self.failed:
-            s = "(!)" + s
-        print >> sys.stderr, s
+        if c_r:
+            s = "\r" + s + "\n"
+        sys.stderr.write(s)
         
 
     def started(self):
@@ -74,20 +87,19 @@ class ConsoleReporter(BaseReporter):
         self.n_complete = 0
         self.failed = False
 
+    def task_started(self, task_no):
+        self._msg(self.stats.start, self.run_context.tasks[task_no].name)
     
     def task_skipped(self, task_no):
-        self._msg(self.run_context.tasks[task_no].name+" (Skipped)")
-
+        self._msg(self.stats.skip, self.run_context.tasks[task_no].name, True)
 
     def task_failed(self, task_result):
         n = task_result.task_no
-        self._msg(self.run_context.tasks[n].name+" (Failed)", fail=True)
-
+        self._msg(self.stats.fail, self.run_context.tasks[n].name, True)
 
     def task_completed(self, task_result):
         n = task_result.task_no        
-        self._msg(self.run_context.tasks[n].name)
-
+        self._msg(self.stats.done, self.run_context.tasks[n].name, True)
 
     def finished(self):
         print >> sys.stderr, "Run Finished"
