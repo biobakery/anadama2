@@ -72,6 +72,11 @@ class ConsoleReporter(BaseReporter):
         done = "+"
         start = " "
 
+    def __init__(self, *args, **kwargs):
+        super(ConsoleReporter, self).__init__(*args, **kwargs)
+        self.failed_results = list()
+
+
     def _msg(self, status, msg, c_r=False):
         if c_r:
             self.n_complete += 1
@@ -94,15 +99,22 @@ class ConsoleReporter(BaseReporter):
         self._msg(self.stats.skip, self.run_context.tasks[task_no].name, True)
 
     def task_failed(self, task_result):
-        n = task_result.task_no
-        self._msg(self.stats.fail, self.run_context.tasks[n].name, True)
+        name = self.run_context.tasks[task_result.task_no].name
+        self.failed_results.append((name, task_result))
+        self._msg(self.stats.fail, name, True)
 
     def task_completed(self, task_result):
-        n = task_result.task_no        
-        self._msg(self.stats.done, self.run_context.tasks[n].name, True)
+        name = self.run_context.tasks[task_result.task_no].name
+        self._msg(self.stats.done, name, True)
 
     def finished(self):
         print >> sys.stderr, "Run Finished"
+        for name, result in self.failed_results:
+            print >> sys.stderr, "Task {} failed".format(result.task_no)
+            print >> sys.stderr, "  Name: "+name
+            print >> sys.stderr, "  Original error: "
+            for line in result.error.split("\n"):
+                print >> sys.stderr, "  "+line
 
 
 
