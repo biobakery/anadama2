@@ -64,7 +64,7 @@ class ReporterGroup(BaseReporter):
     
 
 class ConsoleReporter(BaseReporter):
-    msg_str = "({:.1})[{:3}/{:3} - {:6.2f}% complete] {:.48}"
+    msg_str = "({:.1})[{:3}/{:3} - {:6.2f}%] {:.57}"
 
     class stats:
         skip = "s"
