@@ -14,7 +14,7 @@ import anadama.runcontext
 import anadama.util
 import anadama.backends
 
-from .util import capture
+from util import capture
 
 
 class TestRunContext(unittest.TestCase):
