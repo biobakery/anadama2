@@ -19,4 +19,5 @@ setup(
     classifiers=[
         "Development Status :: 2 - Pre-Alpha"
     ],
+    test_suite="tests.test_suite"
 )
