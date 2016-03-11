@@ -57,9 +57,13 @@ def any_different(ds, backend, compare_cache=None):
             return True
 
         compares = itertools.izip_longest(
-            comparator(dep), past_dep_compare, HasNoEqual())
+            comparator(dep), past_dep_compare, fillvalue=HasNoEqual())
         the_same = itertools.starmap(eq, compares)
-        if not all(the_same):
+        try:
+            is_different = not all(the_same)
+        except:
+            return True
+        if is_different:
             return True
     return False
 
@@ -74,18 +78,20 @@ class CompareCache(object):
 
     def __call__(self, dep):
         if dep._key not in self.c:
-            self.c[dep._key] = cached = dict()
-        compare = None
-        for i in itertools.count():
-            if i not in cached:
-                if compare is None:
-                    compare = dep.compare()
-                try:
-                    cached[i] = next(compare)
-                except StopIteration:
-                    break
-            yield cached[i]
-                
+            self.c[dep._key] = pair = [list(), False]
+            for compare_val in dep.compare():
+                pair[0].append(compare_val)
+                yield compare_val
+            pair[1] = True
+        else:
+            pair = self.c[dep._key]
+            for i, compare_val in enumerate(pair[0], 1):
+                yield compare_val
+            if pair[1] is False: # iterable not exhausted
+                for compare_val in itertools.islice(dep.compare(), i, None):
+                    pair[0].append(compare_val)
+                    yield compare_val
+                pair[1] = True
             
 
 class DependencyIndex(object):

@@ -37,13 +37,18 @@ class SerialLocalRunner(BaseRunner):
         done = self.ctx.completed_tasks
 
         while total > len(failed)+len(done):
-            idx = task_idx_deque.popleft()
+            idx = task_idx_deque.pop()
             parents = set(self.ctx.dag.predecessors(idx))
             if parents and parents.difference(done.union(failed)):
                 # has undone parents, come back again later
-                task_idx_deque.append(idx)
+                task_idx_deque.appendleft(idx)
                 continue
+            self.ctx._handle_task_started(idx)
             result = _run_task_locally(self.ctx.tasks[idx])
+            if result.error:
+                failed.add(idx)
+            else:
+                done.add(idx)
             self.ctx._handle_task_result(result)
             if self.quit_early and bool(result.error):
                 break
@@ -122,6 +127,10 @@ class ParallelLocalRunner(BaseRunner):
                 raise
             else:
                 self.ctx._handle_task_result(result)
+                if result.error:
+                    failed.add(result.task_no)
+                else:
+                    done.add(result.task_no)
             n_filled -= 1
             if self.quit_early and result.error:
                 self.terminate()
@@ -149,6 +158,7 @@ class ParallelLocalRunner(BaseRunner):
                        "Original error was `{}'.")
                 raise ValueError(msg.format(self.ctx.tasks[idx], e))
             logger.debug("Adding task %i to work_q", idx)
+            self.ctx._handle_task_started(idx)
             self.work_q.put(pkl)
             logger.debug("Added task %i to work_q", idx)
             n_filled += 1
