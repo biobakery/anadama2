@@ -17,6 +17,7 @@ def capture(stderr=None, stdout=None):
         saved_stderr = sys.stderr
         sys.stderr = stderr
     if stdout:
+        saved_stdout = sys.stdout
         sys.stdout = stdout
     yield
     if stderr:

@@ -1,6 +1,8 @@
 import os
+import sys
 import time
 import shutil
+import random
 import unittest
 from datetime import datetime
 from datetime import timedelta
@@ -224,6 +226,23 @@ class TestRunContext(unittest.TestCase):
         with capture(stderr=StringIO()):
             self.ctx.go()
         self.assertEqual(ctime, os.stat(outf).st_ctime)
+
+    def test_print_within_function_action(self):
+        stderr_msg = "".join([chr(random.randint(32, 126)) for _ in range(10)])
+        stdout_msg = "".join([chr(random.randint(32, 126)) for _ in range(10)])
+        def printer(task):
+            print >> sys.stderr, stderr_msg
+            print >> sys.stdout, stdout_msg
+
+        t1 = self.ctx.add_task(printer)
+
+        out, err = StringIO(), StringIO()
+        with capture(stdout=out, stderr=err):
+            self.ctx.go()
+
+        self.assertNotIn(t1.task_no, self.ctx.failed_tasks)
+        self.assertIn(stdout_msg, out.getvalue())
+        self.assertIn(stderr_msg, err.getvalue())
        
 
 if __name__ == "__main__":
