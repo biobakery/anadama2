@@ -1,9 +1,11 @@
 import re
 import os
 import json
+import zlib
 import errno
 import inspect
 import mimetypes
+import subprocess
 from functools import wraps
 from itertools import izip_longest
 from multiprocessing import cpu_count
@@ -291,6 +293,7 @@ def memoized(func):
         return cache[args]
     return memoizer
 
+
 _PATH_list = None
 @memoized
 def find_on_path(bin_str):
@@ -316,3 +319,44 @@ def find_on_path(bin_str):
 def partition(it, binsize, pad=None):
     iters = [iter(it)]*binsize
     return izip_longest(fillvalue=pad, *iters)    
+
+def _adler32(fname):
+    """Compute the adler32 checksum on a file.
+
+    :param fname: File path to the file to checksum
+    :type fname: str
+    """
+
+    with open(fname, 'r') as f:
+        checksum = 1
+        while True:
+            buf = f.read(1024*1024*8)
+            if not buf:
+                break
+            checksum = zlib.adler32(buf, checksum)
+            
+    return checksum
+
+
+class ShellException(OSError):
+    pass
+
+
+def sh(cmd, **kwargs):
+    kwargs['stdout'] = kwargs.get('stdout', subprocess.PIPE)
+    kwargs['stderr'] = kwargs.get('stderr', subprocess.PIPE)
+    proc = subprocess.Popen(cmd, **kwargs)
+    ret = proc.communicate()
+    if proc.returncode:
+        msg = "Command `{}' failed. \nOut: {}\nErr: {}"
+        raise ShellException(proc.returncode, msg.format(cmd, ret[0], ret[1]))
+    return ret
+
+
+class HasNoEqual(object):
+    def __eq__(self, other):
+        return False
+
+def noop(*args, **kwargs):
+    return None
+
