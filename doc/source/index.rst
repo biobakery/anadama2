@@ -8,9 +8,9 @@ AnADAMA, or Another Automated Data Analysis Management Application is
 a tool for performing data analysis in a reproducible, easily scaled,
 and extensible way.
 
-.. topic:: Looking to analyze 16S or WGS sequence data with ``anadama_workflows``?
-
-    Please refer to the anadama_workflows `docs <http://huttenhower.sph.harvard.edu/docs/anadama_workflows/index.html>`_.
+.. note:: Looking to analyze 16S or WGS sequence data with
+   ``anadama_workflows``?  Please refer to the anadama_workflows `docs
+   <http://huttenhower.sph.harvard.edu/docs/anadama_workflows/index.html>`_.
 
 
 Why AnADAMA?
@@ -45,9 +45,6 @@ to analysis pipelines. Likely, when sharing analysis pipelines, the
 pipeline requires resources external to AnADAMA; AnADAMA can track
 those resources, too.
 
-* :ref:`getting-started`
-* :ref:`scale-up-scale-out`
-* :ref:`your-own-pipeline`
 * :ref:`example-workflows`
 
 

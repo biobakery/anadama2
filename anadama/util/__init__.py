@@ -46,7 +46,7 @@ def rmext(name_str, all=False):
     """removes file extensions 
 
     :keyword all: Boolean; removes all extensions if True, else just
-    the outside one
+      the outside one
 
     """
 

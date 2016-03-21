@@ -33,7 +33,7 @@ class RunContext(object):
 
 
     def do(self, cmd, track_cmd=True, track_binaries=True):
-        """Create and add a :class:`Task` to the runcontext using a
+        """Create and add a :class:`anadama.Task` to the runcontext using a
         convenient, shell-like syntax. 
 
         To explicitly mark task targets, wrap filenames within ``cmd``
@@ -100,13 +100,13 @@ class RunContext(object):
 
     def add_task(self, actions=None, depends=None, targets=None,
                  name=None, interpret_deps_and_targs=True):
-        """Create and add a :class:`Task` to the runcontext.  This
+        """Create and add a :class:`anadama.Task` to the runcontext.  This
         function can be used as a decorator to set a function as the
         sole action.
         
         :param actions: The actions to be performed to complete the
           task. Strings or lists of strings are interpreted as shell
-          commands according to :func:`runcontext.parse_sh`. If given
+          commands according to :func:`anadama.runcontext.parse_sh`. If given
           just a string or just a callable, this method treats it as a
           one-item list of the string or callable.
         :type actions: str or callable or list of str or
@@ -116,31 +116,31 @@ class RunContext(object):
           have these dependencies before executing the
           actions. Strings or lists of strings are interpreted as
           filenames and turned into objects of type
-          :class:`deps.FileDependency`. If given just a string or just
-          a :class:`deps.BaseDependency`, this method treats it as a
+          :class:`anadama.deps.FileDependency`. If given just a string or just
+          a :class:`anadama.deps.BaseDependency`, this method treats it as a
           one-item list of the argument provided.
-        :type depends: str or :class:`deps.BaseDependency` or list of
-          str or list of :class:`deps.BaseDependency`
+        :type depends: str or :class:`anadama.deps.BaseDependency` or list of
+          str or list of :class:`anadama.deps.BaseDependency`
 
         :param targets: The targets of the task. The task must produce
           these targets after executing the actions to be considered
           as "success". Strings or lists of strings are interpreted as
           filenames and turned into objects of type
-          :class:`deps.FileDependency`. If given just a string or just
-          a :class:`deps.BaseDependency`, this method treats it as a
+          :class:`anadama.deps.FileDependency`. If given just a string or just
+          a :class:`anadama.deps.BaseDependency`, this method treats it as a
           one-item list of the argument provided.
-        :type targets: str or :class:`deps.BaseDependency` or list of
-          str or list of :class:`deps.BaseDependency`
+        :type targets: str or :class:`anadama.deps.BaseDependency` or list of
+          str or list of :class:`anadama.deps.BaseDependency`
 
         :param name: A name for the task. Task names must be unique
           within a run context.
         :type name: str
 
         :keyword interpret_deps_and_targs: Should I use
-          :func:`runcontext.parse_sh` to change ``{deps[0]}`` and
-          ``{targs[0]}`` into the first item in depends and the first
-          item in targets? Default is True
-        :type interpret_deps_and_targs: bool
+          :func:`anadama.helpers.parse_sh` to change
+          ``{depends[0]}`` and ``{targets[0]}`` into the first item in
+          depends and the first item in targets? Default is True :type
+          interpret_deps_and_targs: bool
 
         """
 
@@ -235,9 +235,9 @@ class RunContext(object):
         creates these dependencies; they're already there before any
         tasks run.
 
-        :param *depends: One or many dependencies to mark as pre-existing.
-        :type *depends: any argument recognized by :func:`deps.auto`
-
+        :param \*depends: One or many dependencies to mark as pre-existing.
+        :type \*depends: any argument recognized by :func:`anadama.deps.auto`
+        
         """
 
         self.add_task(noop, targets=map(deps.auto, depends),
@@ -318,7 +318,7 @@ def _sugar_list(x):
 def _parse_wrapper(s, metachar):
     """search through string ``s`` and find terms wrapped in curly braces
     and a metacharacter ``metachar``. Intended for use with
-    :meth:`runcontext.RunContext.do`.
+    :meth:`anadama.runcontext.RunContext.do`.
     """
 
     start = len(metachar)+1
@@ -328,7 +328,7 @@ def _parse_wrapper(s, metachar):
 def discover_binaries(s):
     """Search through string ``s`` and find all existing files smaller
     than 10MB. Return those files as a list of objects of type
-    :class:`deps.FileDependency`.
+    :class:`anadama.deps.FileDependency`.
     """
 
     ds = list()
