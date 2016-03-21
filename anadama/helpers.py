@@ -1,6 +1,6 @@
 """Contains functions that help create tasks. All functions contained
 herein are intended for use with
-:meth:`runcontext.RunContext.add_task`. This means that the functions
+:meth:`anadama.runcontext.RunContext.add_task`. This means that the functions
 in here don't immediately do what they say; they return functions
 that, when called, do that they say (they're closures). Sorry if that
 breaks your brain.
@@ -27,7 +27,7 @@ def sh(s, **kwargs):
 
 
 def parse_sh(s, **kwargs):
-    """Do the same thing as :func:`helpers.sh`, but do some extra
+    """Do the same thing as :func:`anadama.helpers.sh`, but do some extra
     interpreting and formatting of the shell command before handing it
     over to the shell. For those familiar with python's
     ``string.format()`` method, the list of dependencies and the list

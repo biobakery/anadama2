@@ -4,19 +4,19 @@ API Reference
 :Release: |version|
 :Date: |today|
 
+.. currentmodule:: anadama
+
+.. automodule:: anadama
+   :members:
+
+
 .. toctree::
    :maxdepth: 2
 
-   action
-   cli
-   commands
-   dag
-   decorators
-   loader
-   monkey
-   picklerunner
-   pipelines
-   provenance
-   runner
-   strategies
+   backends
+   deps
+   helpers
+   reporters
+   runners
+   runcontext
    util

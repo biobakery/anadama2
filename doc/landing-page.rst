@@ -11,35 +11,53 @@ ________________________________________________________________________________
 Overview
 ========
 
-AnADAMA is essentially doit_ with a few extensions:
+AnADAMA is a python module to track dependency changes and rerun
+workflow tasks only when necessary. Plus, you get these extra goodies for free:
 
-- Extra command to serialize the DoIt action plan into a JSON document
-- All DoIt tasks are serialized into runnable python scripts.
+- A pretty progress indicator to show run status
 - Executes tasks on compute clusters LSF and SLURM without having to
   directly interact with the queueing system.
-- Defines pipelines, collections of doit tasks, and provides interfaces to pipelines.
+- A framework for building pipelines, for when you need an interface
+  to your workflows fast.
 
 .. _doit: http://pydoit.org/
 
+Getting AnADAMA
+===============
+
+Downloading the code
+____________________
+
+.. code:: bash
+
+  $ git clone https://bitbucket.org/biobakery/anadama.git
+  $ cd anadama
+  $ git checkout v2
+
 Installation
-============
+____________
 
-One liner::
+.. code:: bash
 
-  $ pip install -e 'git+https://bitbucket.org/biobakery/anadama.git@master#egg=anadama-0.0.1'
+  $ python setup.py install
+
+
+Running the tests
+_________________
+
+.. code:: bash
+
+  $ python setup.py test	  
 
 
 Usage
 =====
 
-Looking to use AnADAMA for microbiome sequence analysis?
-Check out the ``anadama_workflows`` repository_ over on bitbucket.
+.. note:: Looking to use AnADAMA for microbiome sequence analysis?
+   Check out the ``anadama_workflows`` repository_ over on bitbucket.
 
-Otherwise,
 
-Basic usage is covered in a presentation_ over on bitbucket.
 
-.. _presentation: http://rschwager-hsph.bitbucket.org/2014-07-11_lab-presentation/index.html#/3 
 
 
 Documentation
@@ -47,7 +65,7 @@ Documentation
 
 Head on over to the docs_ site.
 
-.. _docs: http://huttenhower.sph.harvard.edu/docs/anadama/index.html
+.. _docs: http://huttenhower.sph.harvard.edu/docs/anadamav2/index.html
 
 How to get help
 ===============

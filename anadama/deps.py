@@ -8,15 +8,15 @@ from .util import _adler32, find_on_path, sh, HasNoEqual
 
 def auto(x):
     """Translate a string, function or task into the appropriate subclass
-    of :class:`deps.BaseDependency`. The current mapping is as follows:
+    of :class:`anadama.deps.BaseDependency`. The current mapping is as follows:
 
-    - Subclasses of :class:`deps.BaseDependency` are returned as is
+    - Subclasses of :class:`anadama.deps.BaseDependency` are returned as is
 
-    - Strings ``->`` :class:`deps.FileDependency`
+    - Strings ``->`` :class:`anadama.deps.FileDependency`
 
-    - Instances of subclasses of :class:`Task` ``->`` :class:`deps.TaskDependency`
+    - Instances of subclasses of :class:`anadama.Task` ``->`` :class:`anadama.deps.TaskDependency`
 
-    - Functions or other callables ``->`` :class:`deps.FunctionDependency`
+    - Functions or other callables ``->`` :class:`anadama.deps.FunctionDependency`
 
     :param x: The object to be translated into a dependency object
 
@@ -42,10 +42,10 @@ def any_different(ds, backend, compare_cache=None):
     """Determine whether any dependencies have changed since last save.
 
     :param ds: The dependencies in question
-    :type ds: instances of any :class:`deps.BaseDependency` subclass
+    :type ds: instances of any :class:`anadama.deps.BaseDependency` subclass
 
     :param backend: Backend to query past results of a dependency object
-    :type backend: instances of any :class:`backends.BaseBackend` subclass
+    :type backend: instances of any :class:`anadama.backends.BaseBackend` subclass
 
     :param compare_cache: object to memoize compare() results temporarily
     """
@@ -112,12 +112,12 @@ class DependencyIndex(object):
         __getitem__.
 
         :param dep: The dependency to track
-        :type dep: subclass of :class:`deps.BaseDependency`
+        :type dep: subclass of :class:`anadama.deps.BaseDependency`
 
         :param task_or_none: The task that's supposed to create this
           dependency. Use None if the dependency isn't created by a
           task but exists prior to any tasks running.
-        :type task_or_none: :class:`Task` or None
+        :type task_or_none: :class:`anadama.Task` or None
 
         """
         self._taskidx[dep.__class__.__name__][dep._key] = task_or_none
@@ -145,18 +145,18 @@ class BaseDependency(object):
     """The Dependency object is the tool for specifying task father-child
     relationships. Dependency objects can be used in either
     ``targets`` or ``depends`` arguments of
-    :meth:`runcontext.RunContext.add_task`. Often, these targets or
-    dependencies are specified by strings or :class:`Task`
+    :meth:`anadama.runcontext.RunContext.add_task`. Often, these targets or
+    dependencies are specified by strings or :class:`anadama.Task`
     objects and instantiated into the appropriate BaseDependency
-    subclass with :func:`deps.auto`; this behavior depends on the
-    arguments to :meth:`runcontext.RunContext.add_task`.
+    subclass with :func:`anadama.deps.auto`; this behavior depends on the
+    arguments to :meth:`anadama.runcontext.RunContext.add_task`.
 
     A dependency of the same name will be defined multiple times in
     the normal use of AnADAMA. To make it such that many calls of a
     dependency constructor or use of the same argument to
-    :func:`deps.auto` result in the same dependency instance being
+    :func:`anadama.deps.auto` result in the same dependency instance being
     returned, a little bit of black magic involving
-    :meth:`deps.BaseDependency.__new__` is required. The price for
+    :meth:`anadama.deps.BaseDependency.__new__` is required. The price for
     such magics is that subclasses of BaseDependency must define the
     ``init`` method to initialize the dependency, instead of the more
     commonly used ``__init__`` method. The ``init`` method is only
@@ -170,7 +170,7 @@ class BaseDependency(object):
 
     Unrelated to the quasi-singleton magics above, sublcasses of
     BaseDependency must define a ``compare()`` method. See
-    :meth:`deps.BaseDependency.compare` for more documentation.
+    :meth:`anadama.deps.BaseDependency.compare` for more documentation.
 
     """
 
@@ -309,7 +309,7 @@ class TaskDependency(BaseDependency):
         """Initialize the dependency
         
         :param task: the task to track
-        :type task: :class:`Task`
+        :type task: :class:`anadama.Task`
         """
         self.task = task
 
@@ -333,10 +333,10 @@ class ExecutableDependency(BaseDependency):
         :param name: Name of a script on the shell $PATH or name of
           the file to track
         :type name: str
-
+        
         :keyword version_cmd: Shell string to execute to get the
-        binary or script's version
-
+          binary or script's version
+        
         """
 
         self.fname = self.__class__.key(name)
@@ -372,7 +372,7 @@ class FunctionDependency(BaseDependency):
 
     """Useful for things like database lookups or API calls. The function
     must return a hashable type. For a tiered comparison method like
-    that seen in :class:`deps.FileDependency`, it's best to create
+    that seen in :class:`anadama.deps.FileDependency`, it's best to create
     your own subclass of BaseDependency and override the ``compare()``
     method.
 
