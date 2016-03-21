@@ -39,10 +39,16 @@ class SerialLocalRunner(BaseRunner):
         while total > len(failed)+len(done):
             idx = task_idx_deque.pop()
             parents = set(self.ctx.dag.predecessors(idx))
-            if parents and parents.difference(done.union(failed)):
-                # has undone parents, come back again later
-                task_idx_deque.appendleft(idx)
-                continue
+            for parent in parents:
+                if parent in failed:
+                    failed.add(idx)
+                    self.ctx._handle_task_result(parent_failed_result(idx,
+                                                                      parent))
+                    continue
+                elif parent not in done:
+                    # has undone parents, come back again later
+                    task_idx_deque.appendleft(idx)
+                    continue
             self.ctx._handle_task_started(idx)
             result = _run_task_locally(self.ctx.tasks[idx])
             if result.error:
@@ -147,10 +153,16 @@ class ParallelLocalRunner(BaseRunner):
         for _ in range(min(self.MAX_QSIZE, len(self.task_idx_deque))):
             idx = self.task_idx_deque.pop()
             parents = set(self.ctx.dag.predecessors(idx))
-            if parents and parents.difference(done.union(failed)):
-                # has undone parents, come back again later
-                self.task_idx_deque.appendleft(idx)
-                continue
+            for parent in parents:
+                if parent in failed:
+                    failed.add(idx)
+                    self.ctx._handle_task_result(parent_failed_result(idx,
+                                                                      parent))
+                    continue
+                elif parent not in done:
+                    # has undone parents, come back again later
+                    task_idx_deque.appendleft(idx)
+                    continue
             try:
                 pkl = cloudpickle.dumps(self.ctx.tasks[idx])
             except Exception as e:
@@ -200,6 +212,11 @@ def default(run_context, n_parallel):
 
 def exception_result(exc):
     return TaskResult(getattr(exc, "task_no", None), exc.message, None, None)
+
+def parent_failed_result(idx, parent_idx):
+    return TaskResult(
+        idx, "Task failed because parent task `{}' failed".format(parent_idx),
+        None, None)
 
 
 def _run_task_locally(task):
