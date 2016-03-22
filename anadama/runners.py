@@ -1,5 +1,4 @@
 import time
-import logging
 import traceback
 import multiprocessing
 import cPickle as pickle
