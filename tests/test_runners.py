@@ -6,7 +6,6 @@ import anadama
 import anadama.deps
 import anadama.runners
 import anadama.helpers
-from anadama.pickler import cloudpickle
 
 
 class TestRunners(unittest.TestCase):
