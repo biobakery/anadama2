@@ -175,7 +175,7 @@ class RunContext(object):
         if not self._backend:
             self._backend = storage_backend or backends.default()
 
-        task_idxs = nx.algorithms.dag.topological_sort(self.dag)
+        task_idxs = nx.algorithms.dag.topological_sort(self.dag, reverse=True)
         if not run_them_all:
             task_idxs = self._filter_skipped_tasks(task_idxs)
         task_idxs = deque(task_idxs)
