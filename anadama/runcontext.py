@@ -27,6 +27,7 @@ class RunContext(object):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         self.tasks = list()
+        self.task_results = list()
         self._depidx = deps.DependencyIndex()
         self._backend = None
         self.compare_cache = deps.CompareCache()
@@ -167,6 +168,7 @@ class RunContext(object):
 
         self.completed_tasks = set()
         self.failed_tasks = set()
+        self.task_results = [None for _ in range(len(self.tasks))]
         self._reporter = reporter or reporters.default(self)
         self._reporter.started()
 
@@ -185,6 +187,8 @@ class RunContext(object):
 
 
     def _handle_task_result(self, result):
+        if result.task_no is not None:
+            self.task_results[result.task_no] = result
         if result.error:
             self.failed_tasks.add(result.task_no)
             self._reporter.task_failed(result)
@@ -270,13 +274,17 @@ class RunContext(object):
     def _handle_nosuchdep(self, dep, task):
         self.tasks.pop()
         self.dag.remove_node(task.task_no)
+        msg = "Unable to find dependency `{}' of type `{}'. "
+        msg = msg.format(str(dep), type(dep))
         alldeps = itertools.chain.from_iterable(
             [list(t.depends) + list(t.targets) for t in self.tasks]
         )
-        closest = matcher.find_match(dep, alldeps, key=attrgetter("_key"))
-        msg = ("Unable to find dependency of type `{}'. "
-               "Perhaps you meant `{}' of type `{}'?")
-        raise KeyError(msg.format(type(dep), closest, type(closest)))
+        try:
+            closest = matcher.find_match(dep, alldeps, key=attrgetter("_key"))
+        except:
+            raise KeyError(msg)
+        msg += "Perhaps you meant `{}' of type `{}'?"
+        raise KeyError(msg.format(str(closest), type(closest)))
 
 
 
