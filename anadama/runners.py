@@ -32,31 +32,23 @@ class SerialLocalRunner(BaseRunner):
 
     def run_tasks(self, task_idx_deque):
         total = len(self.ctx.tasks)
-        failed = self.ctx.failed_tasks
-        done = self.ctx.completed_tasks
-
-        while total > len(failed)+len(done):
+        while total > len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks):
             idx = task_idx_deque.pop()
+
             parents = set(self.ctx.dag.predecessors(idx))
-            for parent in parents:
-                if parent in failed:
-                    failed.add(idx)
-                    self.ctx._handle_task_result(parent_failed_result(idx,
-                                                                      parent))
-                    continue
-                elif parent not in done:
-                    # has undone parents, come back again later
-                    task_idx_deque.appendleft(idx)
-                    continue
+            failed_parents = parents.intersection(self.ctx.failed_tasks)
+            if failed_parents:
+                self.ctx._handle_task_result(
+                    parent_failed_result(idx, iter(failed_parents).next()))
+                continue
+
             self.ctx._handle_task_started(idx)
             result = _run_task_locally(self.ctx.tasks[idx])
-            if result.error:
-                failed.add(idx)
-            else:
-                done.add(idx)
             self.ctx._handle_task_result(result)
+
             if self.quit_early and bool(result.error):
                 break
+
 
 logger = multiprocessing.log_to_stderr()
 logger.setLevel(multiprocessing.SUBWARNING)
@@ -118,12 +110,11 @@ class ParallelLocalRunner(BaseRunner):
     def run_tasks(self, task_idx_deque):
         self.task_idx_deque = task_idx_deque
         total = len(self.ctx.tasks)
-        failed = self.ctx.failed_tasks
-        done = self.ctx.completed_tasks
 
         while True:
             n_filled = self._fill_work_q()
-            if n_filled == 0 and len(failed)+len(done) >= total:
+            n_done = len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks)
+            if n_filled == 0 and n_done >= total:
                 break
             try:
                 result = self.result_q.get()
@@ -132,10 +123,6 @@ class ParallelLocalRunner(BaseRunner):
                 raise
             else:
                 self.ctx._handle_task_result(result)
-                if result.error:
-                    failed.add(result.task_no)
-                else:
-                    done.add(result.task_no)
             n_filled -= 1
             if self.quit_early and result.error:
                 self.terminate()
@@ -146,22 +133,19 @@ class ParallelLocalRunner(BaseRunner):
 
     def _fill_work_q(self):
         logger.debug("Filling work_q")
-        failed = self.ctx.failed_tasks
-        done = self.ctx.completed_tasks
         n_filled = 0
         for _ in range(min(self.MAX_QSIZE, len(self.task_idx_deque))):
             idx = self.task_idx_deque.pop()
             parents = set(self.ctx.dag.predecessors(idx))
-            for parent in parents:
-                if parent in failed:
-                    failed.add(idx)
-                    self.ctx._handle_task_result(parent_failed_result(idx,
-                                                                      parent))
-                    continue
-                elif parent not in done:
-                    # has undone parents, come back again later
-                    task_idx_deque.appendleft(idx)
-                    continue
+            failed_parents = parents.intersection(self.ctx.failed_tasks)
+            if failed_parents:
+                self.ctx._handle_task_result(
+                    parent_failed_result(idx, failed_parents[0]))
+                continue
+            elif parents.intersection(self.ctx.completed_tasks):
+                # has undone parents, come back again later
+                self.task_idx_deque.appendleft(idx)
+                continue
             try:
                 pkl = cloudpickle.dumps(self.ctx.tasks[idx])
             except Exception as e:
