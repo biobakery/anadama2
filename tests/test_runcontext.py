@@ -244,6 +244,16 @@ class TestRunContext(unittest.TestCase):
         self.assertIn(stdout_msg, out.getvalue())
         self.assertIn(stderr_msg, err.getvalue())
        
+    def test__sugar_list(self):
+        rc = anadama.runcontext
+        self.assertEqual([5], rc._sugar_list(5))
+        self.assertEqual(["blah"], rc._sugar_list("blah"))
+        it = iter(range(5))
+        self.assertIs(it, rc._sugar_list(it))
+        t = anadama.Task("dummy task", [], [], [], 0)
+        self.assertEqual([t], rc._sugar_list(t))
+        self.assertEqual((5,), rc._sugar_list((5,)))
+
 
 if __name__ == "__main__":
     unittest.main()
