@@ -3,6 +3,7 @@ import shutil
 import inspect
 import unittest
 
+import anadama
 import anadama.deps
 import anadama.backends
 
@@ -48,7 +49,7 @@ class TestDeps(unittest.TestCase):
         
     def test_auto(self):
         t = anadama.Task("dummy task", [], [], [], 0)
-        self.assertIsInstance(anadama.deps.auto(t), anadama.deps.TaskDependency)
+        self.assertIsInstance(anadama.deps.auto(t), anadama.Task)
         n = "/tmp/foobaz"
         self.assertIsInstance(anadama.deps.auto(n), anadama.deps.FileDependency)
         self.assertIsInstance(anadama.deps.auto(lambda *a, **kw: None),

@@ -13,7 +13,7 @@ from . import reporters
 from . import runners
 from . import backends
 from .helpers import sh, parse_sh
-from .util import matcher, noop, find_on_path
+from .util import matcher, noop, find_on_path, istask
 
 
 
@@ -217,7 +217,9 @@ class RunContext(object):
     
     def _should_skip_task(self, task_no):
         task = self.tasks[task_no]
-        if not task.targets:
+        if not task.targets and not task.depends:
+            return False
+        if any(istask(d) for d in task.depends):
             return False
         if deps.any_different(task.depends, self._backend, self.compare_cache):
             return False
@@ -254,8 +256,8 @@ class RunContext(object):
         self.tasks.append(task)
         self.dag.add_node(task.task_no)
         for dep in task.depends:
-            if isinstance(dep, deps.TaskDependency):
-                self.dag.add_edge(dep.task.task_no, task.task_no)
+            if istask(dep):
+                self.dag.add_edge(dep.task_no, task.task_no)
                 continue
             try:
                 parent_task = self._depidx[dep]
@@ -309,7 +311,7 @@ def _build_targets(targets):
     targets = filter(None, _sugar_list(targets))
     ret = list()
     for targ in targets:
-        if isinstance(targ, Task):
+        if istask(targ):
             raise ValueError("Can't make a task a target")
         ret.append(deps.auto(targ))
     return ret
@@ -327,9 +329,7 @@ def _sugar_list(x):
 
     """
 
-    if isinstance(x, Task) \
-       or not hasattr(x, "__iter__") \
-       or isinstance(x, basestring):
+    if istask(x) or not hasattr(x, "__iter__") or isinstance(x, basestring):
         return [x]
     else:
         return x

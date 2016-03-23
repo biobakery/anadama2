@@ -227,6 +227,25 @@ class TestRunContext(unittest.TestCase):
             self.ctx.go()
         self.assertEqual(ctime, os.stat(outf).st_ctime)
 
+
+    def test_go_skip_notargets(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                 for letter in ("a", "b", "c", "d")]
+        self.ctx.add_task("touch {targets[0]}", targets=[a])
+        self.ctx.add_task("touch {targets[0]} {targets[1]}", targets=[b, c])
+        self.ctx.add_task("touch {}".format(d), depends=[a,b])
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        mtime = os.stat(a).st_mtime
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertEqual(mtime, os.stat(a).st_mtime)
+        os.remove(a)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertNotEqual(mtime, os.stat(a).st_mtime)
+
+
     def test_print_within_function_action(self):
         stderr_msg = "".join([chr(random.randint(32, 126)) for _ in range(10)])
         stdout_msg = "".join([chr(random.randint(32, 126)) for _ in range(10)])
