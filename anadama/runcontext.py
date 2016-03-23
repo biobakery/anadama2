@@ -305,8 +305,15 @@ def _build_depends(depends):
     return map(deps.auto, depends)
 
 
-_build_targets = _build_depends
-
+def _build_targets(targets):
+    targets = filter(None, _sugar_list(targets))
+    ret = list()
+    for targ in targets:
+        if isinstance(targ, Task):
+            raise ValueError("Can't make a task a target")
+        ret.append(deps.auto(targ))
+    return ret
+    
 
 def _build_name(name, task_no):
     if not name:
