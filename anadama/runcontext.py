@@ -254,6 +254,9 @@ class RunContext(object):
         self.tasks.append(task)
         self.dag.add_node(task.task_no)
         for dep in task.depends:
+            if isinstance(dep, deps.TaskDependency):
+                self.dag.add_edge(dep.task.task_no, task.task_no)
+                continue
             try:
                 parent_task = self._depidx[dep]
             except KeyError:
@@ -317,7 +320,9 @@ def _sugar_list(x):
 
     """
 
-    if not hasattr(x, "__iter__") or isinstance(x, basestring):
+    if isinstance(x, Task) \
+       or not hasattr(x, "__iter__") \
+       or isinstance(x, basestring):
         return [x]
     else:
         return x
