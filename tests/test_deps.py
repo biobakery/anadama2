@@ -46,6 +46,20 @@ class TestDeps(unittest.TestCase):
                           "dep hasn't changed, so there should be no "
                           "difference"))
         
+    def test_auto(self):
+        t = anadama.Task("dummy task", [], [], [], 0)
+        self.assertIsInstance(anadama.deps.auto(t), anadama.deps.TaskDependency)
+        n = "/tmp/foobaz"
+        self.assertIsInstance(anadama.deps.auto(n), anadama.deps.FileDependency)
+        self.assertIsInstance(anadama.deps.auto(lambda *a, **kw: None),
+                              anadama.deps.FunctionDependency)
+        self.assertIsInstance(anadama.deps.StringDependency("garglefwonk"),
+                              anadama.deps.StringDependency)
+        with self.assertRaises(ValueError):
+            anadama.deps.auto(["a", 5])
+        
+
+
     def test_CompareCache(self):
         f = anadama.deps.FileDependency(
             os.path.join(self.workdir, "compare_cache.txt"))
