@@ -55,11 +55,13 @@ class TestEndToEnd(unittest.TestCase):
         task_nos = [None for _ in range(len(nodes))]
         for n in nodes:
             cmd = "touch /dev/null "
+            name = None
             if n in shall_fail:
                 cmd += " ;exit 1"
+                name = "should fail"
             t = self.ctx.add_task(
-                cmd, depends=[self.ctx.tasks[task_nos[a]]
-                              for a in G.predecessors(n)]
+                cmd, name=name,
+                depends=[self.ctx.tasks[task_nos[a]] for a in G.predecessors(n)]
             )
             task_nos[n] = t.task_no
 

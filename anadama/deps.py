@@ -2,9 +2,8 @@ import os
 import itertools
 from operator import eq
 
-from . import Task
 from .util import _adler32, find_on_path, sh, HasNoEqual
-
+from .util import istask
 
 def auto(x):
     """Translate a string, function or task into the appropriate subclass
@@ -14,7 +13,9 @@ def auto(x):
 
     - Strings ``->`` :class:`anadama.deps.FileDependency`
 
-    - Instances of subclasses of :class:`anadama.Task` ``->`` :class:`anadama.deps.TaskDependency`
+    - Instances of subclasses of :class:`anadama.Task` are handled
+      specially by :meth:`anadama.runcontext.RunContext.add_task` and
+      are returned as is
 
     - Functions or other callables ``->`` :class:`anadama.deps.FunctionDependency`
 
@@ -22,12 +23,12 @@ def auto(x):
 
     """
 
-    if isinstance(x, BaseDependency):
-        return x
-    elif isinstance(x, basestring):
+    if isinstance(x, basestring):
         return FileDependency(x)
-    elif isinstance(x, Task):
-        return TaskDependency(x)
+    elif istask(x):
+        return x
+    elif isinstance(x, BaseDependency):
+        return x
     elif callable(x):
         # no explicit key is given, so I have to make one up
         key = "Function ({}) <{}>".format(x.__name__, id(x))
@@ -302,28 +303,6 @@ class HugeFileDependency(FileDependency):
 
 
 
-class TaskDependency(BaseDependency):
-    """Track another task."""
-
-    def init(self, task):
-        """Initialize the dependency
-        
-        :param task: the task to track
-        :type task: :class:`anadama.Task`
-        """
-        self.task = task
-
-
-    def compare(self):
-        return None
-
-
-    @staticmethod
-    def key(task):
-        return task.task_no
-
-
-
 class ExecutableDependency(BaseDependency):
     """Track a script or binary executable."""
 
@@ -397,7 +376,6 @@ _singleton_idx = dict([
         BaseDependency,
         StringDependency,
         FileDependency,
-        TaskDependency,
         ExecutableDependency,
         FunctionDependency)
 ])

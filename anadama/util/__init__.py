@@ -11,6 +11,7 @@ from itertools import izip_longest
 from multiprocessing import cpu_count
 from collections import namedtuple
 
+from .. import Task
 
 max_cpus = max(1, cpu_count()-1)
 
@@ -360,3 +361,8 @@ class HasNoEqual(object):
 def noop(*args, **kwargs):
     return None
 
+def istask(x):
+    return isinstance(x, Task)
+
+def isnottask(x):
+    return not isinstance(x, Task)
