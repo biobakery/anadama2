@@ -22,6 +22,15 @@ class RunFailed(ValueError):
 
 
 class RunContext(object):
+    """Create a RunContext.
+    
+    :keyword storage_backend: Lookup and save dependency information
+      from this object. If ``None`` is passed (the default), the
+      default backend from :func:`anadama.backends.default` is used.
+    :type storage_backend: instance of any
+      :class:`anadama.backends.BaseBackend` subclass or None.
+
+    """
 
 
     def __init__(self, storage_backend=None):
@@ -166,7 +175,40 @@ class RunContext(object):
 
     def go(self, run_them_all=False, quit_early=False, runner=None,
            reporter=None, storage_backend=None, n_parallel=1):
-        """Kick off execution of all previously configured tasks. """
+        """Kick off execution of all previously configured tasks. 
+
+        :keyword run_them_all: Skip no tasks; run it all.
+        :type run_them_all: bool
+        
+        :keyword quit_early: If any tasks fail, stop all execution
+          immediately. If set to ``False`` (the default), children of
+          failed tasks are *not* executed but children of successful
+          or skipped tasks *are* executed: basically, keep going until
+          you run out of tasks to execute.
+
+        :keyword runner: The tasks to execute are passed to this
+          object for execution.  For a list of runners that come
+          bundled with anadama, see :module:`anadama.runners`. Passing
+          ``None`` (the default) uses the default runner from
+          :func:`anadama.runners.default`.
+        :type runner: instance of any
+          :class:`anadama.runners.BaseRunner` subclass or None.
+
+        :keyword reporter: As task execution proceeds, events are
+          dispatched to this object for reporting purposes. For more
+          information of the reporters bundled with anadama, see
+          :module:`anadama.reporters`. Passing ``None`` (the default)
+          uses the default reporter from
+          :func:`anadama.reporters.default`.
+        :type reporter: instance of any
+          :class:`anadama.reporters.BaseReporter` subclass or None.
+
+        :keyword n_parallel: The number of tasks to execute in
+          parallel. This option is ignored when a custom runner is
+          used with the ``runner`` keyword.
+        :type n_parallel: int
+
+        """
 
         self.completed_tasks = set()
         self.failed_tasks = set()
