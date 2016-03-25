@@ -5,29 +5,100 @@ def default(run_context):
 
 class BaseReporter(object):
 
+    """The base reporter defines functionality similar amongst all
+    reporters.
+
+    The runcontext that executes the hooks defined can be accessed at
+    ``self.run_context``.
+
+    """
+
     def __init__(self, run_context):
         self.run_context = run_context
 
     def started(self):
+        """Executed when a run is started, usually when
+        :meth:`anadama.runcontext.RunContext.go` is executed.
+
+        """
+
         raise NotImplementedError()
 
     def task_skipped(self, task_no):
+        """Executed when anadama determines that a task needn't be run.
+
+        :param task_no: The task number of the task that is
+          skipped. To get the actual :class:`anadama.Task` object
+          that's being skipped, do ``self.run_context.tasks[task_no]``.
+
+        :type task_no: int
+
+        """
+
         raise NotImplementedError()
 
     def task_started(self, task_no):
+        """Executed when anadama is just about to execute a task.
+
+        :param task_no: The task number of the task that is
+          being started. To get the actual :class:`anadama.Task` object
+          that's being executed, do ``self.run_context.tasks[task_no]``.
+
+        :type task_no: int
+
+        """
+
         raise NotImplementedError()
 
     def task_failed(self, task_result):
+        """Executed when a task fails.
+
+        :param task_no: The task number of the task that failed . To
+          get the actual :class:`anadama.Task` object that failed, do
+          ``self.run_context.tasks[task_no]``. To get the task result
+          of the task that failed,
+          do``self.run_context.task_results[task_no]``
+
+        :type task_no: int
+
+        """
         raise NotImplementedError()        
 
     def task_completed(self, task_result):
+        """Executed when a task completes with no errors.
+
+        :param task_no: The task number of the task that succeeded . To
+          get the actual :class:`anadama.Task` object that succeeded, do
+          ``self.run_context.tasks[task_no]``. To get the task result
+          of the task that succeeded,
+          do``self.run_context.task_results[task_no]``
+
+        :type task_no: int
+
+        """
         raise NotImplementedError()
 
     def finished(self):
+        """Executed when a run finishes. This method is called whether there
+        are task failures or not.
+
+        """
         raise NotImplementedError()
 
 
 class ReporterGroup(BaseReporter):
+    """Sometimes you want to use multiple reporters. For that, there is
+    ReporterGroup. Here's an example usage:
+
+    .. code:: python
+        from anadama.reporters import ReporterGroup
+        my_grouped_reporter = ReporterGroup([custom_reporter_a, 
+                                             custom_reporter_b, 
+                                             custom_reporter_c])
+        ...
+        ctx.go(reporter=my_grouped_reporter)
+    """
+
     def __init__(self, other_reporters):
         self.reps = other_reporters
 
@@ -64,6 +135,42 @@ class ReporterGroup(BaseReporter):
     
 
 class ConsoleReporter(BaseReporter):
+    """The default reporter. Prints out run progress to stderr.
+    An example readout is as follows:
+
+    ::
+
+      (s)[  1/  6 -  16.67%] Track pre-existing dependencies
+
+    The readout is composed of five pieces of information:
+
+      1. The task status. That's the part in the parentheses. 
+      
+        * ``( )`` means that the task is currently being executed
+
+        * ``(+)`` means that the task finished successfully
+
+        * ``(s)`` means that the task was skipped
+
+        * ``(!)`` means that the task failed.
+
+      2. The current task number. That's the first number in the
+         square brackets.
+
+      3. The total number of tasks to be run or skipped. That's the
+         number after the forward slash.
+
+      4. The percent complete of the current run. That's the number
+         with a percent-sign next to it
+
+      5. The task name. That's the text that comes after the ending
+         square bracket. Remember that you can set the task name with
+         the ``name`` option to
+         :meth:`anadama.runcontext.RunContext.add_task`.
+
+    """
+
+
     msg_str = "({:.1})[{:3}/{:3} - {:6.2f}%] {:.57}"
 
     class stats:
@@ -119,9 +226,11 @@ class ConsoleReporter(BaseReporter):
 
 
 class LoggerReporter(BaseReporter):
+    """TODO"""
     pass
 
 
 
 class WebhookReporter(BaseReporter):
+    """TODO"""
     pass
