@@ -23,14 +23,16 @@ class RunFailed(ValueError):
 
 class RunContext(object):
 
-    def __init__(self):
+
+    def __init__(self, storage_backend=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         self.tasks = list()
         self.task_results = list()
         self._depidx = deps.DependencyIndex()
-        self._backend = None
         self.compare_cache = deps.CompareCache()
+        if not storage_backend:
+            self._backend = storage_backend or backends.default()
 
 
     def do(self, cmd, track_cmd=True, track_binaries=True):
@@ -174,9 +176,6 @@ class RunContext(object):
 
         _runner = runner or runners.default(self, n_parallel)
         _runner.quit_early = quit_early
-        if not self._backend:
-            self._backend = storage_backend or backends.default()
-
         task_idxs = nx.algorithms.dag.topological_sort(self.dag, reverse=True)
         if not run_them_all:
             task_idxs = self._filter_skipped_tasks(task_idxs)
