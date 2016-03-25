@@ -91,12 +91,14 @@ class ReporterGroup(BaseReporter):
     ReporterGroup. Here's an example usage:
 
     .. code:: python
-        from anadama.reporters import ReporterGroup
-        my_grouped_reporter = ReporterGroup([custom_reporter_a, 
-                                             custom_reporter_b, 
-                                             custom_reporter_c])
-        ...
-        ctx.go(reporter=my_grouped_reporter)
+
+      from anadama.reporters import ReporterGroup
+      my_grouped_reporter = ReporterGroup([custom_reporter_a, 
+                                           custom_reporter_b, 
+                                           custom_reporter_c])
+      ...
+      ctx.go(reporter=my_grouped_reporter)
+
     """
 
     def __init__(self, other_reporters):

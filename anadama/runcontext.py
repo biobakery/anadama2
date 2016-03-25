@@ -36,7 +36,15 @@ class RunContext(object):
     def __init__(self, storage_backend=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
+        #: tasks is a list of objects of type
+        #: :class:`anadama.Task`. This list is populated as new tasks
+        #: are added via :meth:`anadama.runcontext.RunContext.add_task`
+        #: and :meth:`anadama.runcontext.RunContext.do`
         self.tasks = list()
+        #: task_results is a list of objects of type :
+        #: :class:`anadama.runners.TaskResult`. This list is populated
+        #: only after tasks have been run with
+        #: :meth:`anadama.runcontext.RunContext.go`.
         self.task_results = list()
         self._depidx = deps.DependencyIndex()
         self.compare_cache = deps.CompareCache()
@@ -188,7 +196,7 @@ class RunContext(object):
 
         :keyword runner: The tasks to execute are passed to this
           object for execution.  For a list of runners that come
-          bundled with anadama, see :module:`anadama.runners`. Passing
+          bundled with anadama, see :mod:`anadama.runners`. Passing
           ``None`` (the default) uses the default runner from
           :func:`anadama.runners.default`.
         :type runner: instance of any
@@ -197,7 +205,7 @@ class RunContext(object):
         :keyword reporter: As task execution proceeds, events are
           dispatched to this object for reporting purposes. For more
           information of the reporters bundled with anadama, see
-          :module:`anadama.reporters`. Passing ``None`` (the default)
+          :mod:`anadama.reporters`. Passing ``None`` (the default)
           uses the default reporter from
           :func:`anadama.reporters.default`.
         :type reporter: instance of any
