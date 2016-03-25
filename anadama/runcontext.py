@@ -290,9 +290,15 @@ class RunContext(object):
         creates these dependencies; they're already there before any
         tasks run.
 
+        .. note::
+
+            If you have a list or other iterable containing the
+            dependencies that already exist, you can declare them all
+            like so ``ctx.already_exists(*my_bunch_of_deps)``.
+
         :param \*depends: One or many dependencies to mark as pre-existing.
         :type \*depends: any argument recognized by :func:`anadama.deps.auto`
-        
+
         """
 
         self.add_task(noop, targets=map(deps.auto, depends),
