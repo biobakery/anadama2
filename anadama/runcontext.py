@@ -48,6 +48,7 @@ class RunContext(object):
         self.task_results = list()
         self._depidx = deps.DependencyIndex()
         self.compare_cache = deps.CompareCache()
+        self._pexist_task = None
         if not storage_backend:
             self._backend = storage_backend or backends.default()
 
@@ -97,24 +98,22 @@ class RunContext(object):
           within ``cmd`` and treat them as dependencies.
         :type track_binaries: bool
 
-        """
+        :returns: The :class:`anadama.Task` just created
 
+        """
         targs = _parse_wrapper(cmd, metachar="@")
         ds = _parse_wrapper(cmd, metachar="#")
         sh_cmd = re.sub(r'[@#]{([^{}]+)}', r'\1', cmd)
-        pre_exist = list()
         if track_cmd:
             d = deps.StringDependency(sh_cmd)
-            pre_exist.append(d)
+            self._add_do_pexist(d)
             ds.append(d)
         if track_binaries:
             for binary in discover_binaries(cmd):
-                pre_exist.append(binary)
+                self._add_do_pexist(binary)
                 ds.append(binary)
-        if pre_exist:
-            self.already_exists(*pre_exist)
-        
-        return self.add_task(sh_cmd, ds, targs, name=sh_cmd,
+
+        return self.add_task(sh_cmd, depends=ds, targets=targs, name=sh_cmd,
                              interpret_deps_and_targs=False)
 
 
@@ -159,8 +158,10 @@ class RunContext(object):
         :keyword interpret_deps_and_targs: Should I use
           :func:`anadama.helpers.parse_sh` to change
           ``{depends[0]}`` and ``{targets[0]}`` into the first item in
-          depends and the first item in targets? Default is True :type
-          interpret_deps_and_targs: bool
+          depends and the first item in targets? Default is True 
+        :type interpret_deps_and_targs: bool
+
+        :returns: The :class:`anadama.Task` just created
 
         """
 
@@ -345,6 +346,17 @@ class RunContext(object):
             raise KeyError(msg)
         msg += "Perhaps you meant `{}' of type `{}'?"
         raise KeyError(msg.format(str(closest), type(closest)))
+
+
+    def _add_do_pexist(self, dep):
+        if not self._pexist_task:
+            self._pexist_task = self.add_task(
+                noop, targets=dep, name="Track pre-existing dependencies")
+        else:
+            d = deps.auto(dep)
+            if d not in self._depidx:
+                self._pexist_task.targets.append(deps.auto(dep))
+                self._depidx.link(dep, self._pexist_task)
 
 
 
