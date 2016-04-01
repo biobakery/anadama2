@@ -125,7 +125,7 @@ class DependencyIndex(object):
 
 
     def __contains__(self, dep):
-        return dep._key in _singleton_idx[dep.__class__.__name__]
+        return dep._key in self._taskidx[dep.__class__.__name__]
 
 
     def __getitem__(self, dep):
@@ -222,6 +222,10 @@ class BaseDependency(object):
 
         """
         raise NotImplementedError()
+
+
+    def __hash__(self):
+        return self._key
 
 
 

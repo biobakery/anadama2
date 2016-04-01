@@ -109,15 +109,12 @@ class TestRunContext(unittest.TestCase):
         
 
     def test_do_targets(self):
-        def closure(*args, **kwargs):
-            return args, kwargs
-        self.ctx.add_task = closure
-        args, kws = self.ctx.do("echo true > @{true.txt}")
-        self.assertIn("true.txt", args[0],
+        t = self.ctx.do("echo true > @{true.txt}")
+        self.assertIn("true.txt", t.name,
                       "target shouldn't be removed from command string")
-        self.assertNotIn(args[0], "@{true.txt}", "target metachar not removed")
-        self.assertEqual(len(args[2]), 1, "Should only be one target")
-        self.assertEqual(args[2][0], "true.txt",
+        self.assertNotIn(t.name, "@{true.txt}", "target metachar not removed")
+        self.assertEqual(len(t.targets), 1, "Should only be one target")
+        self.assertEqual(os.path.basename(str(t.targets[0])), "true.txt",
                          "the target should be a filedependency, true.txt")
 
     def test_do_deps(self):
@@ -126,12 +123,20 @@ class TestRunContext(unittest.TestCase):
         self.ctx.add_task = closure
         args, kws = self.ctx.do("cat #{/etc/hosts} > @{hosts.txt}",
                                 track_cmd=False, track_binaries=False)
-        self.assertNotIn("#{/etc/hosts}", args[1],
-                         "dep metachar not removed")
-        self.assertIn("/etc/hosts", args[0],
+        
+        self.assertNotIn("@{hosts}", kws["targets"],
+                         "targ metachar not removed")
+        self.assertIn("hosts.txt", map(os.path.basename, kws["targets"]),
+                      "targ should be in targets")
+        self.assertIn("hosts.txt", kws['name'],
+                      "targ shouldn't be removed from command string")
+        self.assertIn("/etc/hosts", kws['name'],
                       "dep shouldn't be removed from command string")
-        self.assertEqual(len(args[1]), 1, "Should only be one dep")
-        self.assertEqual(args[1][0], "/etc/hosts",
+        self.assertNotIn("#{/etc/hosts}", kws["depends"],
+                         "dep metachar not removed")
+        self.assertIn("/etc/hosts", kws["depends"], "dep should be in deps")
+        self.assertEqual(len(kws["depends"]), 1, "Should only be one dep")
+        self.assertEqual(kws["depends"][0], "/etc/hosts",
                          "the dep should be a filedependency, /etc/hosts")
 
 
