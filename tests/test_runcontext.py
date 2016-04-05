@@ -248,6 +248,7 @@ class TestRunContext(unittest.TestCase):
         os.remove(a)
         with capture(stderr=StringIO()):
             self.ctx.go()
+        time.sleep(0.01)
         self.assertNotEqual(mtime, os.stat(a).st_mtime)
 
 
@@ -277,6 +278,30 @@ class TestRunContext(unittest.TestCase):
         t = anadama.Task("dummy task", [], [], [], 0)
         self.assertEqual([t], rc._sugar_list(t))
         self.assertEqual((5,), rc._sugar_list((5,)))
+
+
+    def test_add_task_custom_dependency(self):
+        class CustomDependency(anadama.deps.BaseDependency):
+            @staticmethod
+            def key(the_key):
+                return str(the_key)
+
+            def compare(self):
+                self.compared = True
+                yield str(self._key)
+
+            def init(self, key):
+                self.initialized = True
+                self.compared = False
+
+        d = CustomDependency("blah")
+        self.ctx.add_task(anadama.util.noop, targets=d)
+        self.assertTrue(d.initialized)
+        self.assertFalse(d.compared)
+        with capture(stdout=StringIO(), stderr=StringIO()):
+            self.ctx.go()
+        self.assertTrue(d.compared)
+
 
 
 if __name__ == "__main__":

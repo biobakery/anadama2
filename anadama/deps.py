@@ -1,9 +1,12 @@
 import os
 import itertools
 from operator import eq
+from collections import defaultdict
 
 from .util import _adler32, find_on_path, sh, HasNoEqual
 from .util import istask
+
+_singleton_idx = defaultdict(dict)
 
 def auto(x):
     """Translate a string, function or task into the appropriate subclass
@@ -105,7 +108,8 @@ class DependencyIndex(object):
     """
 
     def __init__(self):
-        self._taskidx = dict([(k, dict()) for k in _singleton_idx.iterkeys()])
+        self._taskidx = defaultdict(dict)
+        self._taskidx.update((k, dict()) for k in _singleton_idx.iterkeys())
 
         
     def link(self, dep, task_or_none):
@@ -375,11 +379,10 @@ class FunctionDependency(BaseDependency):
         
 
 
-_singleton_idx = dict([
-    (cls.__name__, dict()) for cls in (
-        BaseDependency,
-        StringDependency,
-        FileDependency,
-        ExecutableDependency,
-        FunctionDependency)
-])
+_cached_dep_classes = (
+    BaseDependency,       StringDependency,
+    FileDependency,       HugeFileDependency,
+    ExecutableDependency, FunctionDependency
+)
+for cls in _cached_dep_classes:
+    _singleton_idx[cls.__name__] = dict()

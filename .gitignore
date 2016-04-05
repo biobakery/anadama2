@@ -4,3 +4,4 @@
 *.fuse_hidden*
 *#
 doc/build/*
+.noseids
