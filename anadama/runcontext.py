@@ -125,7 +125,7 @@ class RunContext(object):
         
         :param actions: The actions to be performed to complete the
           task. Strings or lists of strings are interpreted as shell
-          commands according to :func:`anadama.runcontext.parse_sh`. If given
+          commands according to :func:`anadama.helpers.parse_sh`. If given
           just a string or just a callable, this method treats it as a
           one-item list of the string or callable.
         :type actions: str or callable or list of str or
