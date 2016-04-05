@@ -35,7 +35,7 @@ from .util import sh as _sh
 
 def sh(s, **kwargs):
     """Execute a shell command. All further keywords are passed to
-    ``subprocess.Popen``
+    :class:`subprocess.Popen`
 
     :param s: The command to execute. Passed directly to a shell, so
       be careful about doing things like ``sh('df -h > data; rm -rf
@@ -54,14 +54,14 @@ def parse_sh(s, **kwargs):
     """Do the same thing as :func:`anadama.helpers.sh`, but do some extra
     interpreting and formatting of the shell command before handing it
     over to the shell. For those familiar with python's
-    ``string.format()`` method, the list of dependencies and the list
+    :meth:`str.format()` method, the list of dependencies and the list
     of targets are given to ``.format`` like so:
-    ``.format(targs=targets, deps=depends)``. Here's a synopsis of
+    ``.format(targets=targets, depends=depends)``. Here's a synopsis of
     common use cases:
 
-    - ``{targs[0]}`` is formatted to the first target
+    - ``{targets[0]}`` is formatted to the first target
     
-    - ``{deps[2]}`` is formatted to the third dependency
+    - ``{depends[2]}`` is formatted to the third dependency
 
     :param s: The command to execute. Passed directly to a shell, so
       be careful about doing things like 
