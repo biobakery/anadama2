@@ -238,8 +238,10 @@ class StringDependency(BaseDependency):
     def init(self, s):
         """
         Initialize the dependency.
+
         :param s: The string to keep track of
         :type s: str or unicode
+
         """
         self.s = s
 
