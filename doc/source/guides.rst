@@ -237,6 +237,60 @@ For more information on ``.do()``, please refer to the API reference:
 :meth:`anadama.runcontext.RunContext.do`.
   
 
+Dependencies
+============
+
+In what order should AnADAMA execute your task? It depends!  Use
+dependencies to link together tasks. AnADAMA follows the links between
+tasks to execute the tasks in the correct order and skip any task that
+doesn't need to be run.
+
+Dependencies are objects. These objects are defined by classes
+(i.e. types). The :mod:`anadama.deps` module contains a wide
+selection of dependency types, giving you flexibility in linking your
+tasks.
+
+Implicitly, many tasks use the :class:`anadama.deps.FileDependency`
+type. When a string or a list of strings are passed to the
+``targets=`` or ``depends=`` keyword of
+:meth:`anadama.runcontext.RunContext.add_task`, or if any filenames
+are wrapped with ``@{}`` or ``#{}`` when using
+:meth:`anadama.runcontext.RunContext.do`, those strings are used to
+initialize :class:`anadama.deps.FileDependency` objects.
+
+Other dependency types are similar to
+:class:`anadama.deps.FileDependency`. The
+:class:`anadama.deps.ExecutableDependency` type is meant to track
+scripts, binaries, and other executables; it searches your ``$PATH``
+for the location of the executable, and you can specify a command to
+get and track the executable's version. One of the characteristics a
+:class:`anadama.deps.FileDependency` looks at to determine if a file
+has changed is the file checksum. Reading a file's checksum requires
+reading through the entire file. If you're working with a huge file
+and that's not practical, try using the
+:class:`anadama.deps.HugeFileDependency`.
+
+The :class:`anadama.deps.FunctionDependency` is for depending on the
+output of a function. This is useful for depending on changes in
+databases or web APIs: places where you can't point to a specific
+file.
+
+Finally, the simplest dependency type:
+:class:`anadama.deps.StringDependency`. Use it for depending on a
+string of your choice. Doesn't seem useful? Check out how
+:meth:`anadama.runcontext.RunContext.do` uses it.
+
+.. warning:: Ensure your dependencies of type
+             :class:`anadama.deps.StringDependency` and
+             :class:`anadama.deps.FunctionDependency` are unique. For
+             example, if you depend on ``"--threads=10"`` in one run
+             context, and ``"--threads=10"`` in a different run
+             context and use the same storage backend between the two
+             contexts, **the dependencies will be shared between
+             contexts**.
+
+
+
 Running the tasks -- ``.go()``
 ==============================
 
