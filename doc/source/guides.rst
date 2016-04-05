@@ -43,6 +43,13 @@ To actually get your workflow into the run context, use the
 :meth:`anadama.runcontext.RunContext.add_task` or the
 :meth:`anadama.runcontext.RunContext.do` methods.
 
+The ``.do()`` method is for quickly adding simple tasks. ``.do()``
+adds a task with only one action, that action is a
+:func:`anadama.helpers.sh` action. ``.add_task()`` allows much more
+fine-grained control over adding a task: more than one action can be
+used, any type of action can be used, and different dependency types
+can be added.
+
 
 ``add_task()``
 ______________
@@ -93,6 +100,30 @@ list of dependencies. Read more about dependencies at
 number is unique and refers to its spot in the ``tasks`` attribute of
 a run context attribute. The name is just for cosmetic purposes; use
 it to remember what that task does.
+
+
+Dependency interpolation
+------------------------
+
+This is a thing you can do::
+
+  >>> ctx.add_task("cat {depends[0]} > {targets[0]}",
+  ...              depends=["input.txt"], targets=["output.txt"])
+
+That makes things more DRY (don't repeat yourself). If you have more
+than one ``target`` or ``depends``, refer to them by index::
+
+  >>> ctx.add_task("big_program --o-log {targets[0]} "
+  ...              "--input {depends[0]} "
+  ...              "--output {targets[1]} "
+  ...              "--nucleotide-database {depends[1]} "
+  ...              "--protein-database {depends[2]} "
+  ...              "--bowtie2 {depends[3]}",
+  ...              targets=["log.txt"],
+  ...              depends=["input.fastq", "uniref50.db",
+  ...                       "chocophlan.db", "bowtie2"])
+
+
 
 Function actions
 ----------------
