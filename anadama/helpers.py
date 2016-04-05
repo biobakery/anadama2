@@ -5,6 +5,30 @@ in here don't immediately do what they say; they return functions
 that, when called, do that they say (they're closures). Sorry if that
 breaks your brain.
 
+Using closures lets you add tasks like this:
+
+.. code:: python
+
+  from anadama import RunContext
+  from anadama.helpers import sh
+
+  ctx = RunContext()
+  ctx.add_task(sh("my fancy shell command"),
+               targets="foobaz.txt")
+
+Instead of this:
+
+.. code:: python
+
+
+  from anadama import RunContext
+  from anadama.util import sh # <--- note the different import
+
+  ctx = RunContext()
+  ctx.add_task(lambda task: sh("my fancy shell command"),
+               targets="foobaz.txt")
+
+
 """
 
 from .util import sh as _sh
