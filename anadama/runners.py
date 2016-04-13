@@ -1,10 +1,28 @@
+import os
+import sys
 import time
+import Queue
+import shlex
+import itertools
 import traceback
+import threading
 import multiprocessing
 import cPickle as pickle
+from math import exp
 from collections import namedtuple
 
+from . import picklerunner
 from .pickler import cloudpickle
+from .util import underscore
+
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
+
+
+sigmoid = lambda t: 1/(1-exp(-t))
+
 
 class TaskResult(namedtuple(
         "TaskResult", ["task_no", "error", "dep_keys", "dep_compares"])):
@@ -42,6 +60,7 @@ class TaskFailed(Exception):
         self.task_no = task_no
         super(TaskFailed, self).__init__(msg)
 
+
 class BaseRunner(object):
     def __init__(self, run_context):
         self.ctx = run_context
@@ -76,7 +95,9 @@ class SerialLocalRunner(BaseRunner):
 logger = multiprocessing.log_to_stderr()
 logger.setLevel(multiprocessing.SUBWARNING)
 
-class ParallelLocalWorker(multiprocessing.Process):
+class ParallelWorkerMixin(object):
+    run_task = None
+
     def __init__(self, work_q, result_q):
         super(ParallelLocalWorker, self).__init__()
         self.logger = logger
@@ -89,7 +110,7 @@ class ParallelLocalWorker(multiprocessing.Process):
         while True:
             try:
                 self.logger.debug("Getting work")
-                pkl = self.work_q.get()
+                pkl, extra = self.work_q.get()
                 self.logger.debug("Got work")
             except IOError as e:
                 self.logger.debug("Received IOError (%s) errno %s from work_q",
@@ -110,12 +131,108 @@ class ParallelLocalWorker(multiprocessing.Process):
                 self.logger.debug("Failed to deserialize task")
                 continue
             self.logger.debug("Running task locally")
-            result = _run_task_locally(task)
+            result = self.run_task(task, extra)
             self.logger.debug("Finished running task; "
                               "putting results on result_q")
             self.result_q.put_nowait(result)
             self.logger.debug("Result put on result_q. Back to get more work.")
+    
+
+def _run_task_locally(task, extra=None):
+    for i, action_func in enumerate(task.actions):
+        try:
+            action_func(task)
+        except Exception:
+            msg = ("Error executing action {}. "
+                   "Original Exception: \n{}")
+            return exception_result(
+                TaskFailed(msg.format(i, traceback.format_exc()), task.task_no)
+                )
+
+    targ_keys, targ_compares = list(), list()
+    for target in task.targets:
+        targ_keys.append(target._key)
+        try:
+            targ_compares.append(list(target.compare()))
+        except Exception:
+            msg = "Failed to produce target `{}'. Original exception: {}"
+            return exception_result(
+                TaskFailed(msg.format(target, traceback.format_exc()),
+                           task.task_no)
+                )
             
+    return TaskResult(task.task_no, None, targ_keys, targ_compares)
+
+    
+class ParallelLocalWorker(multiprocessing.Process, ParallelWorkerMixin):
+    run_task = _run_task_locally
+    appropriate_q_class = multiprocessing.Queue
+            
+
+def _run_task_slurm(task, extra):
+    (perf, partition, tmpdir, extra_srun_flags) = extra
+    script_path = picklerunner.tmp(task, dir=tmpdir).path
+    job_name = "task{}:{}".format(task.task_no, underscore(task.name))
+    mem, time = perf.mem, perf.time
+    for tries in itertools.count(1):
+        rerun = False
+        args = ["srun", "-v", "--export=ALL", "--partition="+partition,
+                "--mem={.1g}".format(mem),
+                "--time={.1g}".format(time),
+                "--cpus-per-task="+str(perf.cores),
+                "--job-name="+job_name]
+        args += extra_srun_flags+[script_path, "-p", "-r" ]
+        proc = subprocess.Popen(args)
+        out, err = proc.communicate()
+        if "Exceeded job memory limit" in out+err:
+            used = re.search(r'memory limit \((\d+) > \d+\)', outerr).group(1)
+            mem = int(used)/1024 * 1.3
+            rerun = True
+        if re.search(r"due to time limit", out+err, re.IGNORECASE):
+            time = time * (sigmoid(tries/10.)*2.7)
+            rerun = True
+        if not rerun:
+            break
+    extra_error = ""
+    try:
+        result = picklerunner.decode(out)
+    except ValueError:
+        extra_error += "Unable to decode task result\n"
+        result = None
+    if proc.returncode != 0:
+        extra_error += "Srun error: "+err+"\n"
+    if result is None:
+        return TaskResult(task.task_no, extra_error or "srun failed",
+                          None, None)
+    elif extra_error: # (result is not None) is implicit here
+        result = result._replace(error=result.error+extra_error)
+    return result
+        
+
+class SLURMWorker(threading.Thread, ParallelWorkerMixin):
+    appropriate_q_class = Queue.Queue
+    run_task = _run_task_slurm
+
+    def __init__(self, tmpdir, *args, **kwargs):
+        self.tmpdir = tmpdir
+        super(SLURMWorker, self).__init__(*args, **kwargs)
+    
+
+def _run_task_lsf(task, extra=None):
+    pass
+
+class LSFWorker(threading.Thread, ParallelWorkerMixin):
+    run_task = _run_task_lsf
+    appropriate_q_class = Queue.Queue
+
+
+def _run_task_sge(task, extra=None):
+    pass
+
+
+class SGEWorker(threading.Thread, ParallelWorkerMixin):
+    run_task = _run_task_sge
+    appropriate_q_class = Queue.Queue
 
 
 class ParallelLocalRunner(BaseRunner):
@@ -198,7 +315,9 @@ class ParallelLocalRunner(BaseRunner):
             time.sleep(0)
         for worker in self.workers:
             worker.terminate()
-        self.cleanup()
+        for worker in self.workers:
+            worker.join()
+        self.work_q._rlock.release()
 
 
     def cleanup(self):
@@ -208,6 +327,171 @@ class ParallelLocalRunner(BaseRunner):
             w.join()
 
 
+class GridRunner(BaseRunner):
+    MAX_QSIZE = 5000
+
+    def __init__(self, runcontext):
+        super(GridRunner, self).__init__(runcontext)
+        self._worker_config = dict()
+        self._worker_qs = dict()
+        self.routes = dict() # task_no -> (worker_type_name, extra_args)
+        self.workers = list()
+        self.started = False
+        self.default_worker = None
+
+
+    def add_worker(self, worker_class, name,
+                   rate=1, default=False, extra_kwargs={}):
+        self._worker_config[name] = (worker_class, rate, extra_kwargs)
+        if default:
+            self.default_worker = name
+
+
+    def run_tasks(self, task_idx_deque):
+        self.task_idx_deque = task_idx_deque
+        if not self.workers:
+            self._init_workers()
+
+        total = len(self.ctx.tasks)
+        while True:
+            n_filled = self._fill_work_qs()
+            n_done = len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks)
+            if n_filled == 0 and n_done >= total:
+                break
+            try:
+                result = self._get_result()
+            except (SystemExit, KeyboardInterrupt, Exception):
+                self.terminate()
+                raise
+            else:
+                self.ctx._handle_task_result(result)
+            n_filled -= 1
+            if self.quit_early and result.error:
+                self.terminate()
+                break
+
+        self.cleanup()
+
+
+    def terminate(self):
+        for name, (work_q, _) in self._worker_qs.iteritems():
+            if hasattr(q, "_rlock"):
+                self._terminate_mpq(work_q, name)
+            elif hasattr(q, "mutex"):
+                self._terminate_qq(work_q, name)
+            else:
+                raise Exception
+        for worker in self.workers:
+            worker.join()
+
+
+    def cleanup(self):
+        for name, (_, n_procs) in self._worker_config.iteritems():
+            for _ in range(n_procs):
+                self._worker_qs[name][0].put({"stop": True})
+        for w in self.workers:
+            w.join()
+
+
+    def route(self, task_no):
+        if task_no in self.routes:
+            return self.routes[task_no]
+        elif self.default_default_worker is not None:
+            return self.default_worker, None
+        else:
+            msg = ("GridRunner tried to run task {} but has no "
+                   "runner to run it and no default runner is defined")
+            raise ValueError(msg.format(task_no))
+
+
+    def _fill_work_qs(self):
+        for _ in range(min(self.MAX_QSIZE, len(self.task_idx_deque))):
+            idx = self._get_next_task()
+            if idx is None:
+                continue
+            try:
+                pkl = cloudpickle.dumps(self.ctx.tasks[idx])
+            except Exception as e:
+                msg = ("Unable to serialize task `{}'. "
+                       "Original error was `{}'.")
+                raise ValueError(msg.format(self.ctx.tasks[idx], e))
+            name, extra = self.route(idx)
+            logger.debug("Adding task %i to `%s' work_q", idx, name)
+            work_q = self._worker_qs[name][0].put((pkl, extra))
+            self.ctx._handle_task_started(idx)
+            logger.debug("Added task %i to `%s' work_q", idx, name)
+            n_filled += 1
+        if not self.started:
+            logger.debug("Starting up workers")
+            for w in self.workers:
+                w.start()
+            self.started = True
+        return n_filled
+
+
+    def _init_workers(self):
+        for name, (worker_cls, n_procs, kw) in self._worker_config.iteritems():
+            work_q = worker_cls.appropriate_q_class(self.MAX_QSIZE)
+            result_q = worker_cls.appropriate_q_class(self.MAX_QSIZE)
+            self._worker_qs[name] = (work_q, result_q)
+            for _ in range(n_procs):
+                self.workers.append(worker_cls(work_q, result_q, **kw))
+        self._qcycle = itertools.cycle(val[1]
+                                       for val in self._worker_qs.itervalues)
+
+
+    def _get_next_task(self):
+        idx = self.task_idx_deque.pop()
+        parents = set(self.ctx.dag.predecessors(idx))
+        failed_parents = parents.intersection(self.ctx.failed_tasks)
+        if failed_parents:
+            self.ctx._handle_task_result(
+                parent_failed_result(idx, failed_parents[0]))
+            return None
+        elif parents.intersection(self.ctx.completed_tasks):
+            # has undone parents, come back again later
+            self.task_idx_deque.appendleft(idx)
+            return None
+        if idx is None:
+            raise Exception
+        return idx
+
+
+    def _get_result(self):
+        for q in self._qcycle: # loops forever until we get from q
+            try:
+                ret = q.get(False, 0.05)
+            except Queue.Empty:
+                continue
+            return ret
+
+
+    def _terminate_mpq(self, q, name):
+        q._rlock.acquire()
+        while q._reader.poll():
+            try:
+                q._reader.recv()
+            except EOFError:
+                break
+            time.sleep(0)
+        worker_type = self._worker_config[name][0]
+        for worker in self.workers:
+            if isinstance(worker, worker_type):
+                worker.terminate()
+        q._rlock.release()
+
+
+    def _terminate_qq(self, q, name):
+        q.mutex.acquire()
+        while q.queue:
+            q.pop()
+        worker_type = self._worker_config[name][0]
+        for worker in self.workers:
+            if isinstance(worker, worker_type):
+                worker.join()
+        q.mutex.release()
+        
+
 
 def default(run_context, n_parallel):
     if n_parallel < 2:
@@ -216,8 +500,17 @@ def default(run_context, n_parallel):
         return ParallelLocalRunner(run_context, n_parallel)
 
 
+_current_grid_runner = None
+def current_grid_runner():
+    global _current_grid_runner
+    if _current_grid_runner is None:
+        _current_grid_runner = GridRunner()
+    return _current_grid_runner
+
+    
 def exception_result(exc):
     return TaskResult(getattr(exc, "task_no", None), exc.message, None, None)
+
 
 def parent_failed_result(idx, parent_idx):
     return TaskResult(
@@ -225,32 +518,3 @@ def parent_failed_result(idx, parent_idx):
         None, None)
 
 
-def _run_task_locally(task):
-    for i, action_func in enumerate(task.actions):
-        try:
-            action_func(task)
-        except Exception:
-            msg = ("Error executing action {}. "
-                   "Original Exception: \n{}")
-            return exception_result(
-                TaskFailed(msg.format(i, traceback.format_exc()), task.task_no)
-                )
-
-    targ_keys, targ_compares = list(), list()
-    for target in task.targets:
-        targ_keys.append(target._key)
-        try:
-            targ_compares.append(list(target.compare()))
-        except Exception:
-            msg = "Failed to produce target `{}'. Original exception: {}"
-            return exception_result(
-                TaskFailed(msg.format(target, traceback.format_exc()),
-                           task.task_no)
-                )
-            
-    return TaskResult(task.task_no, None, targ_keys, targ_compares)
-
-
-        
-
-    
