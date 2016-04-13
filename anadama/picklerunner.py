@@ -1,6 +1,7 @@
 """Save a task to a script for running by other programs"""
 
 import os
+import re
 import sys
 import cPickle as pickle
 from base64 import b64decode
@@ -68,11 +69,11 @@ class PickleScript(object):
             return self._path
 
     def save(self, path=None, to_fp=None):
-        if bool(path) == bool(to_fp): # logical xor
+        if bool(path) == bool(to_fp): # logical not xor
             raise ValueError("Need either path or to_fp")
         if path:
             self._path = path
-            with open(path, 'rb') as out_file:
+            with open(path, 'wb') as out_file:
                 self.render(to_fp=out_file)
         elif to_fp:
             self._path = to_fp.name

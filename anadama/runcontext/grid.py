@@ -1,5 +1,7 @@
 from collections import namedtuple
 
+from .. import runners
+
 class PerformanceData(namedtuple("PerformanceData", ["time", "mem", "cores"])):
     """Performance Data. Defines the resources or performance a task used,
     is limited to use, or is expected to use.
