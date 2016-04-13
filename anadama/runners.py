@@ -1,8 +1,8 @@
 import os
+import re
 import sys
 import time
 import Queue
-import shlex
 import itertools
 import traceback
 import threading
@@ -95,47 +95,38 @@ class SerialLocalRunner(BaseRunner):
 logger = multiprocessing.log_to_stderr()
 logger.setLevel(multiprocessing.SUBWARNING)
 
-class ParallelWorkerMixin(object):
-    run_task = None
-
-    def __init__(self, work_q, result_q):
-        super(ParallelLocalWorker, self).__init__()
-        self.logger = logger
-        self.work_q = work_q
-        self.result_q = result_q
-
-
-    def run(self):
-        self.logger.debug("Starting worker")
-        while True:
-            try:
-                self.logger.debug("Getting work")
-                pkl, extra = self.work_q.get()
-                self.logger.debug("Got work")
-            except IOError as e:
-                self.logger.debug("Received IOError (%s) errno %s from work_q",
-                                  e.message, e.errno)
-                break
-            except EOFError:
-                self.logger.debug("Received EOFError from work_q")
-                break
-            if type(pkl) is dict and pkl.get("stop", False):
-                self.logger.debug("Received sentinel, stopping")
-                break
-            try:
-                self.logger.debug("Deserializing task")
-                task = pickle.loads(pkl)
-                self.logger.debug("Task deserialized")
-            except Exception as e:
-                self.result_q.put_nowait(exception_result(e))
-                self.logger.debug("Failed to deserialize task")
-                continue
-            self.logger.debug("Running task locally")
-            result = self.run_task(task, extra)
-            self.logger.debug("Finished running task; "
-                              "putting results on result_q")
-            self.result_q.put_nowait(result)
-            self.logger.debug("Result put on result_q. Back to get more work.")
+def worker_run_loop(work_q, result_q, run_task):
+    """this is my doc"""
+    logger.debug("Starting worker")
+    while True:
+        try:
+            logger.debug("Getting work")
+            pkl, extra = work_q.get()
+            logger.debug("Got work")
+        except IOError as e:
+            logger.debug("Received IOError (%s) errno %s from work_q",
+                              e.message, e.errno)
+            break
+        except EOFError:
+            logger.debug("Received EOFError from work_q")
+            break
+        if type(pkl) is dict and pkl.get("stop", False):
+            logger.debug("Received sentinel, stopping")
+            break
+        try:
+            logger.debug("Deserializing task")
+            task = pickle.loads(pkl)
+            logger.debug("Task deserialized")
+        except Exception as e:
+            result_q.put_nowait(exception_result(e))
+            logger.debug("Failed to deserialize task")
+            continue
+        logger.debug("Running task locally")
+        result = run_task(task, extra)
+        logger.debug("Finished running task; "
+                          "putting results on result_q")
+        result_q.put_nowait(result)
+        logger.debug("Result put on result_q. Back to get more work.")
     
 
 def _run_task_locally(task, extra=None):
@@ -164,10 +155,18 @@ def _run_task_locally(task, extra=None):
     return TaskResult(task.task_no, None, targ_keys, targ_compares)
 
     
-class ParallelLocalWorker(multiprocessing.Process, ParallelWorkerMixin):
-    run_task = _run_task_locally
+class ParallelLocalWorker(multiprocessing.Process):
     appropriate_q_class = multiprocessing.Queue
             
+    def __init__(self, work_q, result_q):
+        super(ParallelLocalWorker, self).__init__()
+        self.logger = logger
+        self.work_q = work_q
+        self.result_q = result_q
+
+    def run(self):
+        return worker_run_loop(self.work_q, self.result_q, _run_task_locally)
+
 
 def _run_task_slurm(task, extra):
     (perf, partition, tmpdir, extra_srun_flags) = extra
@@ -185,7 +184,7 @@ def _run_task_slurm(task, extra):
         proc = subprocess.Popen(args)
         out, err = proc.communicate()
         if "Exceeded job memory limit" in out+err:
-            used = re.search(r'memory limit \((\d+) > \d+\)', outerr).group(1)
+            used = re.search(r'memory limit \((\d+) > \d+\)', out+err).group(1)
             mem = int(used)/1024 * 1.3
             rerun = True
         if re.search(r"due to time limit", out+err, re.IGNORECASE):
@@ -209,20 +208,23 @@ def _run_task_slurm(task, extra):
     return result
         
 
-class SLURMWorker(threading.Thread, ParallelWorkerMixin):
+class SLURMWorker(threading.Thread):
     appropriate_q_class = Queue.Queue
-    run_task = _run_task_slurm
 
-    def __init__(self, tmpdir, *args, **kwargs):
-        self.tmpdir = tmpdir
-        super(SLURMWorker, self).__init__(*args, **kwargs)
-    
+    def __init__(self, work_q, result_q, tmpdir):
+        super(SLURMWorker, self).__init__()
+        self.logger = logger
+        self.work_q = work_q
+        self.result_q = result_q
+
+    def run(self):
+        return worker_run_loop(self.work_q, self.result_q, _run_task_slurm)
+
 
 def _run_task_lsf(task, extra=None):
     pass
 
-class LSFWorker(threading.Thread, ParallelWorkerMixin):
-    run_task = _run_task_lsf
+class LSFWorker(threading.Thread):
     appropriate_q_class = Queue.Queue
 
 
@@ -230,7 +232,7 @@ def _run_task_sge(task, extra=None):
     pass
 
 
-class SGEWorker(threading.Thread, ParallelWorkerMixin):
+class SGEWorker(threading.Thread):
     run_task = _run_task_sge
     appropriate_q_class = Queue.Queue
 
@@ -294,7 +296,7 @@ class ParallelLocalRunner(BaseRunner):
                 raise ValueError(msg.format(self.ctx.tasks[idx], e))
             logger.debug("Adding task %i to work_q", idx)
             self.ctx._handle_task_started(idx)
-            self.work_q.put(pkl)
+            self.work_q.put((pkl, None))
             logger.debug("Added task %i to work_q", idx)
             n_filled += 1
         if not self.started:
@@ -306,25 +308,36 @@ class ParallelLocalRunner(BaseRunner):
 
 
     def terminate(self):
+        logger.debug("Terminating all workers")
         self.work_q._rlock.acquire()
+        logger.debug("got work_q readlock")
         while self.work_q._reader.poll():
+            logger.debug("draining work_q")
             try:
                 self.work_q._reader.recv()
             except EOFError:
                 break
             time.sleep(0)
         for worker in self.workers:
+            logger.debug("terminating worker %s", worker)
             worker.terminate()
         for worker in self.workers:
+            logger.debug("joining worker %s", worker)
             worker.join()
+        logger.debug("releasing readlock")
         self.work_q._rlock.release()
+        logger.debug("termination complete")
 
 
     def cleanup(self):
+        logger.debug("cleaning up parallellocalrunner")
         for w in self.workers:
+            logger.debug("giving stop sentinel to worker %s", w)
             self.work_q.put({"stop": True})
         for w in self.workers:
+            logger.debug("joining worker %s", w)
             w.join()
+        logger.debug("successfully cleaned up parallellocalrunner")
 
 
 class GridRunner(BaseRunner):
@@ -375,9 +388,9 @@ class GridRunner(BaseRunner):
 
     def terminate(self):
         for name, (work_q, _) in self._worker_qs.iteritems():
-            if hasattr(q, "_rlock"):
+            if hasattr(work_q, "_rlock"):
                 self._terminate_mpq(work_q, name)
-            elif hasattr(q, "mutex"):
+            elif hasattr(work_q, "mutex"):
                 self._terminate_qq(work_q, name)
             else:
                 raise Exception
@@ -405,6 +418,8 @@ class GridRunner(BaseRunner):
 
 
     def _fill_work_qs(self):
+        logger.debug("Filling work_q")
+        n_filled = 0
         for _ in range(min(self.MAX_QSIZE, len(self.task_idx_deque))):
             idx = self._get_next_task()
             if idx is None:
@@ -419,6 +434,7 @@ class GridRunner(BaseRunner):
             logger.debug("Adding task %i to `%s' work_q", idx, name)
             work_q = self._worker_qs[name][0].put((pkl, extra))
             self.ctx._handle_task_started(idx)
+            work_q.put(pkl)
             logger.debug("Added task %i to `%s' work_q", idx, name)
             n_filled += 1
         if not self.started:
