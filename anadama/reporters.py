@@ -184,15 +184,23 @@ class ConsoleReporter(BaseReporter):
     def __init__(self, *args, **kwargs):
         super(ConsoleReporter, self).__init__(*args, **kwargs)
         self.failed_results = list()
+        self.n_open = 0
+        self.multithread_mode = False
 
 
     def _msg(self, status, msg, c_r=False):
-        if c_r:
-            self.n_complete += 1
+        if self.n_open > 1:
+            self.multithread_mode = True
+            sys.stderr.write('\n')
         s = self.msg_str.format(status, self.n_complete, self.n_tasks,
                                 (float(self.n_complete)/self.n_tasks)*100, msg)
-        if c_r:
+        if self.multithread_mode is True:
+            s += "\n"
+        elif c_r:
+            self.n_open -= 1
             s = "\r" + s + "\n"
+        else:
+            self.n_open += 1
         sys.stderr.write(s)
         
 
@@ -205,14 +213,17 @@ class ConsoleReporter(BaseReporter):
         self._msg(self.stats.start, self.run_context.tasks[task_no].name)
     
     def task_skipped(self, task_no):
+        self.n_complete += 1
         self._msg(self.stats.skip, self.run_context.tasks[task_no].name, True)
 
     def task_failed(self, task_result):
+        self.n_complete += 1
         name = self.run_context.tasks[task_result.task_no].name
         self.failed_results.append((name, task_result))
         self._msg(self.stats.fail, name, True)
 
     def task_completed(self, task_result):
+        self.n_complete += 1
         name = self.run_context.tasks[task_result.task_no].name
         self._msg(self.stats.done, name, True)
 
