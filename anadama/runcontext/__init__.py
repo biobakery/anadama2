@@ -7,13 +7,13 @@ from collections import deque
 
 import networkx as nx
 
-from . import Task
-from . import deps
-from . import reporters
-from . import runners
-from . import backends
-from .helpers import sh, parse_sh
-from .util import matcher, noop, find_on_path, istask
+from .. import Task
+from .. import deps
+from .. import reporters
+from .. import runners
+from .. import backends
+from ..helpers import sh, parse_sh
+from ..util import matcher, noop, find_on_path, istask
 
 
 

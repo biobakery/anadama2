@@ -1,4 +1,15 @@
+import os
+import sys
+
 from setuptools import setup, find_packages
+
+requires = [
+        'networkx==1.9',
+        'leveldb==0.193'
+]
+
+if os.name == 'posix' and sys.version_info[0] < 3:
+    requires.append("subprocess32")
 
 setup(
     name='anadama',
@@ -12,10 +23,7 @@ setup(
                  'Application'),
     packages=find_packages(exclude=['ez_setup', 'tests', 'tests.*']),
     zip_safe=False,
-    install_requires=[
-        'networkx==1.9',
-        'leveldb==0.193'
-    ],
+    install_requires=requires,
     classifiers=[
         "Development Status :: 2 - Pre-Alpha"
     ],
