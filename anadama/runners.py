@@ -1,27 +1,12 @@
-import os
-import re
-import sys
 import time
 import Queue
 import itertools
 import traceback
-import threading
 import multiprocessing
 import cPickle as pickle
-from math import exp
 from collections import namedtuple
 
-from . import picklerunner
 from .pickler import cloudpickle
-from .util import underscore
-
-if os.name == 'posix' and sys.version_info[0] < 3:
-    import subprocess32 as subprocess
-else:
-    import subprocess
-
-
-sigmoid = lambda t: 1/(1-exp(-t))
 
 
 class TaskResult(namedtuple(
@@ -96,7 +81,6 @@ logger = multiprocessing.log_to_stderr()
 logger.setLevel(multiprocessing.SUBWARNING)
 
 def worker_run_loop(work_q, result_q, run_task):
-    """this is my doc"""
     logger.debug("Starting worker")
     while True:
         try:
@@ -121,7 +105,7 @@ def worker_run_loop(work_q, result_q, run_task):
             result_q.put_nowait(exception_result(e))
             logger.debug("Failed to deserialize task")
             continue
-        logger.debug("Running task locally")
+        logger.debug("Running task %s with %s", task.task_no, run_task)
         result = run_task(task, extra)
         logger.debug("Finished running task; "
                           "putting results on result_q")
@@ -156,7 +140,6 @@ def _run_task_locally(task, extra=None):
 
     
 class ParallelLocalWorker(multiprocessing.Process):
-    appropriate_q_class = multiprocessing.Queue
             
     def __init__(self, work_q, result_q):
         super(ParallelLocalWorker, self).__init__()
@@ -164,77 +147,14 @@ class ParallelLocalWorker(multiprocessing.Process):
         self.work_q = work_q
         self.result_q = result_q
 
+
+    @staticmethod
+    def appropriate_q_class(*args, **kwargs):
+        return multiprocessing.Queue(*args, **kwargs)
+
+
     def run(self):
         return worker_run_loop(self.work_q, self.result_q, _run_task_locally)
-
-
-def _run_task_slurm(task, extra):
-    (perf, partition, tmpdir, extra_srun_flags) = extra
-    script_path = picklerunner.tmp(task, dir=tmpdir).path
-    job_name = "task{}:{}".format(task.task_no, underscore(task.name))
-    mem, time = perf.mem, perf.time
-    for tries in itertools.count(1):
-        rerun = False
-        args = ["srun", "-v", "--export=ALL", "--partition="+partition,
-                "--mem={.1g}".format(mem),
-                "--time={.1g}".format(time),
-                "--cpus-per-task="+str(perf.cores),
-                "--job-name="+job_name]
-        args += extra_srun_flags+[script_path, "-p", "-r" ]
-        proc = subprocess.Popen(args)
-        out, err = proc.communicate()
-        if "Exceeded job memory limit" in out+err:
-            used = re.search(r'memory limit \((\d+) > \d+\)', out+err).group(1)
-            mem = int(used)/1024 * 1.3
-            rerun = True
-        if re.search(r"due to time limit", out+err, re.IGNORECASE):
-            time = time * (sigmoid(tries/10.)*2.7)
-            rerun = True
-        if not rerun:
-            break
-    extra_error = ""
-    try:
-        result = picklerunner.decode(out)
-    except ValueError:
-        extra_error += "Unable to decode task result\n"
-        result = None
-    if proc.returncode != 0:
-        extra_error += "Srun error: "+err+"\n"
-    if result is None:
-        return TaskResult(task.task_no, extra_error or "srun failed",
-                          None, None)
-    elif extra_error: # (result is not None) is implicit here
-        result = result._replace(error=result.error+extra_error)
-    return result
-        
-
-class SLURMWorker(threading.Thread):
-    appropriate_q_class = Queue.Queue
-
-    def __init__(self, work_q, result_q, tmpdir):
-        super(SLURMWorker, self).__init__()
-        self.logger = logger
-        self.work_q = work_q
-        self.result_q = result_q
-
-    def run(self):
-        return worker_run_loop(self.work_q, self.result_q, _run_task_slurm)
-
-
-def _run_task_lsf(task, extra=None):
-    pass
-
-class LSFWorker(threading.Thread):
-    appropriate_q_class = Queue.Queue
-
-
-def _run_task_sge(task, extra=None):
-    pass
-
-
-class SGEWorker(threading.Thread):
-    run_task = _run_task_sge
-    appropriate_q_class = Queue.Queue
 
 
 class ParallelLocalRunner(BaseRunner):
@@ -265,7 +185,6 @@ class ParallelLocalRunner(BaseRunner):
                 raise
             else:
                 self.ctx._handle_task_result(result)
-            n_filled -= 1
             if self.quit_early and result.error:
                 self.terminate()
                 break
@@ -284,7 +203,7 @@ class ParallelLocalRunner(BaseRunner):
                 self.ctx._handle_task_result(
                     parent_failed_result(idx, failed_parents[0]))
                 continue
-            elif parents.intersection(self.ctx.completed_tasks):
+            elif parents.difference(self.ctx.completed_tasks):
                 # has undone parents, come back again later
                 self.task_idx_deque.appendleft(idx)
                 continue
@@ -333,7 +252,7 @@ class ParallelLocalRunner(BaseRunner):
         logger.debug("cleaning up parallellocalrunner")
         for w in self.workers:
             logger.debug("giving stop sentinel to worker %s", w)
-            self.work_q.put({"stop": True})
+            self.work_q.put(({"stop": True}, None))
         for w in self.workers:
             logger.debug("joining worker %s", w)
             w.join()
@@ -354,8 +273,8 @@ class GridRunner(BaseRunner):
 
 
     def add_worker(self, worker_class, name,
-                   rate=1, default=False, extra_kwargs={}):
-        self._worker_config[name] = (worker_class, rate, extra_kwargs)
+                   rate=1, default=False):
+        self._worker_config[name] = (worker_class, rate)
         if default:
             self.default_worker = name
 
@@ -378,7 +297,6 @@ class GridRunner(BaseRunner):
                 raise
             else:
                 self.ctx._handle_task_result(result)
-            n_filled -= 1
             if self.quit_early and result.error:
                 self.terminate()
                 break
@@ -401,7 +319,7 @@ class GridRunner(BaseRunner):
     def cleanup(self):
         for name, (_, n_procs) in self._worker_config.iteritems():
             for _ in range(n_procs):
-                self._worker_qs[name][0].put({"stop": True})
+                self._worker_qs[name][0].put(({"stop": True}, None))
         for w in self.workers:
             w.join()
 
@@ -409,7 +327,7 @@ class GridRunner(BaseRunner):
     def route(self, task_no):
         if task_no in self.routes:
             return self.routes[task_no]
-        elif self.default_default_worker is not None:
+        elif self.default_worker is not None:
             return self.default_worker, None
         else:
             msg = ("GridRunner tried to run task {} but has no "
@@ -418,7 +336,7 @@ class GridRunner(BaseRunner):
 
 
     def _fill_work_qs(self):
-        logger.debug("Filling work_q")
+        logger.debug("Filling work_qs")
         n_filled = 0
         for _ in range(min(self.MAX_QSIZE, len(self.task_idx_deque))):
             idx = self._get_next_task()
@@ -432,28 +350,32 @@ class GridRunner(BaseRunner):
                 raise ValueError(msg.format(self.ctx.tasks[idx], e))
             name, extra = self.route(idx)
             logger.debug("Adding task %i to `%s' work_q", idx, name)
-            work_q = self._worker_qs[name][0].put((pkl, extra))
+            self._worker_qs[name][0].put((pkl, extra))
             self.ctx._handle_task_started(idx)
-            work_q.put(pkl)
             logger.debug("Added task %i to `%s' work_q", idx, name)
             n_filled += 1
         if not self.started:
             logger.debug("Starting up workers")
             for w in self.workers:
+                logger.debug("Starting worker %s", w)
                 w.start()
             self.started = True
         return n_filled
 
 
     def _init_workers(self):
-        for name, (worker_cls, n_procs, kw) in self._worker_config.iteritems():
+        threads, procs = list(), list()
+        for name, (worker_cls, n_procs) in self._worker_config.iteritems():
             work_q = worker_cls.appropriate_q_class(self.MAX_QSIZE)
             result_q = worker_cls.appropriate_q_class(self.MAX_QSIZE)
             self._worker_qs[name] = (work_q, result_q)
+            isproc = issubclass(worker_cls, multiprocessing.Process) 
+            l = procs if isproc else threads
             for _ in range(n_procs):
-                self.workers.append(worker_cls(work_q, result_q, **kw))
+                l.append(worker_cls(work_q, result_q))
+        self.workers = procs+threads # http://stackoverflow.com/a/13115499
         self._qcycle = itertools.cycle(val[1]
-                                       for val in self._worker_qs.itervalues)
+                                       for val in self._worker_qs.itervalues())
 
 
     def _get_next_task(self):
@@ -462,9 +384,10 @@ class GridRunner(BaseRunner):
         failed_parents = parents.intersection(self.ctx.failed_tasks)
         if failed_parents:
             self.ctx._handle_task_result(
-                parent_failed_result(idx, failed_parents[0]))
+                parent_failed_result(idx, iter(failed_parents).next())
+                )
             return None
-        elif parents.intersection(self.ctx.completed_tasks):
+        elif parents.difference(self.ctx.completed_tasks):
             # has undone parents, come back again later
             self.task_idx_deque.appendleft(idx)
             return None
@@ -500,7 +423,7 @@ class GridRunner(BaseRunner):
     def _terminate_qq(self, q, name):
         q.mutex.acquire()
         while q.queue:
-            q.pop()
+            q.queue.pop()
         worker_type = self._worker_config[name][0]
         for worker in self.workers:
             if isinstance(worker, worker_type):
@@ -517,10 +440,10 @@ def default(run_context, n_parallel):
 
 
 _current_grid_runner = None
-def current_grid_runner():
+def current_grid_runner(context):
     global _current_grid_runner
     if _current_grid_runner is None:
-        _current_grid_runner = GridRunner()
+        _current_grid_runner = GridRunner(context)
     return _current_grid_runner
 
     

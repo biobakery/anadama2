@@ -205,9 +205,7 @@ class ConsoleReporter(BaseReporter):
         
 
     def started(self):
-        self.n_tasks = len(self.run_context.tasks)
-        self.n_complete = 0
-        self.failed = False
+        self.reset()
 
     def task_started(self, task_no):
         self._msg(self.stats.start, self.run_context.tasks[task_no].name)
@@ -235,6 +233,13 @@ class ConsoleReporter(BaseReporter):
             print >> sys.stderr, "  Original error: "
             for line in result.error.split("\n"):
                 print >> sys.stderr, "  "+line
+        self.reset()
+
+    def reset(self):
+        self.n_tasks = len(self.run_context.tasks)
+        self.n_complete = 0
+        self.failed = False
+
 
 
 

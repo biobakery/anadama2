@@ -38,8 +38,6 @@ def main(do_pickle=False):
         print "{pickle_key}: "+b64encode(pickle.dumps(result))
     else:
         print result
-    if result.error:
-        return 1
 
 
 if __name__ == '__main__':
