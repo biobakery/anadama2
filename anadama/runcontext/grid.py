@@ -1,5 +1,6 @@
 from collections import namedtuple
 
+from . import RunContext
 from .. import runners
 
 class PerformanceData(namedtuple("PerformanceData", ["time", "mem", "cores"])):
@@ -67,7 +68,7 @@ class SLURMMixin(object):
 
     def __init__(self, partition, tmpdir="/tmp", extra_srun_flags=[],
                  *args, **kwargs):
-        super(SLURMMixin, self).__init__(*args, **kwargs)
+        RunContext.__init__(self, *args, **kwargs)
         self.slurm_partition = partition
         self.slurm_tmpdir = tmpdir
         self.extra_srun_flags = extra_srun_flags
