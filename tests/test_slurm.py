@@ -24,7 +24,7 @@ TMPDIR = os.environ.get("ANASLURM_TMPDIR")
 srun_exists = all(map(bool, (find_on_path("srun"), PARTITION, TMPDIR) ))
 
 
-class TestEndToEnd(unittest.TestCase):
+class TestSlurm(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -151,3 +151,13 @@ class TestEndToEnd(unittest.TestCase):
             self.assertIn(task_no, self.ctx.completed_tasks)
             self.assertFalse(bool(self.ctx.task_results[task_no].error))
 
+
+    @unittest.skipUnless(srun_exists, "requires srun")
+    def test_slurm_do(self):
+        self.ctx.slurm_do("echo true > @{true.txt}", time=5, mem=50, cores=1)
+        self.assertFalse(os.path.exists("true.txt"))
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertTrue(os.path.exists("true.txt"))
+        os.remove("true.txt")
+                                                                    
