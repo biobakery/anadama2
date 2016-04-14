@@ -90,4 +90,24 @@ class TestPicklerunner(unittest.TestCase):
         for a, b in zip(result.dep_compares[0], compares):
             self.assertEqual(a, b, "compare() not the same")
         
+
+    def test_decode_fail(self):
+        outf = os.path.join(self.workdir, "hosts")
+        t = self.ctx.add_task("ls -alh /etc/hosts > {targets[0]}; exit 1",
+                              targets=outf)
+        s = picklerunner.tmp(t)
+        self.assertTrue(os.path.exists(s.path))
+        self.assertFalse(os.path.exists(outf))
+        proc = subprocess.Popen([s.path, "-p"], 
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        out, err = proc.communicate()
+        self.assertEqual(proc.returncode, 0)
+        self.assertTrue(os.path.exists(s.path))
+        self.assertTrue(os.path.exists(outf))
+        result = picklerunner.decode(out)
+        self.assertTrue(bool(result.error))
+        self.assertIn("ShellException", result.error)
         
+
+
