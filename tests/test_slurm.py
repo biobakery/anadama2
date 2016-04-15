@@ -1,3 +1,4 @@
+
 import os
 import random
 import shutil
@@ -77,7 +78,7 @@ class TestSlurm(unittest.TestCase):
 
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama.runcontext.RunFailed):
-                self.ctx.go()
+                self.ctx.go(n_slurm_parallel=2)
         child_fail = set()
         for n in shall_fail:
             task_no = task_nos[n]
@@ -129,7 +130,7 @@ class TestSlurm(unittest.TestCase):
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama.runcontext.RunFailed):
-                self.ctx.go()
+                self.ctx.go(n_slurm_parallel=2)
         child_fail = set()
         for n in shall_fail:
             task_no = task_nos[n]
