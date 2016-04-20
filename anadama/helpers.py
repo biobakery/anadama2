@@ -31,7 +31,10 @@ Instead of this:
 
 """
 
+import shutil
+
 from .util import sh as _sh
+from .util import sugar_list
 
 def sh(s, **kwargs):
     """Execute a shell command. All further keywords are passed to
@@ -76,3 +79,54 @@ def parse_sh(s, **kwargs):
         return _sh(s.format(depends=task.depends,
                             targets=task.targets), **kwargs)
     return actually_sh
+
+
+def system(args_list, **kwargs):
+    """Execute a system call (no shell will be used). All further keywords
+    are passed to :class:`subprocess.Popen`
+
+    :param args_list: The argv to be passed to the system call.
+    :type args_list: list
+
+    """
+    kwargs.pop("shell", None)
+    def actually_system(task):
+        return _sh(args_list, **kwargs)
+    return actually_system
+
+
+def rm(to_rm, ignore_missing=True):
+    """Remove files using :func:`os.remove`.
+    
+    :param to_rm: The filename or filenames to remove.
+    :type to_rm: str or list of str
+
+    :keyword ignore_missing: If one of the filenames isn't a file,
+      don't raise an exception
+    :type ignore_missing: bool
+
+    """
+
+    def actually_rm(task):
+        for f in sugar_list(to_rm):
+            if os.path.isfile(f) or not ignore_missing:
+                os.remove(f)
+    return actually_rm
+
+
+def rm_r(to_rm, ignore_missing=True):
+    """Recursively remove files and directories using
+    :func:`shutil.rmtree`.
+    
+    :param to_rm: The filename or filenames to remove.
+    :type to_rm: str or list of str
+
+    :keyword ignore_missing: If one of the filenames isn't a file,
+      don't raise an exception
+    :type ignore_missing: bool
+
+    """
+    def actually_rm_r(task):
+        for f in sugar_list(to_rm):
+            shutil.rmtree(f, ignore_errors=ignore_missing)
+    return actually_rm_r
