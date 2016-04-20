@@ -189,7 +189,7 @@ class ConsoleReporter(BaseReporter):
 
 
     def _msg(self, status, msg, c_r=False):
-        if self.n_open > 1:
+        if self.n_open > 1 and not self.multithread_mode:
             self.multithread_mode = True
             sys.stderr.write('\n')
         s = self.msg_str.format(status, self.n_complete, self.n_tasks,
