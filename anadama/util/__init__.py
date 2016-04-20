@@ -1,17 +1,23 @@
 import re
 import os
+import sys
 import json
 import zlib
 import errno
 import inspect
 import mimetypes
-import subprocess
 from functools import wraps
 from itertools import izip_longest
 from multiprocessing import cpu_count
 from collections import namedtuple
 
 from .. import Task
+
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
+
 
 max_cpus = max(1, cpu_count()-1)
 
@@ -370,3 +376,14 @@ def isnottask(x):
 def underscore(s):
     """Remove all whitespace and replace with underscores"""
     return re.sub(r'\s+', '_', s)
+
+
+def _sugar_list(x):
+    """Turns just a single thing into a list containing that single thing.
+
+    """
+
+    if istask(x) or not hasattr(x, "__iter__") or isinstance(x, basestring):
+        return [x]
+    else:
+        return x
