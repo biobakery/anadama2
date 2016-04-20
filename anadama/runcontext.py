@@ -13,7 +13,7 @@ from . import reporters
 from . import runners
 from . import backends
 from .helpers import sh, parse_sh
-from .util import matcher, noop, find_on_path, istask
+from .util import matcher, noop, find_on_path, istask, sugar_list
 
 
 class RunFailed(ValueError):
@@ -360,7 +360,7 @@ class RunContext(object):
 
 
 def _build_actions(actions, deps, targs, use_parse_sh=True):
-    actions = filter(None, _sugar_list(actions))
+    actions = filter(None, sugar_list(actions))
     if use_parse_sh:
         mod = parse_sh
     else:
@@ -369,12 +369,12 @@ def _build_actions(actions, deps, targs, use_parse_sh=True):
         
 
 def _build_depends(depends):
-    depends = filter(None, _sugar_list(depends))
+    depends = filter(None, sugar_list(depends))
     return map(deps.auto, depends)
 
 
 def _build_targets(targets):
-    targets = filter(None, _sugar_list(targets))
+    targets = filter(None, sugar_list(targets))
     ret = list()
     for targ in targets:
         if istask(targ):
@@ -388,17 +388,6 @@ def _build_name(name, task_no):
         return "Step "+str(task_no)
     else:
         return name
-
-
-def _sugar_list(x):
-    """Turns just a single thing into a list containing that single thing.
-
-    """
-
-    if istask(x) or not hasattr(x, "__iter__") or isinstance(x, basestring):
-        return [x]
-    else:
-        return x
 
 
 def _parse_wrapper(s, metachar):
