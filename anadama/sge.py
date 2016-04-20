@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import Queue
 import tempfile
 import threading
@@ -56,10 +57,10 @@ class SGEContext(RunContext):
       machines in the cluster must be able to read the contents of
       this directory; uses :mod:`anadama.picklerunner` to create
       self-contained scripts to run individual tasks and calls
-      ``srun`` to run the script on the cluster.
+      ``qsub`` to run the script on the cluster.
     :type tmpdir: str
 
-    :type extra_srun_flags: list of str
+    :type extra_qsub_flags: list of str
 
     """
 
@@ -94,7 +95,7 @@ class SGEContext(RunContext):
         runner = runners.GridRunner(self)
         runner.add_worker(runners.ParallelLocalWorker,
                           name="local", rate=local_n_parallel, default=True)
-        runner.add_worker(SGEWorker, name="SGE",
+        runner.add_worker(SGEWorker, name="sge",
                           rate=n_sge_parallel)
         runner.routes.update([
             ( task_idx, ("sge", extra) )
@@ -162,6 +163,18 @@ class SGEWorker(threading.Thread):
                                        _run_task_sge)
 
 
+def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
+    for _ in range(int(secs/pollfreq)):
+        if os.path.exists(fname):
+            with open(fname) as f:
+                ret = f.read()
+            if rm is True:
+                os.unlink(fname)
+            return ret
+        else:
+            time.sleep(pollfreq)
+    raise OSError("Timed out waiting for "+fname+" to appear")
+
 
 def _run_task_sge(task, extra):
     (perf, partition, tmpdir, pe_name, extra_qsub_flags) = extra
@@ -172,26 +185,21 @@ def _run_task_sge(task, extra):
 
     args = ["qsub", "-R", "y", "-b", "y", "-sync", "y",
             "-pe", pe_name, str(perf.cores), "-cwd",
-            "-l", "'m_mem_free={:1g}M'".format(max(1, perf.mem)),
+            "-l", "m_mem_free={:1g}M".format(max(1, perf.mem)),
             "-o", tmpout, "-e", tmperr]
-    args += extra_qsub_flags+[script_path, "-r" ]
+    args += extra_qsub_flags+[script_path, "-r", "-p" ]
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
                             stderr=subprocess.PIPE)
     out, err = proc.communicate()
-
     extra_error = ""
     try:
-        if os.path.exists(tmpout):
-            with open(tmpout) as f_out:
-                taskout = f_out.read()
-            os.unlink(tmpout)
-        if os.path.exists(tmperr):
-            with open(tmperr) as f_err:
-                 extra_error += f_err.read()
-            os.unlink(tmperr)
+        taskout = _wait_on_file(tmpout)
+        if proc.returncode != 0:
+            extra_error += _wait_on_file(tmperr)
     except Exception as e:
-        extra_error += "Anadama error: "+str(e)
-
+        e.task_no = task.task_no
+        return runners.exception_result(e)
+        
     try:
         result = picklerunner.decode(taskout)
     except ValueError:
