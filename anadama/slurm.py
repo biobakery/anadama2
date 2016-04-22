@@ -13,6 +13,7 @@ from . import picklerunner
 
 from .util import underscore
 from .util import find_on_path
+from .util import keepkeys
 
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
@@ -104,6 +105,18 @@ class SlurmContext(RunContext):
                                            self.extra_srun_flags)
         return (PerformanceData(int(time), int(mem), int(cores)),
                 partition, self.slurm_tmpdir, extra_srun_flags)
+
+
+    def _import(self, task_dict):
+        slurm_keys = ["time", "mem", "cores", "partition", "extra_srun_flags"]
+        keys_to_keep = ["actions", "depends", "targets",
+                        "name", "interpret_deps_and_targs"]
+        if any(k in task_dict for k in slurm_keys):
+            return self.slurm_add_task(
+                **keepkeys(task_dict, slurm_keys+keys_to_keep)
+            )
+        else:
+            return self.add_task(**keepkeys(task_dict, keys_to_keep))
 
 
     def slurm_do(self, *args, **kwargs):

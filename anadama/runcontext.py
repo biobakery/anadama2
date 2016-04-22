@@ -13,7 +13,8 @@ from . import reporters
 from . import runners
 from . import backends
 from .helpers import sh, parse_sh
-from .util import matcher, noop, find_on_path, istask, sugar_list
+from .util import matcher, noop, find_on_path
+from .util import istask, sugar_list, keepkeys
 
 
 class RunFailed(ValueError):
@@ -253,6 +254,14 @@ class RunContext(object):
 
         _runner.run_tasks(task_idxs)
         self._handle_finished()
+
+
+    def _import(self, task_dict):
+        keys_to_keep = ("actions", "depends", "targets",
+                        "name", "interpret_deps_and_targs")
+        return self.add_task(**keepkeys(task_dict, keys_to_keep))
+
+    _ = _import
 
 
     def _handle_task_result(self, result):

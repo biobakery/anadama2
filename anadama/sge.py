@@ -12,6 +12,7 @@ from . import picklerunner
 from .slurm import PerformanceData
 from .util import underscore
 from .util import find_on_path
+from .util import keyrename, keepkeys
 
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
@@ -73,6 +74,22 @@ class SGEContext(RunContext):
         
         self.sge_task_data = dict()
         self._sge_pe_name = self._find_suitable_pe()
+
+
+    def _import(self, task_dict):
+        sge_keys = ["time", "mem", "cores", "partition", "extra_srun_flags"]
+        keys_to_keep = ["actions", "depends", "targets",
+                        "name", "interpret_deps_and_targs"]
+        if any(k in task_dict for k in sge_keys):
+            task_dict = keyrename( task_dict,
+                [("partition", "queue"),
+                 ("extra_srun_flags", "extra_qsub_flags")]
+            )
+            return self.sge_add_task(
+                **keepkeys(task_dict, sge_keys+keys_to_keep)
+            )
+        else:
+            return self.add_task(**keepkeys(task_dict, keys_to_keep))
 
 
     def sge_do(self, *args, **kwargs):
