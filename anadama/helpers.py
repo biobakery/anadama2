@@ -31,6 +31,7 @@ Instead of this:
 
 """
 
+import os
 import shutil
 
 from .util import sh as _sh
