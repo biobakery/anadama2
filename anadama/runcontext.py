@@ -181,6 +181,26 @@ class RunContext(object):
             return the_task
 
 
+    def already_exists(self, *depends):
+        """Declare a dependency as pre-existing. That means that no task
+        creates these dependencies; they're already there before any
+        tasks run.
+
+        .. note::
+
+            If you have a list or other iterable containing the
+            dependencies that already exist, you can declare them all
+            like so ``ctx.already_exists(*my_bunch_of_deps)``.
+
+        :param \*depends: One or many dependencies to mark as pre-existing.
+        :type \*depends: any argument recognized by :func:`anadama.deps.auto`
+
+        """
+
+        self.add_task(noop, targets=map(deps.auto, depends),
+                      name="Track pre-existing dependencies")
+
+
     def go(self, run_them_all=False, quit_early=False, runner=None,
            reporter=None, storage_backend=None, n_parallel=1):
         """Kick off execution of all previously configured tasks. 
@@ -280,29 +300,10 @@ class RunContext(object):
     def _handle_task_started(self, task_no):
         self._reporter.task_started(task_no)
 
+
     def _handle_task_skipped(self, task_no):
         self.completed_tasks.add(task_no)
         self._reporter.task_skipped(task_no)
-
-
-    def already_exists(self, *depends):
-        """Declare a dependency as pre-existing. That means that no task
-        creates these dependencies; they're already there before any
-        tasks run.
-
-        .. note::
-
-            If you have a list or other iterable containing the
-            dependencies that already exist, you can declare them all
-            like so ``ctx.already_exists(*my_bunch_of_deps)``.
-
-        :param \*depends: One or many dependencies to mark as pre-existing.
-        :type \*depends: any argument recognized by :func:`anadama.deps.auto`
-
-        """
-
-        self.add_task(noop, targets=map(deps.auto, depends),
-                      name="Track pre-existing dependencies")
 
 
     def _add_task(self, task):
