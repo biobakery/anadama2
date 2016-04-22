@@ -30,11 +30,14 @@ biopython_to_metaphlan = {
     "bam"  : "bam",
 }
 
+
 def first(iterable):
     return next(iter(iterable))
 
+
 def intatleast1(n):
     return max(1, int(n))
+
 
 def generator_flatten(gen):
     for item in gen:
@@ -44,40 +47,6 @@ def generator_flatten(gen):
         else:
             yield item
 
-
-def addext(name_str, tag_str):
-    return name_str + "." + tag_str
-
-
-def rmext(name_str, all=False):
-    """removes file extensions 
-
-    :keyword all: Boolean; removes all extensions if True, else just
-      the outside one
-
-    """
-
-    _match = lambda name_str: re.match(r'(.+)(\..*)', name_str)
-    path, name_str = os.path.split(name_str)
-    match = _match(name_str)
-    while match:
-        name_str = match.group(1)
-        match = _match(name_str)
-        if not all:
-            break
-
-    return os.path.join(path, name_str)
-
-
-def addtag(name_str, tag_str):
-    path, name_str = os.path.split(name_str)
-    match = re.match(r'(.+)(\..*)', name_str)
-    if match:
-        base, ext = match.groups()
-        return os.path.join(path, base + "_" + tag_str + ext)
-    else:
-        return os.path.join(path, name_str + "_" + tag_str)
-        
 
 def guess_seq_filetype(guess_from):
     guess_from = os.path.split(guess_from)[-1]
@@ -100,8 +69,15 @@ def dict_to_cmd_opts_iter(opts_dict,
     short options and their values e.g. --long=foobar vs -M 2
 
     """
-    longkv = lambda k, v: longdash + k + longsep + v
-    shortkv = lambda k, v: shortdash + k + shortsep + v
+    if longsep is None:
+        longkv = lambda k, v: (longdash+k, v)
+    else:
+        longkv = lambda k, v: longdash + k + longsep + v
+
+    if shortsep is None:
+        shortkv = lambda k, v: (shortdash+k, v)
+    else:
+        shortkv = lambda k, v: shortdash + k + shortsep + v
 
     for key, val in opts_dict.iteritems():
         kv = longkv if len(key) > 1 else shortkv
@@ -130,31 +106,6 @@ def mkdirp(path):
             raise
 
 
-def _new_file(*names, **opts):
-    basedir = opts.get("basedir")
-    for name in names:
-        if basedir:
-            name = os.path.abspath(
-                os.path.join(
-                    basedir, os.path.basename(name)
-                )
-            )
-        
-        dir = os.path.dirname(name)
-        if dir and not os.path.exists(dir):
-            mkdirp(dir)
-
-        yield name
-
-
-def new_file(*names, **opts):
-    iterator = _new_file(*names, basedir=opts.get("basedir"))
-    if len(names) == 1:
-        return iterator.next()
-    else:
-        return list(iterator)
-
-
 def is_compressed(fname):
     recognized_compression_types = ("gzip", "bzip2")
     return mimetypes.guess_type(fname)[1] in recognized_compression_types
@@ -175,10 +126,12 @@ def which_compressed_idxs(fname_mtx):
             if is_compressed(fname):
                 yield i, j
 
+
 def take(raw_seq_files, index_list):
     return [
         raw_seq_files[i][j] for i, j in index_list
     ]
+
         
 ###
 # Serialization things
@@ -327,6 +280,7 @@ def partition(it, binsize, pad=None):
     iters = [iter(it)]*binsize
     return izip_longest(fillvalue=pad, *iters)    
 
+
 def _adler32(fname):
     """Compute the adler32 checksum on a file.
 
@@ -364,14 +318,18 @@ class HasNoEqual(object):
     def __eq__(self, other):
         return False
 
+
 def noop(*args, **kwargs):
     return None
+
 
 def istask(x):
     return isinstance(x, Task)
 
+
 def isnottask(x):
     return not isinstance(x, Task)
+
 
 def underscore(s):
     """Remove all whitespace and replace with underscores"""
@@ -387,3 +345,37 @@ def _sugar_list(x):
         return [x]
     else:
         return x
+
+
+def keepkeys(d, keys):
+    """Drop all keys from dictionary ``d`` except those in
+    ``keys``. Modifies the dictionary in place!
+    
+    :param d: The dictionary to modify
+    :type d: dict
+
+    :param keys: The keys to keep
+    :type keys: iterable
+    """
+
+    ks = set(list(keys))
+    to_rm = [k for k in d.iterkeys() if k not in ks]
+    for k in to_rm:
+        del d[k]
+    return d
+
+def keyrename(d, mapping):
+    """Change all keys in dictionary ``d`` according to
+    ``mapping``. Modifies ``d`` in place!
+
+    :param d: The dictionary to change
+    :type d: dict
+
+    :param mapping: The keys to change and to what to change them
+    :type mapping: iterable of 2-tuples
+
+    """
+
+    for frm, to in mapping:
+        d[to] = d.pop(frm)
+    return d
