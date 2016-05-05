@@ -23,7 +23,8 @@ def kmer_set(iterable, kmer_lengths=(2,)):
 def distance(a_str, b_str, kmer_lengths=(2,)):
     a_chunks = kmer_set(a_str, kmer_lengths)
     b_chunks = kmer_set(b_str, kmer_lengths)
-    return len(a_chunks.difference(b_chunks))
+    return sum((len(a_chunks.difference(b_chunks)),
+                len(b_chunks.difference(a_chunks))))
 
 
 def similarity(a_str, b_str, kmer_lengths=(2,)):
