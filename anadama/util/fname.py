@@ -4,9 +4,9 @@ import os
 import re
 from . import sugar_list, mkdirp
 
-def mangle(fname, tags=[], dir=None, ext=None):
+def mangle(fname, tag=None, dir=None, ext=None):
     new = fname[:]
-    for tag in sugar_list(tags):
+    if tag: # don't want empty strings
         new = addtag(new, tag)
     if dir is not None:
         new = os.path.join(dir, os.path.basename(new))
@@ -55,7 +55,7 @@ def addext(name_str, tag_str):
 
 
 def rmext(name_str, all=False):
-    """removes file extensions 
+    """remove file extensions 
 
     :keyword all: Boolean; removes all extensions if True, else just
       the outside one
