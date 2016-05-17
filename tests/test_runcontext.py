@@ -271,13 +271,13 @@ class TestRunContext(unittest.TestCase):
        
     def test__sugar_list(self):
         rc = anadama.runcontext
-        self.assertEqual([5], rc._sugar_list(5))
-        self.assertEqual(["blah"], rc._sugar_list("blah"))
+        self.assertEqual([5], rc.sugar_list(5))
+        self.assertEqual(["blah"], rc.sugar_list("blah"))
         it = iter(range(5))
-        self.assertIs(it, rc._sugar_list(it))
+        self.assertIs(it, rc.sugar_list(it))
         t = anadama.Task("dummy task", [], [], [], 0)
-        self.assertEqual([t], rc._sugar_list(t))
-        self.assertEqual((5,), rc._sugar_list((5,)))
+        self.assertEqual([t], rc.sugar_list(t))
+        self.assertEqual((5,), rc.sugar_list((5,)))
 
 
     def test_add_task_custom_dependency(self):

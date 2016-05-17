@@ -336,7 +336,7 @@ def underscore(s):
     return re.sub(r'\s+', '_', s)
 
 
-def _sugar_list(x):
+def sugar_list(x):
     """Turns just a single thing into a list containing that single thing.
 
     """
