@@ -235,7 +235,7 @@ class TestRunContext(unittest.TestCase):
 
     def test_go_skip_notargets(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
-                 for letter in ("a", "b", "c", "d")]
+                   for letter in ("a", "b", "c", "d")]
         self.ctx.add_task("touch {targets[0]}", targets=[a])
         self.ctx.add_task("touch {targets[0]} {targets[1]}", targets=[b, c])
         self.ctx.add_task("touch {}".format(d), depends=[a,b])
@@ -246,10 +246,100 @@ class TestRunContext(unittest.TestCase):
             self.ctx.go()
         self.assertEqual(mtime, os.stat(a).st_mtime)
         os.remove(a)
+        time.sleep(0.01)
         with capture(stderr=StringIO()):
             self.ctx.go()
-        time.sleep(0.01)
         self.assertNotEqual(mtime, os.stat(a).st_mtime)
+
+
+    def test_go_skip_glob(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                   for letter in ("a", "b", "c", "d")]
+        globdep = anadama.deps.GlobDependency(
+            os.path.join(self.workdir, "*.txt")
+        )
+        out = os.path.join(self.workdir, "out")
+        self.ctx.already_exists(globdep)
+        for letter in (a,b,c,d):
+            anadama.util.sh("echo {a} > {a}".format(a=letter), shell=True)
+        self.ctx.add_task("ls {depends[0]} > {targets[0]}",
+                          depends=globdep, targets=out)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        mtime = os.stat(out).st_mtime
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertEqual(mtime, os.stat(out).st_mtime)
+        with open(os.path.join(self.workdir, "f.txt"), 'w') as f:
+            print >> f, "hi mom"
+        time.sleep(0.01)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        new_mtime = os.stat(out).st_mtime
+        self.assertNotEqual(mtime, new_mtime)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertEqual(new_mtime, os.stat(out).st_mtime)
+
+
+    def test_go_skip_dir(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                   for letter in ("a", "b", "c", "d")]
+        dirdep = anadama.deps.DirectoryDependency(self.workdir)
+        out = "/tmp/foobaz"
+        self.ctx.already_exists(dirdep)
+        for letter in (a,b,c,d):
+            anadama.util.sh("echo {a} > {a}".format(a=letter), shell=True)
+        self.ctx.add_task("ls {depends[0]} > {targets[0]}",
+                          depends=dirdep, targets=out)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        mtime = os.stat(out).st_mtime
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertEqual(mtime, os.stat(out).st_mtime)
+        with open(os.path.join(self.workdir, "f.txt"), 'w') as f:
+            print >> f, "hi mom"
+        time.sleep(0.01)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        new_mtime = os.stat(out).st_mtime
+        self.assertNotEqual(mtime, new_mtime)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertEqual(new_mtime, os.stat(out).st_mtime)
+        os.remove(out)
+
+
+    def test_go_skip_config(self):
+        a = os.path.join(self.workdir, "a.txt")
+        conf = anadama.deps.KVContainer(alpha="5", beta=2)
+        self.ctx.add_task("echo beta:{depends[0]} > {targets[0]}",
+                          depends=conf.beta, targets=a)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        mtime = os.stat(a).st_mtime
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertEqual(mtime, os.stat(a).st_mtime)
+        conf.beta = 7
+        time.sleep(0.01)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        new_mtime = os.stat(a).st_mtime
+        self.assertNotEqual(mtime, new_mtime)
+        conf.gamma = 10
+        time.sleep(0.01)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertEqual(new_mtime, os.stat(a).st_mtime)
+        self.ctx.add_task("echo beta > {targets[0]}",
+                          depends=conf.items(), targets=a)
+        time.sleep(0.01)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertNotEqual(new_mtime, os.stat(a).st_mtime)
+
 
 
     def test_print_within_function_action(self):

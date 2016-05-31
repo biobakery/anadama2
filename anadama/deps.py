@@ -1,20 +1,30 @@
 import os
 import itertools
-from operator import eq
+import traceback
+from glob import glob
+from operator import eq, itemgetter
 from collections import defaultdict
 
 from .util import _adler32, find_on_path, sh, HasNoEqual
 from .util import istask
 
 _singleton_idx = defaultdict(dict)
+first = itemgetter(0)
 
 def auto(x):
     """Translate a string, function or task into the appropriate subclass
-    of :class:`anadama.deps.BaseDependency`. The current mapping is as follows:
+    of :class:`anadama.deps.BaseDependency`. Tildes and shell
+    variables are expanded using :func:`os.path.expanduser` and
+    :func:`os.path.expandvars`. If that's not your game, use
+    :class:`anadama.deps.DirectoryDependency` or
+    :class:`anadama.deps.FileDependency` as appropriate. The current
+    mapping is as follows:
 
     - Subclasses of :class:`anadama.deps.BaseDependency` are returned as is
 
-    - Strings ``->`` :class:`anadama.deps.FileDependency`
+    - Strings ending in '/' ``->`` :class:`anadama.deps.DirectoryDependency`
+
+    - Strings not ending in '/' ``->`` :class:`anadama.deps.FileDependency`
 
     - Instances of subclasses of :class:`anadama.Task` are handled
       specially by :meth:`anadama.runcontext.RunContext.add_task` and
@@ -27,7 +37,7 @@ def auto(x):
     """
 
     if isinstance(x, basestring):
-        return FileDependency(x)
+        return _autostring(x)
     elif istask(x):
         return x
     elif isinstance(x, BaseDependency):
@@ -40,6 +50,13 @@ def auto(x):
         raise ValueError(
             "Not sure how to make `{}' into a dependency".format(x))
 
+
+def _autostring(s):
+    s = os.path.expanduser(os.path.expandvars(s))
+    if s.endswith('/'):
+        return DirectoryDependency(s)
+    else:
+        return FileDependency(s)
 
 
 def any_different(ds, backend, compare_cache=None):
@@ -72,6 +89,7 @@ def any_different(ds, backend, compare_cache=None):
     return False
 
 
+
 class CompareCache(object):
     def __init__(self):
         self.c = {}
@@ -96,7 +114,8 @@ class CompareCache(object):
                     pair[0].append(compare_val)
                     yield compare_val
                 pair[1] = True
-            
+
+
 
 class DependencyIndex(object):
 
@@ -191,6 +210,7 @@ class BaseDependency(object):
             dep.init(key, *args, **kwargs)
             return dep
 
+
     def __getnewargs__(self):
         return (self._key,)
             
@@ -229,7 +249,7 @@ class BaseDependency(object):
 
 
     def __hash__(self):
-        return self._key
+        return hash(self._key)
 
 
 
@@ -256,6 +276,35 @@ class StringDependency(BaseDependency):
 
     def __str__(self):
         return self.s
+
+
+KVDEPSEPARATOR = ":"
+class KVDependency(BaseDependency):
+    def __new__(cls, namespace, key, val):
+        global _singleton_idx
+        real_key = cls.key(namespace, key, val)
+        maybe_exists = _singleton_idx[cls.__name__].get(real_key, None)
+        if maybe_exists:
+            return maybe_exists
+        else:
+            _singleton_idx[cls.__name__][real_key] = dep = object.__new__(cls)
+            dep._key = real_key
+            dep.init(namespace, key, val)
+            return dep
+
+
+    def init(self, namespace, k, v):
+        self.val = str(v)
+
+    def compare(self):
+        return self._key
+
+    @staticmethod
+    def key(ns, k, v):
+        return KVDEPSEPARATOR.join(map(str, (ns,k,v)))
+
+    def __str__(self):
+        return str(self.val)
 
 
 
@@ -310,6 +359,116 @@ class HugeFileDependency(FileDependency):
         stat = os.stat(self.fname)
         yield stat.st_size
         yield stat.st_mtime
+
+
+
+class KVContainer(object):
+    """Track a collection of small strings. This is useful for rerunning
+    tasks based on whether a flag has changed when running a
+    command. Using :class:`anadama.deps.StringDependency` for small
+    strings can run into collisions between workflows that use the
+    same backend. Consider using ``logging =
+    StringDependency("debug")`` in script_a.py and ``logging =
+    StringDependency("warning")`` in script_b.py. If you change
+    script_a.py to ``logging = StringDependency("warning") after
+    running script_b.py, script_a.py won't rerun tasks that depend on
+    the StringDependency assigned to ``logging``.
+
+    This class solves StringDependency collisions by prepending a
+    user-provided (or auto-generated) namespace to each key-value pair
+    in the collection. The auto-generated namespace is unique to the
+    script or module creating the KVContainer, so expect to have
+    a bunch of tasks rerun if you rename a module or script between
+    runs.
+
+    """
+
+    def __init__(self, namespace=None, **kwds):
+        self.__dict__['_ns'] = self.__class__.key(namespace)
+        self.__dict__['_d'] = dict()
+        for k, v in kwds.iteritems():
+            self._d[k] = KVDependency(self._ns, k, v)
+
+
+    @staticmethod
+    def key(namespace=None):
+        if not namespace:
+            anamodpath = os.path.dirname(__file__)
+            for stackfile in reversed(map(first, traceback.extract_stack())):
+                if not stackfile.startswith(anamodpath):
+                    namespace = stackfile
+                    break
+        return namespace
+
+    def items(self):
+        return list(self._d.itervalues())
+
+    def compare(self):
+        for k in self._d:
+            for item in self[k].compare():
+                yield item
+
+
+    def __getattr__(self, key):
+        return self._d[key]
+
+    __getitem__ = __getattr__
+
+    def __setattr__(self, key, val):
+        if key in self._d:
+            global _singleton_idx
+            dep = self._d[key]
+            dep.val = val
+            dep._key = KVDependency.key(self._ns, key, val)
+            _singleton_idx[dep.__class__.__name__][dep._key] = dep
+        else:
+            self._d[key] = KVDependency(self._ns, key, val)
+
+    __setitem__ = __setattr__
+
+    def __hash__(self):
+        return hash(tuple(self._d.iteritems()))
+
+
+
+class DirectoryDependency(FileDependency):
+
+    """Track a directory. A directory is considered changed if it's
+    removed, the modify time has changed, the list of files within the
+    directory has changed, or if any of the files within the directory
+    have changed size or modify times.
+
+    """
+
+    def compare(self):
+        stat = os.stat(self.fname)
+        yield stat.st_size
+        yield stat.st_mtime
+        contained = list(sorted(os.listdir(self.fname)))
+        yield hash(tuple(contained))
+        for item in contained:
+            stat = os.stat(os.path.join(self.fname, item))
+            yield stat.st_size
+            yield stat.st_mtime
+
+
+
+class GlobDependency(FileDependency):
+    """Track several files according to a bash-style globbing
+    pattern. Uses :func:`glob.glob` under the hood.  A Glob is
+    considered changed if the names of the matched files changes, or
+    any of the matched files change in size or modify time.
+
+    """
+
+    def compare(self):
+        fs = glob(self.fname)
+        fs = list(sorted(fs))
+        yield hash(tuple(fs))
+        for f in fs:
+            stat = os.stat(f)
+            yield stat.st_size
+            yield stat.st_mtime
 
 
 
@@ -378,13 +537,15 @@ class FunctionDependency(BaseDependency):
     @staticmethod
     def key(key):
         return key
-        
+
 
 
 _cached_dep_classes = (
     BaseDependency,       StringDependency,
     FileDependency,       HugeFileDependency,
-    ExecutableDependency, FunctionDependency
+    ExecutableDependency, FunctionDependency,
+    GlobDependency,       DirectoryDependency,
+    KVDependency
 )
 for cls in _cached_dep_classes:
     _singleton_idx[cls.__name__] = dict()
