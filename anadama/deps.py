@@ -381,6 +381,22 @@ class KVContainer(object):
     a bunch of tasks rerun if you rename a module or script between
     runs.
 
+    .. code:: python
+
+      >>> import anadama.deps
+      >>> conf = anadama.deps.KVContainer(alpha="5", beta=2)
+      >>> conf.alpha
+      <anadama.deps.KVDependency object at 0x7f66445fa490> 
+      >>> str(conf.alpha)
+      '5'
+      >>> str(conf['beta'])
+      '2'
+      >>> conf.beta = 7
+      >>> conf.beta
+      <anadama.deps.KVDependency object at 0x7f66445fa4d0>
+      >>> str(conf.beta)
+      '7'
+    
     """
 
     def __init__(self, namespace=None, **kwds):
