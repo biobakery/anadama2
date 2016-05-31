@@ -120,6 +120,29 @@ class SlurmContext(RunContext):
 
 
     def slurm_do(self, *args, **kwargs):
+        """Use it like :meth:`anadama.runcontext.RunContext.do`. Accepts the
+        following extra arguments:
+        
+        :param time: The maximum time in minutes allotted to run the
+          command
+        :type time: int
+
+        :param mem: The maximum memory in megabytes allocated to run
+          the command
+        :type mem: int
+
+        :param cores: The number of CPU cores allocated to the job
+        :type cores: int
+
+        :param partition: The SLURM partiton to send this job to
+        :type partition: str
+
+        :param extra_srun_flags: Any command-line flags to augment
+          ``srun`` behavior formatted like ``--begin=22:00``,
+          ``--exclusive``, or ``-k``
+        :type extra_srun_flags: list of str
+
+        """
         params = self._kwargs_extract(kwargs)
         task = self.do(*args, **kwargs)
         self.slurm_task_data[task.task_no] = params
@@ -127,6 +150,29 @@ class SlurmContext(RunContext):
 
     
     def slurm_add_task(self, *args, **kwargs):
+        """Use it like :meth:`anadama.runcontext.RunContext.add_task`. Accepts
+        the following extra arguments:
+        
+        :keyword time: The maximum time in minutes allotted to run the
+          command
+        :type time: int
+
+        :keyword mem: The maximum memory in megabytes allocated to run
+          the command
+        :type mem: int
+
+        :keyword cores: The number of CPU cores allocated to the job
+        :type cores: int
+
+        :keyword partition: The SLURM partiton to send this job to
+        :type partition: str
+
+        :keyword extra_srun_flags: Any command-line flags to augment
+          ``srun`` behavior formatted like ``--begin=22:00``,
+          ``--exclusive``, or ``-k``
+        :type extra_srun_flags: list of str
+
+        """
         params = self._kwargs_extract(kwargs)
         task = self.add_task(*args, **kwargs)
         self.slurm_task_data[task.task_no] = params
@@ -134,6 +180,17 @@ class SlurmContext(RunContext):
 
 
     def go(self, n_slurm_parallel=1, *args, **kwargs):
+        """Launch execution of all tasks. Behaves much like
+        :meth:`anadama.runcontext.RunContext.go`, except the
+        ``runner`` keyword argument is
+        ignored; :class:`anadama.runners.GridRunner` is always used.
+        Accepts the following extra arguments:
+
+        :keyword n_slurm_parallel: The number of jobs to run on SLURM
+          at once.
+        :type n_slurm_parallel: int
+
+        """
         kwargs.pop("runner", None) # ignore the runner keyword
         local_n_parallel = kwargs.pop("n_parallel", 1)
         runner = runners.GridRunner(self)

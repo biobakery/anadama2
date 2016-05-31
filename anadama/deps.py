@@ -370,7 +370,7 @@ class KVContainer(object):
     same backend. Consider using ``logging =
     StringDependency("debug")`` in script_a.py and ``logging =
     StringDependency("warning")`` in script_b.py. If you change
-    script_a.py to ``logging = StringDependency("warning") after
+    script_a.py to ``logging = StringDependency("warning")`` after
     running script_b.py, script_a.py won't rerun tasks that depend on
     the StringDependency assigned to ``logging``.
 
@@ -565,3 +565,4 @@ _cached_dep_classes = (
 )
 for cls in _cached_dep_classes:
     _singleton_idx[cls.__name__] = dict()
+del cls

@@ -92,7 +92,7 @@ class RunContext(object):
         :type cmd: str
 
         :keyword track_cmd: Set to False to not track changes to ``cmd``.
-       :type track_cmd: bool
+        :type track_cmd: bool
         
         :keyword track_binaries: Set to False to not discover files
           within ``cmd`` and treat them as dependencies.

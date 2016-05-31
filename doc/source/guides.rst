@@ -287,7 +287,9 @@ string of your choice. Doesn't seem useful? Check out how
              context, and ``"--threads=10"`` in a different run
              context and use the same storage backend between the two
              contexts, **the dependencies will be shared between
-             contexts**.
+             contexts**. If you need to track a bunch of small strings
+             that could collide with uses in other contexts, consider
+             using :class:`anadama.deps.KVContainer`.
 
 
 
