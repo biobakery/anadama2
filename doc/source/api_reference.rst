@@ -19,4 +19,5 @@ API Reference
    reporters
    runners
    runcontext
+   slurm	      
    util
