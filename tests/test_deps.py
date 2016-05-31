@@ -52,6 +52,8 @@ class TestDeps(unittest.TestCase):
         self.assertIsInstance(anadama.deps.auto(t), anadama.Task)
         n = "/tmp/foobaz"
         self.assertIsInstance(anadama.deps.auto(n), anadama.deps.FileDependency)
+        d = "/tmp/"
+        self.assertIsInstance(anadama.deps.auto(d), anadama.deps.DirectoryDependency)
         self.assertIsInstance(anadama.deps.auto(lambda *a, **kw: None),
                               anadama.deps.FunctionDependency)
         self.assertIsInstance(anadama.deps.StringDependency("garglefwonk"),

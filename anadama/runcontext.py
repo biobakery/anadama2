@@ -92,7 +92,7 @@ class RunContext(object):
         :type cmd: str
 
         :keyword track_cmd: Set to False to not track changes to ``cmd``.
-        :type track_cmd: bool
+       :type track_cmd: bool
         
         :keyword track_binaries: Set to False to not discover files
           within ``cmd`` and treat them as dependencies.
@@ -324,6 +324,8 @@ class RunContext(object):
             if istask(dep):
                 self.dag.add_edge(dep.task_no, task.task_no)
                 continue
+            if not _must_preexist(dep) and dep not in self._depidx:
+                self._add_do_pexist(dep)
             try:
                 parent_task = self._depidx[dep]
             except KeyError:
@@ -434,4 +436,8 @@ def discover_binaries(s):
 
     return ds
 
-    
+def _must_preexist(d):
+    t = (deps.StringDependency,
+         deps.KVDependency,
+         deps.FunctionDependency)
+    return type(d) not in t
