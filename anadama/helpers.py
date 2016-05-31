@@ -33,6 +33,7 @@ Instead of this:
 
 import os
 import shutil
+import contextlib
 
 from .util import sh as _sh
 from .util import sugar_list
@@ -82,17 +83,65 @@ def parse_sh(s, **kwargs):
     return actually_sh
 
 
-def system(args_list, **kwargs):
+def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
+           stderr=None, stderr_clobber=None, **kwargs):
     """Execute a system call (no shell will be used). All further keywords
     are passed to :class:`subprocess.Popen`
 
     :param args_list: The argv to be passed to the system call.
     :type args_list: list
 
+    :keyword stdin: If provided, the name of the file to open and send
+      to the subprocess' standard input. By default no data is sent to
+      the process.
+    :type stdin: str
+
+    :keyword stdout: If provided, the name of the file to send output
+      from the subprocess' standard output. Standard output is
+      appended to the file. By default all data from the subprocess
+      standard out is sent to the standard out of the executing
+      process
+    :type stdout: str
+
+    :keyword stdout_clobber: If provided, the name of the file to send
+      output from the subprocess' standard output. If the file already
+      exists, it will be truncated before it receives writes.
+    :type stdout_clobber: str
+
+    :keyword stderr: If provided, the name of the file to send output
+      from the subprocess' standard error output. Standard error
+      output is appended to the file. By default all data from the
+      subprocess standard error is sent to the standard error of the
+      executing process.
+    :type stderr: str
+
+    :keyword stderr_clobber: If provided, the name of the file to send
+      output from the subprocess' standard error output. If the file
+      already exists, it will be truncated before it receives writes.
+    :type stderr_clobber: str
+
     """
     kwargs.pop("shell", None)
     def actually_system(task):
-        return _sh(args_list, **kwargs)
+        files = []
+        if stdin:
+            f = kwargs['stdin'] = open(stdin, 'r')
+            files.append(f)
+        if stdout:
+            f = kwargs['stdout'] = open(stdout, 'a')
+            files.append(f)
+        if stdout_clobber:
+            f = kwargs['stdout'] = open(stdout_clobber, 'w')
+            files.append(f)
+        if stderr:
+            f = kwargs['stderr'] = open(stderr, 'a')
+            files.append(f)
+        if stderr_clobber:
+            f = kwargs['stderr'] = open(stderr_clobber, 'w')
+            files.append(f)
+        with contextlib.nested(*files):
+            ret = _sh(args_list, **kwargs)
+        return ret
     return actually_system
 
 
@@ -131,3 +180,4 @@ def rm_r(to_rm, ignore_missing=True):
         for f in sugar_list(to_rm):
             shutil.rmtree(f, ignore_errors=ignore_missing)
     return actually_rm_r
+
