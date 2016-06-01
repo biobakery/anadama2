@@ -1,6 +1,7 @@
 import os
 import re
 import shlex
+import logging
 import itertools
 from operator import attrgetter
 from collections import deque
@@ -15,6 +16,8 @@ from . import backends
 from .helpers import sh, parse_sh
 from .util import matcher, noop, find_on_path
 from .util import istask, sugar_list, keepkeys
+
+logger = logging.getLogger(__name__)
 
 
 class RunFailed(ValueError):
@@ -51,6 +54,7 @@ class RunContext(object):
         self._pexist_task = None
         if not storage_backend:
             self._backend = storage_backend or backends.default()
+        logger.debug("Instantiated run context")
 
 
     def do(self, cmd, track_cmd=True, track_binaries=True):
@@ -247,7 +251,9 @@ class RunContext(object):
 
         _runner = runner or runners.default(self, n_parallel)
         _runner.quit_early = quit_early
+        logger.debug("Sorting task_nos by network topology")
         task_idxs = nx.algorithms.dag.topological_sort(self.dag, reverse=True)
+        logger.debug("Sorting complete")
         if not run_them_all:
             task_idxs = self._filter_skipped_tasks(task_idxs)
         task_idxs = deque(task_idxs)
@@ -285,24 +291,37 @@ class RunContext(object):
 
     def _filter_skipped_tasks(self, task_idxs):
         ret = list()
+        logger.debug("Deciding which tasks to skip")
         for idx in task_idxs:
             if self._should_skip_task(idx):
                 self._handle_task_skipped(idx)
             else:
                 ret.append(idx)
+        logger.debug("Skipping %i tasks", len(ret))
         return ret
 
     
     def _should_skip_task(self, task_no):
         task = self.tasks[task_no]
         if not task.targets and not task.depends:
+            logger.debug("Can't skip task %i because it "
+                          "has no targets or depends", task_no)
             return False
         if any(istask(d) for d in task.depends):
+            logger.debug("Can't skip task %i because it "
+                          "depends on another task", task_no)
             return False
         if deps.any_different(task.depends, self._backend, self.compare_cache):
+            logger.debug("Can't skip task %i because its "
+                          "dependencies changed since they "
+                          "were last stored", task_no)
             return False
         if deps.any_different(task.targets, self._backend, self.compare_cache):
+            logger.debug("Can't skip task %i because its "
+                          "targets changed since they were "
+                          "last stored", task_no)
             return False
+        logger.debug("Skipping task %i", task_no)
         return True
 
 

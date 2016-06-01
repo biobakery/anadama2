@@ -1,4 +1,5 @@
 import sys
+import logging
 
 def default(run_context):
     return ConsoleReporter(run_context)
@@ -244,8 +245,76 @@ class ConsoleReporter(BaseReporter):
 
 
 class LoggerReporter(BaseReporter):
-    """TODO"""
-    pass
+    """A reporter that uses :mod:`logging`.
+
+    :param run_context: The run context to report on
+    :type run_context: :class:`anadama.runcontext.RunContext`
+
+    :param loglevel_str: The logging level. Valid levels: subdebug,
+      debug, info, subwarning, warning, error
+    :type loglevel_str: str
+
+    :param logfile: The file to log to. Defaults to stdout.
+    :type logfile: str or file-like
+
+    :param fmt_str: The log format. See :mod:`logging` for more
+      information
+    :type fmt_str: str
+
+    """
+
+    FORMAT = "%(asctime)s\t%(name)s\t%(funcName)s\t%(levelname)s: %(message)s"
+    def __init__(self, run_context, loglevel_str="", logfile=None,
+                 fmt_str=None, *args, **kwargs):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        logkwds = {"format": fmt_str or self.FORMAT,
+                  "level":  getattr(logging, loglevel_str.upper(), logging.WARNING) }
+        if logfile and hasattr(logfile, "write"):
+            logkwds['stream'] = logfile
+        elif logfile and isinstance(logfile, basestring):
+            logkwds['filename'] = logfile
+        logging.basicConfig(**logkwds)
+        self.any_failed = False
+        super(LoggerReporter, self).__init__(run_context, *args, **kwargs)
+
+    def _daginfo(self, task_no):
+        children = self.run_context.dag.successors(task_no)
+        parents = self.run_context.dag.predecessors(task_no)
+        msg = " %i parents: %s.  %i children: %s."
+        return msg.format(len(parents), parents, len(children), children)
+
+    def started(self):
+        self.logger.info("Beginning AnADAMA run with %i tasks.",
+                         len(self.run_context.tasks))
+
+    def task_skipped(self, task_no):
+        msg = "Task %i `%s' skipped." + self._daginfo(task_no)
+        self.logger.info(msg, task_no,
+                         self.run_context.tasks[task_no].name)
+
+    def task_started(self, task_no):
+        msg = "Task %i, `%s' started." + self._daginfo(task_no)
+        self.logger.info(msg, task_no,
+                         self.run_context.tasks[task_no].name)
+
+    def task_failed(self, task_result):
+        n = task_result.task_no
+        self.logger.error("Task %i, `%s' failed! Error generated: %s",
+                          n, self.run_context.tasks[n].name, task_result.error)
+        self.any_failed = True
+
+    def task_completed(self, task_result):
+        n = task_result.task_no
+        self.logger.info("Task %i, `%s' completed successfully.",
+                         n, self.run_context.tasks[n])
+
+    def finished(self):
+        if self.any_failed:
+            self.logger.error("AnADAMA run finished with errors.")
+        else:
+            self.logger.info("AnADAMA run finished.")
+
+        
 
 
 

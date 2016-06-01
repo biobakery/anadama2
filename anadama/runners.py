@@ -1,5 +1,6 @@
 import time
 import Queue
+import logging
 import itertools
 import traceback
 import multiprocessing
@@ -7,6 +8,8 @@ import cPickle as pickle
 from collections import namedtuple
 
 from .pickler import cloudpickle
+
+logger = logging.getLogger(__name__)
 
 
 class TaskResult(namedtuple(
@@ -59,6 +62,7 @@ class SerialLocalRunner(BaseRunner):
 
     def run_tasks(self, task_idx_deque):
         total = len(self.ctx.tasks)
+        logger.debug("Running %i tasks locally and serially", total)
         while total > len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks):
             idx = task_idx_deque.pop()
 
@@ -74,11 +78,9 @@ class SerialLocalRunner(BaseRunner):
             self.ctx._handle_task_result(result)
 
             if self.quit_early and bool(result.error):
+                logger.debug("Quitting early")
                 break
 
-
-logger = multiprocessing.log_to_stderr()
-logger.setLevel(multiprocessing.SUBWARNING)
 
 def worker_run_loop(work_q, result_q, run_task):
     logger.debug("Starting worker")
@@ -115,6 +117,7 @@ def worker_run_loop(work_q, result_q, run_task):
 
 def _run_task_locally(task, extra=None):
     for i, action_func in enumerate(task.actions):
+        logger.debug("Executing Task %i action %i", task.task_no, i)
         try:
             action_func(task)
         except Exception:
@@ -123,6 +126,7 @@ def _run_task_locally(task, extra=None):
             return exception_result(
                 TaskFailed(msg.format(i, traceback.format_exc()), task.task_no)
                 )
+        logger.debug("Completed executing Task %i action %i", task.task_no, i)
 
     targ_keys, targ_compares = list(), list()
     for target in task.targets:
@@ -172,20 +176,33 @@ class ParallelLocalRunner(BaseRunner):
     def run_tasks(self, task_idx_deque):
         self.task_idx_deque = task_idx_deque
         total = len(self.ctx.tasks)
-
+        logger.debug("Running %i tasks in parallel with %i workers locally",
+                      total, len(self.workers))
+        
         while True:
             n_filled = self._fill_work_q()
+            logger.debug("Added %i tasks to worker queues", n_filled)
             n_done = len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks)
             if n_filled == 0 and n_done >= total:
+                logger.debug("No new tasks added to work queues and"
+                             " the number of completed tasks equals the"
+                             " number of tasks to do. Job's done")
                 break
             try:
                 result = self.result_q.get()
-            except (SystemExit, KeyboardInterrupt, Exception):
+            except (SystemExit, KeyboardInterrupt):
+                logger.info("Terminating due to SystemExit or Ctrl-C")
+                self.terminate()
+                raise
+            except Exception as e:
+                logger.error("Terminating due to unhandled exception")
+                logger.exception(e)
                 self.terminate()
                 raise
             else:
                 self.ctx._handle_task_result(result)
             if self.quit_early and result.error:
+                logger.debug("Quitting early.")
                 self.terminate()
                 break
 
@@ -285,19 +302,30 @@ class GridRunner(BaseRunner):
             self._init_workers()
 
         total = len(self.ctx.tasks)
+        logger.debug("Running %i tasks in parallel with %i workers"
+                      " using the grid",
+                      total, len(self.workers))
         while True:
             n_filled = self._fill_work_qs()
+            logger.debug("Added %i tasks to worker queues", n_filled)
             n_done = len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks)
             if n_filled == 0 and n_done >= total:
                 break
             try:
                 result = self._get_result()
-            except (SystemExit, KeyboardInterrupt, Exception):
+            except (SystemExit, KeyboardInterrupt):
+                logger.info("Terminating due to SystemExit or Ctrl-C")
+                self.terminate()
+                raise
+            except Exception as e:
+                logger.error("Terminating due to unhandled exception")
+                logger.exception(e)
                 self.terminate()
                 raise
             else:
                 self.ctx._handle_task_result(result)
             if self.quit_early and result.error:
+                logger.debug("Quitting early.")
                 self.terminate()
                 break
 
@@ -388,6 +416,8 @@ class GridRunner(BaseRunner):
                 )
             return None
         elif parents.difference(self.ctx.completed_tasks):
+            logger.debug("Task %i has undone parents; I'll come back later",
+                         idx)
             # has undone parents, come back again later
             self.task_idx_deque.appendleft(idx)
             return None
