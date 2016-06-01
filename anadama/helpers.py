@@ -33,6 +33,7 @@ Instead of this:
 
 import os
 import shutil
+import logging
 import contextlib
 
 from .util import sh as _sh
@@ -48,8 +49,8 @@ def sh(s, **kwargs):
     :type s: str
 
     """
-
     def actually_sh(task=None):
+        logging.getLogger(__name__).debug("Executing with shell: "+s)
         kwargs['shell'] = True
         return _sh(s, **kwargs)
     return actually_sh
@@ -78,8 +79,9 @@ def parse_sh(s, **kwargs):
 
     def actually_sh(task):
         kwargs['shell'] = True
-        return _sh(s.format(depends=task.depends,
-                            targets=task.targets), **kwargs)
+        fmtd = s.format(depends=task.depends, targets=task.targets)
+        logging.getLogger(__name__).debug("Executing with shell: "+fmtd)
+        return _sh(fmtd, **kwargs)
     return actually_sh
 
 
@@ -140,6 +142,8 @@ def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
             f = kwargs['stderr'] = open(stderr_clobber, 'w')
             files.append(f)
         with contextlib.nested(*files):
+            logging.getLogger(__name__).debug(
+                "Forking subprocess %s with args %s", args_list, kwargs)
             ret = _sh(args_list, **kwargs)
         return ret
     return actually_system
@@ -160,6 +164,7 @@ def rm(to_rm, ignore_missing=True):
     def actually_rm(task):
         for f in sugar_list(to_rm):
             if os.path.isfile(f) or not ignore_missing:
+                logging.getLogger(__name__).debug("Removing "+f)
                 os.remove(f)
     return actually_rm
 
@@ -178,6 +183,7 @@ def rm_r(to_rm, ignore_missing=True):
     """
     def actually_rm_r(task):
         for f in sugar_list(to_rm):
+            logging.getLogger(__name__).debug("Removing recursively: "+f)
             shutil.rmtree(f, ignore_errors=ignore_missing)
     return actually_rm_r
 

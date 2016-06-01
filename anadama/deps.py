@@ -1,4 +1,5 @@
 import os
+import logging
 import itertools
 import traceback
 from glob import glob
@@ -8,6 +9,7 @@ from collections import defaultdict
 from .util import _adler32, find_on_path, sh, HasNoEqual
 from .util import istask
 
+logger = logging.getLogger(__name__)
 _singleton_idx = defaultdict(dict)
 first = itemgetter(0)
 
@@ -71,10 +73,15 @@ def any_different(ds, backend, compare_cache=None):
     :param compare_cache: object to memoize compare() results temporarily
     """
     comparator = compare_cache or (lambda d: d.compare())
-
+    isdebug = logger.isEnabledFor(logging.DEBUG)
+    
     for dep in ds:
         past_dep_compare = backend.lookup(dep)
         if not past_dep_compare:
+            if isdebug:
+                logger.debug("Dep `%s' of type %s changed: "
+                             "wasn't previously saved in backend",
+                             dep._key, type(dep))
             return True
 
         compares = itertools.izip_longest(
@@ -83,8 +90,16 @@ def any_different(ds, backend, compare_cache=None):
         try:
             is_different = not all(the_same)
         except:
+            if isdebug:
+                logger.debug("Dep `%s' of type %s changed: "
+                             "hit an exception when running .compare()",
+                             dep._key, type(dep))
             return True
         if is_different:
+            if isdebug:
+                logger.debug("Dep `%s' of type %s changed: "
+                             ".compare() different since last save",
+                             dep._key, type(dep))
             return True
     return False
 
@@ -401,6 +416,8 @@ class KVContainer(object):
 
     def __init__(self, namespace=None, **kwds):
         self.__dict__['_ns'] = self.__class__.key(namespace)
+        logger.debug("Creating %s with namespace %s",
+                     self.__class__.__name__, self._ns)
         self.__dict__['_d'] = dict()
         for k, v in kwds.iteritems():
             self._d[k] = KVDependency(self._ns, k, v)
