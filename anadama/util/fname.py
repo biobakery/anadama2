@@ -2,7 +2,7 @@
 
 import os
 import re
-from . import sugar_list, mkdirp
+from . import mkdirp
 
 def mangle(fname, tag=None, dir=None, ext=None):
     new = fname[:]
