@@ -121,14 +121,14 @@ class ReporterGroup(BaseReporter):
             r.task_started(task_no)
 
 
-    def task_failed(self, task_no):
+    def task_failed(self, task_result):
         for r in self.reps:
-            r.task_failed(task_no)
+            r.task_failed(task_result)
 
 
-    def task_completed(self, task_no):
+    def task_completed(self, task_result):
         for r in self.reps:
-            r.task_completed(task_no)
+            r.task_completed(task_result)
 
 
     def finished(self):
@@ -217,6 +217,8 @@ class ConsoleReporter(BaseReporter):
 
     def task_failed(self, task_result):
         self.n_complete += 1
+        if task_result.task_no is None:
+            return
         name = self.run_context.tasks[task_result.task_no].name
         self.failed_results.append((name, task_result))
         self._msg(self.stats.fail, name, True)
@@ -280,7 +282,7 @@ class LoggerReporter(BaseReporter):
     def _daginfo(self, task_no):
         children = self.run_context.dag.successors(task_no)
         parents = self.run_context.dag.predecessors(task_no)
-        msg = " %i parents: %s.  %i children: %s."
+        msg = " {} parents: {}.  {} children: {}."
         return msg.format(len(parents), parents, len(children), children)
 
     def started(self):
@@ -299,8 +301,12 @@ class LoggerReporter(BaseReporter):
 
     def task_failed(self, task_result):
         n = task_result.task_no
-        self.logger.error("Task %i, `%s' failed! Error generated: %s",
-                          n, self.run_context.tasks[n].name, task_result.error)
+        if n is None:
+            self.logger.error("Task %s, `Unknown' failed! Error generated: %s",
+                              n, task_result.error)
+        else:
+            self.logger.error("Task %i, `%s' failed! Error generated: %s",
+                              n, self.run_context.tasks[n].name, task_result.error)
         self.any_failed = True
 
     def task_completed(self, task_result):
