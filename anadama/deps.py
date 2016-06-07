@@ -319,6 +319,10 @@ class KVDependency(BaseDependency):
     def key(ns, k, v):
         return KVDEPSEPARATOR.join(map(str, (ns,k)))
 
+    def __getnewargs__(self):
+        ns, k = self._key.split(KVDEPSEPARATOR)
+        return (ns, k, self.val)
+
     def __str__(self):
         return str(self.val)
 
