@@ -3,10 +3,11 @@ import re
 import shlex
 import logging
 import itertools
-from operator import attrgetter
+from operator import attrgetter, itemgetter
 from collections import deque
 
 import networkx as nx
+from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
 from . import Task
 from . import deps
@@ -17,6 +18,7 @@ from .helpers import sh, parse_sh
 from .util import matcher, noop, find_on_path
 from .util import istask, sugar_list, keepkeys
 
+second = itemgetter(1)
 logger = logging.getLogger(__name__)
 
 
@@ -290,15 +292,22 @@ class RunContext(object):
 
 
     def _filter_skipped_tasks(self, task_idxs):
-        ret = list()
+        should_run = dict([ (idx, True) for idx in task_idxs ])
         logger.debug("Deciding which tasks to skip")
-        for idx in task_idxs:
+        idxs = set(task_idxs)
+        while idxs:
+            idx = idxs.pop()
             if self._should_skip_task(idx):
+                should_run[idx] = False
                 self._handle_task_skipped(idx)
             else:
-                ret.append(idx)
-        logger.debug("Skipping %i tasks", len(ret))
-        return ret
+                child_idxs = filter(
+                    idxs.__contains__, allchildren(self.dag, idx))
+                for child_idx in child_idxs:
+                    idxs.remove(child_idx)
+                    logger.debug("Can't skip task %i because "
+                                 "its ancestor will be rerun", child_idx)
+        return [ idx for idx in task_idxs if should_run[idx] is True ]
 
     
     def _should_skip_task(self, task_no):
@@ -460,3 +469,6 @@ def _must_preexist(d):
          deps.KVDependency,
          deps.FunctionDependency)
     return type(d) not in t
+
+def allchildren(dag, task_no):
+    return itertools.imap(second, dfs_edges(dag, task_no))

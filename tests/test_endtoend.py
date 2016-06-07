@@ -115,8 +115,10 @@ class TestEndToEnd(unittest.TestCase):
         # self.ctx.fail_idx = task_nos[G.successors(list(shall_fail)[0])[-1]]
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
+            import anadama.reporters
             with self.assertRaises(anadama.runcontext.RunFailed):
-                self.ctx.go()
+                rep = anadama.reporters.LoggerReporter(self.ctx, "debug", "/tmp/analog")
+                self.ctx.go(reporter=rep)
         child_fail = set()
         for n in shall_fail:
             task_no = task_nos[n]

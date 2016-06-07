@@ -341,6 +341,44 @@ class TestRunContext(unittest.TestCase):
         self.assertNotEqual(new_mtime, os.stat(a).st_mtime)
 
 
+    def test_issue36(self):
+        ctx = self.ctx
+        step1_const = anadama.deps.KVContainer(a = 12)
+        step1_out = os.path.join(self.workdir, "step1.txt")
+        step1_cmd = " ".join(["echo", str(step1_const.a), ">", step1_out])
+        ctx.already_exists(anadama.deps.StringDependency(step1_cmd))
+        step1 = ctx.add_task(step1_cmd,
+                             depends=[step1_const.a,
+                                      anadama.deps.StringDependency(step1_cmd)],
+                             targets=[step1_out])
+
+        step2_out = os.path.join(self.workdir, "step2.txt")
+        step2_cmd = "; ".join(["p=$(cat " + step1_out + ")",
+                               "echo $p > " + step2_out ])
+        ctx.already_exists(anadama.deps.StringDependency(step2_cmd))
+
+        step2 = ctx.add_task(step2_cmd,
+                             depends=[step1_out],
+                             targets=[step2_out],
+                             name="Step 2")
+        with capture(stderr=StringIO()):
+            ctx.go()
+
+        step2skipped = False
+        class CustomReporter(anadama.reporters.ConsoleReporter):
+            def task_skipped(self, task_no, *args, **kwargs):
+                if task_no == step2.task_no:
+                    step2skipped = True
+                return super(CustomReporter, self).task_skipped(
+                    task_no, *args, **kwargs)
+
+        step1_const.a = 10
+        with capture(stderr=StringIO()):
+            ctx.go(reporter=CustomReporter(ctx))
+
+        self.assertFalse(step2skipped,
+                         "Shouldn't skip step 2; parent dep changed")
+
 
     def test_print_within_function_action(self):
         stderr_msg = "".join([chr(random.randint(32, 126)) for _ in range(10)])
