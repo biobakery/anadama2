@@ -293,6 +293,7 @@ class StringDependency(BaseDependency):
         return self.s
 
 
+
 KVDEPSEPARATOR = ":"
 class KVDependency(BaseDependency):
     def __new__(cls, namespace, key, val):
@@ -312,11 +313,11 @@ class KVDependency(BaseDependency):
         self.val = str(v)
 
     def compare(self):
-        return self._key
+        yield self.val
 
     @staticmethod
     def key(ns, k, v):
-        return KVDEPSEPARATOR.join(map(str, (ns,k,v)))
+        return KVDEPSEPARATOR.join(map(str, (ns,k)))
 
     def __str__(self):
         return str(self.val)
