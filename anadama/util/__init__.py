@@ -331,9 +331,9 @@ def isnottask(x):
     return not isinstance(x, Task)
 
 
-def underscore(s):
+def underscore(s, repl=r'[\s/:@\,*?]+'):
     """Remove all whitespace and replace with underscores"""
-    return re.sub(r'\s+', '_', s)
+    return re.sub(repl, '_', s)
 
 
 def sugar_list(x):
