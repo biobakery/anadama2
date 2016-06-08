@@ -429,7 +429,7 @@ class GridRunner(BaseRunner):
     def _get_result(self):
         for q in self._qcycle: # loops forever until we get from q
             try:
-                ret = q.get(False, 0.05)
+                ret = q.get(True, 0.05)
             except Queue.Empty:
                 continue
             return ret
