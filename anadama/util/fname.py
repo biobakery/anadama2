@@ -11,7 +11,7 @@ def mangle(fname, tag=None, dir=None, ext=None):
     if dir is not None:
         new = os.path.join(dir, os.path.basename(new))
     if ext is not None:
-        new = addext(ext, rmext(new, all=True))
+        new = addext(rmext(new, all=True), ext)
     return new_file(new)
 
 
