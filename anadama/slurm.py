@@ -232,8 +232,8 @@ def _run_task_slurm(task, extra):
     for tries in itertools.count(1):
         rerun = False
         args = ["srun", "-v", "--export=ALL", "--partition="+partition,
-                "--mem={:1g}".format(mem),
-                "--time={:1g}".format(time),
+                "--mem={:i}".format(int(mem)),
+                "--time={:i}".format(int(time)),
                 "--cpus-per-task="+str(perf.cores),
                 "--job-name="+job_name]
         args += extra_srun_flags+[script_path, "-p", "-r" ]
