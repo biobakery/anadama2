@@ -416,8 +416,6 @@ class GridRunner(BaseRunner):
                 )
             return None
         elif parents.difference(self.ctx.completed_tasks):
-            logger.debug("Task %i has undone parents; I'll come back later",
-                         idx)
             # has undone parents, come back again later
             self.task_idx_deque.appendleft(idx)
             return None
