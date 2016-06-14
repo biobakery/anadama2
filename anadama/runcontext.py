@@ -54,8 +54,7 @@ class RunContext(object):
         self._depidx = deps.DependencyIndex()
         self.compare_cache = deps.CompareCache()
         self._pexist_task = None
-        if not storage_backend:
-            self._backend = storage_backend or backends.default()
+        self._backend = storage_backend or backends.default()
         logger.debug("Instantiated run context")
 
 
