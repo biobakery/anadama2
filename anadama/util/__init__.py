@@ -379,3 +379,25 @@ def keyrename(d, mapping):
     for frm, to in mapping:
         d[to] = d.pop(frm)
     return d
+
+
+def dichotomize(it, tf_func):
+    """Split an iterable into two lists by use of a function that returns
+    True or False.
+
+    :param it: The items to split
+
+    :param tf_func: A function that returns True or False
+
+    :returns: 2-Tuple of lists: the items for which the function
+      returned True, and the items for which the function returned
+      False
+
+    """
+    t, f, = list(), list()
+    for item in it:
+        if tf_func(item):
+            t.append(item)
+        else:
+            f.append(item)
+    return t, f
