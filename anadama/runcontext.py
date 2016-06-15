@@ -16,7 +16,8 @@ from . import runners
 from . import backends
 from .helpers import sh, parse_sh
 from .util import matcher, noop, find_on_path
-from .util import istask, sugar_list, keepkeys
+from .util import istask, sugar_list, dichotomize
+from .util import keepkeys
 
 second = itemgetter(1)
 logger = logging.getLogger(__name__)
@@ -291,46 +292,73 @@ class RunContext(object):
 
 
     def _filter_skipped_tasks(self, task_idxs):
-        should_run = dict([ (idx, True) for idx in task_idxs ])
-        logger.debug("Deciding which tasks to skip")
-        idxs = set(task_idxs)
+        idxs = task_idxs[:]
+        should_run = set()
         while idxs:
             idx = idxs.pop()
-            if self._should_skip_task(idx):
-                should_run[idx] = False
-                self._handle_task_skipped(idx)
-            else:
-                child_idxs = filter(
-                    idxs.__contains__, allchildren(self.dag, idx))
-                for child_idx in child_idxs:
-                    idxs.remove(child_idx)
-                    logger.debug("Can't skip task %i because "
-                                 "its ancestor will be rerun", child_idx)
-        return [ idx for idx in task_idxs if should_run[idx] is True ]
+            if idx in should_run:
+                continue
+            if self._always_rerun(idx) or self._childless_rerun(idx):
+                should_run.add(idx)
+                continue
+            for child_idx, dep in self._child_nottask_deps(idx):
+                if deps.any_different([dep], self._backend, self.compare_cache):
+                    logger.debug("Can't skip task %i and %i because"
+                                 " of dep change", idx, child_idx)
+                    should_run.add(idx)
+                    should_run.add(child_idx)
+            for parent_idx in self._parent_taskdep_idxs(idx):
+                if parent_idx in should_run:
+                    should_run.add(idx)
+                    logger.debug("Can't skip %i because it depends "
+                                 "directly on task %i, which will be rerun",
+                                 parent_idx, idx)
 
+        to_run, skipped = dichotomize(task_idxs, should_run.__contains__)
+        for idx in skipped:
+            self._handle_task_skipped(idx)
+        return to_run
+
+
+    def _child_nottask_deps(self, idx):
+        child_idxs = self.dag.successors(idx)
+        deps = [ self.dag[idx][c_i].get("dep") for c_i in child_idxs ]
+        return [ pair for pair in zip(child_idxs, deps)
+                 if not type(pair[1]) is int ]
+
+
+    def _parent_taskdep_idxs(self, idx):
+        return [ parent_idx for parent_idx in self.dag.predecessors(idx)
+                 if type(self.dag[parent_idx][idx].get("dep")) is int ]
+
+
+    def _childless_rerun(self, task_no):
+        if self.dag.out_degree(task_no) > 0:
+            return False # not childless
+        task = self.tasks[task_no]
+        if any(istask(d) for d in task.depends):
+            logger.debug("Can't skip task %i because it "
+                          "depends on another task", task_no)
+            return True
+        if deps.any_different(task.depends, self._backend, self.compare_cache):
+            logger.debug("Can't skip task %i because its "
+                         "dependencies changed since they "
+                         "were last stored", task_no)
+            return True
+        if deps.any_different(task.targets, self._backend, self.compare_cache):
+            logger.debug("Can't skip task %i because its "
+                         "targets changed since they were "
+                         "last stored", task_no)
+            return True
+        return False
     
-    def _should_skip_task(self, task_no):
+    def _always_rerun(self, task_no):
         task = self.tasks[task_no]
         if not task.targets and not task.depends:
             logger.debug("Can't skip task %i because it "
                           "has no targets or depends", task_no)
-            return False
-        if any(istask(d) for d in task.depends):
-            logger.debug("Can't skip task %i because it "
-                          "depends on another task", task_no)
-            return False
-        if deps.any_different(task.depends, self._backend, self.compare_cache):
-            logger.debug("Can't skip task %i because its "
-                          "dependencies changed since they "
-                          "were last stored", task_no)
-            return False
-        if deps.any_different(task.targets, self._backend, self.compare_cache):
-            logger.debug("Can't skip task %i because its "
-                          "targets changed since they were "
-                          "last stored", task_no)
-            return False
-        logger.debug("Skipping task %i", task_no)
-        return True
+            return True
+        return False
 
 
     def _handle_task_started(self, task_no):
@@ -349,7 +377,7 @@ class RunContext(object):
         self.dag.add_node(task.task_no)
         for dep in task.depends:
             if istask(dep):
-                self.dag.add_edge(dep.task_no, task.task_no)
+                self.dag.add_edge(dep.task_no, task.task_no, dep=dep.task_no)
                 continue
             if not _must_preexist(dep) and dep not in self._depidx:
                 self._add_do_pexist(dep)
@@ -362,7 +390,8 @@ class RunContext(object):
                 # link to a task. This would happen if someone defined
                 # a preexisting dependency
                 if parent_task is not None:
-                    self.dag.add_edge(parent_task.task_no, task.task_no)
+                    self.dag.add_edge(parent_task.task_no, task.task_no,
+                                      dep=dep)
         for targ in task.targets: 
             # add targets to the DependencyIndex after looking up
             # dependencies for the current task. Hopefully this avoids
