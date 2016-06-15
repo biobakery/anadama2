@@ -196,13 +196,13 @@ def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
 def _run_task_sge(task, extra):
     (perf, partition, tmpdir, pe_name, extra_qsub_flags) = extra
     script_path = picklerunner.tmp(task, dir=tmpdir).path
-    job_name = "task{}:{}".format(task.task_no, underscore(task.name))
+    job_name = "task{}.{}".format(task.task_no, underscore(task.name))
     tmpout = tempfile.mktemp(dir=tmpdir)
     tmperr = tempfile.mktemp(dir=tmpdir)
 
-    args = ["qsub", "-R", "y", "-b", "y", "-sync", "y",
-            "-pe", pe_name, str(perf.cores), "-cwd",
-            "-l", "m_mem_free={:1g}M".format(max(1, perf.mem)),
+    args = ["qsub", "-R", "y", "-b", "y", "-sync", "y", "-N", job_name,
+            "-pe", pe_name, str(perf.cores), "-cwd", "-q", partition,
+            "-V", "-l", "m_mem_free={:1g}M".format(max(1, perf.mem)),
             "-o", tmpout, "-e", tmperr]
     args += extra_qsub_flags+[script_path, "-r", "-p" ]
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
