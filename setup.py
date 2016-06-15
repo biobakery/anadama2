@@ -4,7 +4,7 @@ import sys
 from setuptools import setup, find_packages
 
 requires = [
-        'networkx==1.9',
+        'networkx==1.11',
         'leveldb==0.193'
 ]
 
