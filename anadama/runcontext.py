@@ -4,7 +4,7 @@ import shlex
 import logging
 import itertools
 from operator import attrgetter, itemgetter
-from collections import deque
+from collections import deque, defaultdict
 
 import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
@@ -292,22 +292,19 @@ class RunContext(object):
 
 
     def _filter_skipped_tasks(self, task_idxs):
-        idxs = task_idxs[:]
-        should_run = set()
+        should_run, idxs = dichotomize(task_idxs, self._always_rerun)
+        should_run = set(should_run)
+        for dep, idxs_set in self._aggregate_deps(idxs):
+            if deps.any_different([dep], self._backend, self.compare_cache):
+                for idx in idxs_set:
+                    logger.debug("Can't skip task %i because of dep change",
+                                 idx)
+                    should_run.add(idx)
         while idxs:
             idx = idxs.pop()
             if idx in should_run:
                 continue
-            if self._always_rerun(idx) or self._childless_rerun(idx):
-                should_run.add(idx)
-                continue
-            for child_idx, dep in self._child_nottask_deps(idx):
-                if deps.any_different([dep], self._backend, self.compare_cache):
-                    logger.debug("Can't skip task %i and %i because"
-                                 " of dep change", idx, child_idx)
-                    should_run.add(idx)
-                    should_run.add(child_idx)
-            for parent_idx in self._parent_taskdep_idxs(idx):
+            for parent_idx in self.dag.predecessors(idx):
                 if parent_idx in should_run:
                     should_run.add(idx)
                     logger.debug("Can't skip %i because it depends "
@@ -320,38 +317,6 @@ class RunContext(object):
         return to_run
 
 
-    def _child_nottask_deps(self, idx):
-        child_idxs = self.dag.successors(idx)
-        deps = [ self.dag[idx][c_i].get("dep") for c_i in child_idxs ]
-        return [ pair for pair in zip(child_idxs, deps)
-                 if not type(pair[1]) is int ]
-
-
-    def _parent_taskdep_idxs(self, idx):
-        return [ parent_idx for parent_idx in self.dag.predecessors(idx)
-                 if type(self.dag[parent_idx][idx].get("dep")) is int ]
-
-
-    def _childless_rerun(self, task_no):
-        if self.dag.out_degree(task_no) > 0:
-            return False # not childless
-        task = self.tasks[task_no]
-        if any(istask(d) for d in task.depends):
-            logger.debug("Can't skip task %i because it "
-                          "depends on another task", task_no)
-            return True
-        if deps.any_different(task.depends, self._backend, self.compare_cache):
-            logger.debug("Can't skip task %i because its "
-                         "dependencies changed since they "
-                         "were last stored", task_no)
-            return True
-        if deps.any_different(task.targets, self._backend, self.compare_cache):
-            logger.debug("Can't skip task %i because its "
-                         "targets changed since they were "
-                         "last stored", task_no)
-            return True
-        return False
-    
     def _always_rerun(self, task_no):
         task = self.tasks[task_no]
         if not task.targets and not task.depends:
@@ -360,6 +325,18 @@ class RunContext(object):
             return True
         return False
 
+
+    def _aggregate_deps(self, idxs):
+        grp = defaultdict(set)
+        for idx in idxs:
+            task = self.tasks[idx]
+            for dep in itertools.chain(task.depends, task.targets):
+                if istask(dep):
+                    continue
+                grp[dep].add(idx)
+                    
+        return grp.iteritems()
+        
 
     def _handle_task_started(self, task_no):
         self._reporter.task_started(task_no)
@@ -377,7 +354,7 @@ class RunContext(object):
         self.dag.add_node(task.task_no)
         for dep in task.depends:
             if istask(dep):
-                self.dag.add_edge(dep.task_no, task.task_no, dep=dep.task_no)
+                self.dag.add_edge(dep.task_no, task.task_no)
                 continue
             if not _must_preexist(dep) and dep not in self._depidx:
                 self._add_do_pexist(dep)
@@ -390,8 +367,7 @@ class RunContext(object):
                 # link to a task. This would happen if someone defined
                 # a preexisting dependency
                 if parent_task is not None:
-                    self.dag.add_edge(parent_task.task_no, task.task_no,
-                                      dep=dep)
+                    self.dag.add_edge(parent_task.task_no, task.task_no)
         for targ in task.targets: 
             # add targets to the DependencyIndex after looking up
             # dependencies for the current task. Hopefully this avoids
