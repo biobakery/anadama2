@@ -53,7 +53,6 @@ class RunContext(object):
         #: :meth:`anadama.runcontext.RunContext.go`.
         self.task_results = list()
         self._depidx = deps.DependencyIndex()
-        self.compare_cache = deps.CompareCache()
         self._pexist_task = None
         self._backend = storage_backend or backends.default()
         logger.debug("Instantiated run context")
@@ -285,7 +284,6 @@ class RunContext(object):
 
 
     def _handle_finished(self):
-        self.compare_cache.clear()
         self._reporter.finished()
         if self.failed_tasks:
             raise RunFailed()
@@ -295,7 +293,7 @@ class RunContext(object):
         should_run, idxs = dichotomize(task_idxs, self._always_rerun)
         should_run = set(should_run)
         for dep, idxs_set in self._aggregate_deps(idxs):
-            if deps.any_different([dep], self._backend, self.compare_cache):
+            if deps.any_different([dep], self._backend):
                 for idx in idxs_set:
                     logger.debug("Can't skip task %i because of dep change",
                                  idx)
