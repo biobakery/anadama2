@@ -7,6 +7,23 @@ AnADAMA
 
 ________________________________________________________________________________
 
+Using Version 2
+===============
+
+To start working with the new features of AnADAMA, use the ``v2`` branch.
+
+::
+
+  $ git clone https://bitbucket.org/biobakery/anadama.git
+  $ cd anadama
+  $ git checkout v2
+  $ python setup.py install
+
+
+Documentation for version 2 can be found at the `docs site <https://huttenhower.sph.harvard.edu/docs/anadamav2/guides.html>`_.
+
+
+
 
 Overview
 ========
