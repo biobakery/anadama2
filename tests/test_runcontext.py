@@ -68,7 +68,7 @@ class TestRunContext(unittest.TestCase):
         self.assertEqual(len(t1.targets), 0)
         self.assertEqual(len(t1.actions), 1)
         self.assertTrue(isinstance(t1.depends[0],
-                                   anadama.deps.StringDependency))
+                                   anadama.deps.KVDependency))
         
     def test_do_track_binaries(self):
         t1 = self.ctx.do("echo true", track_cmd=False)

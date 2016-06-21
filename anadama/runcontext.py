@@ -110,7 +110,8 @@ class RunContext(object):
         ds = _parse_wrapper(cmd, metachar="#")
         sh_cmd = re.sub(r'[@#]{([^{}]+)}', r'\1', cmd)
         if track_cmd:
-            d = deps.StringDependency(sh_cmd)
+            ns = deps.KVContainer.key(None)
+            d = deps.KVDependency(ns, str(len(self.tasks)+1), sh_cmd)
             self._add_do_pexist(d)
             ds.append(d)
         if track_binaries:
