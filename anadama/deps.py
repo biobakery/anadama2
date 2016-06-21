@@ -61,7 +61,7 @@ def _autostring(s):
         return FileDependency(s)
 
 
-def any_different(ds, backend, compare_cache=None):
+def any_different(ds, backend):
     """Determine whether any dependencies have changed since last save.
 
     :param ds: The dependencies in question
@@ -69,10 +69,7 @@ def any_different(ds, backend, compare_cache=None):
 
     :param backend: Backend to query past results of a dependency object
     :type backend: instances of any :class:`anadama.backends.BaseBackend` subclass
-
-    :param compare_cache: object to memoize compare() results temporarily
     """
-    comparator = compare_cache or (lambda d: d.compare())
     isdebug = logger.isEnabledFor(logging.DEBUG)
     
     for dep in ds:
@@ -85,7 +82,7 @@ def any_different(ds, backend, compare_cache=None):
             return True
 
         compares = itertools.izip_longest(
-            comparator(dep), past_dep_compare, fillvalue=HasNoEqual())
+            dep.compare(), past_dep_compare, fillvalue=HasNoEqual())
         the_same = itertools.starmap(eq, compares)
         try:
             is_different = not all(the_same)
@@ -102,33 +99,6 @@ def any_different(ds, backend, compare_cache=None):
                              dep._key, type(dep))
             return True
     return False
-
-
-
-class CompareCache(object):
-    def __init__(self):
-        self.c = {}
-
-    def clear(self):
-        del self.c
-        self.c = {}
-
-    def __call__(self, dep):
-        if dep._key not in self.c:
-            self.c[dep._key] = pair = [list(), False]
-            for compare_val in dep.compare():
-                pair[0].append(compare_val)
-                yield compare_val
-            pair[1] = True
-        else:
-            pair = self.c[dep._key]
-            for i, compare_val in enumerate(pair[0], 1):
-                yield compare_val
-            if pair[1] is False: # iterable not exhausted
-                for compare_val in itertools.islice(dep.compare(), i, None):
-                    pair[0].append(compare_val)
-                    yield compare_val
-                pair[1] = True
 
 
 
