@@ -61,7 +61,7 @@ class BaseRunner(object):
 class SerialLocalRunner(BaseRunner):
 
     def run_tasks(self, task_idx_deque):
-        total = len(self.ctx.tasks)
+        total = len(task_idx_deque)
         logger.debug("Running %i tasks locally and serially", total)
         while total > len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks):
             idx = task_idx_deque.pop()
@@ -175,7 +175,7 @@ class ParallelLocalRunner(BaseRunner):
 
     def run_tasks(self, task_idx_deque):
         self.task_idx_deque = task_idx_deque
-        total = len(self.ctx.tasks)
+        total = len(task_idx_deque)
         logger.debug("Running %i tasks in parallel with %i workers locally",
                       total, len(self.workers))
         
@@ -301,7 +301,7 @@ class GridRunner(BaseRunner):
         if not self.workers:
             self._init_workers()
 
-        total = len(self.ctx.tasks)
+        total = len(task_idx_deque)
         logger.debug("Running %i tasks in parallel with %i workers"
                       " using the grid",
                       total, len(self.workers))
