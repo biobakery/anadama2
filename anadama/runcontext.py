@@ -14,6 +14,7 @@ from . import deps
 from . import reporters
 from . import runners
 from . import backends
+from .taskcontainer import TaskContainer
 from .helpers import sh, parse_sh
 from .util import matcher, noop, find_on_path
 from .util import istask, sugar_list, dichotomize
@@ -42,11 +43,12 @@ class RunContext(object):
     def __init__(self, storage_backend=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
-        #: tasks is a list of objects of type
-        #: :class:`anadama.Task`. This list is populated as new tasks
-        #: are added via :meth:`anadama.runcontext.RunContext.add_task`
-        #: and :meth:`anadama.runcontext.RunContext.do`
-        self.tasks = list()
+        #: tasks is a :class:`anadama.taskcontainer.TaskContainer`
+        #: filled with objects of type : :class:`anadama.Task`. This
+        #: list is populated as new tasks : are added via
+        #: :meth:`anadama.runcontext.RunContext.add_task` : and
+        #: :meth:`anadama.runcontext.RunContext.do`
+        self.tasks = TaskContainer()
         #: task_results is a list of objects of type :
         #: :class:`anadama.runners.TaskResult`. This list is populated
         #: only after tasks have been run with
