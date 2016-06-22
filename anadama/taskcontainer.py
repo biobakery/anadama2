@@ -26,7 +26,7 @@ class TaskContainer(list):
 
     def __setitem__(self, key, task):
         self._update(task)
-        return super(TaskContainer, self).__settask__(key, value)
+        return super(TaskContainer, self).__settask__(key, task)
 
 
     def __getitem__(self, key):
