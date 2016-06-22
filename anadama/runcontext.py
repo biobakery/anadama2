@@ -211,7 +211,8 @@ class RunContext(object):
 
 
     def go(self, run_them_all=False, quit_early=False, runner=None,
-           reporter=None, storage_backend=None, n_parallel=1):
+           reporter=None, storage_backend=None, n_parallel=1,
+           until_task=None):
         """Kick off execution of all previously configured tasks. 
 
         :keyword run_them_all: Skip no tasks; run it all.
@@ -245,6 +246,10 @@ class RunContext(object):
           used with the ``runner`` keyword.
         :type n_parallel: int
 
+        :keyword until_task: Stop after running the named task. Can
+          refer to the end task by task number or task name.
+        :type n_parallel: int or str
+
         """
 
         self.completed_tasks = set()
@@ -258,12 +263,20 @@ class RunContext(object):
         logger.debug("Sorting task_nos by network topology")
         task_idxs = nx.algorithms.dag.topological_sort(self.dag, reverse=True)
         logger.debug("Sorting complete")
+        if until_task is not None:
+            parents = allparents(self.dag, self.tasks[until_task].task_no)
+            task_idxs = filter(parents.__contains__, task_idxs)
         if not run_them_all:
             task_idxs = self._filter_skipped_tasks(task_idxs)
         task_idxs = deque(task_idxs)
 
         _runner.run_tasks(task_idxs)
         self._handle_finished()
+
+
+    def run_task(self, no_or_name, **kwargs):
+        kwargs['up_to_task'] = no_or_name
+        return self.go(**kwargs)
 
 
     def _import(self, task_dict):
@@ -469,11 +482,25 @@ def discover_binaries(s):
 
     return ds
 
+
 def _must_preexist(d):
     t = (deps.StringDependency,
          deps.KVDependency,
          deps.FunctionDependency)
     return type(d) not in t
 
+
 def allchildren(dag, task_no):
     return itertools.imap(second, dfs_edges(dag, task_no))
+
+
+def allparents(dag, task_no):
+    seen = set()
+    to_check = deque([task_no])
+    while to_check:
+        idx = to_check.popleft()
+        if idx in seen:
+            continue
+        seen.add(idx)
+        to_check.extend(dag.predecessors(idx))
+    return seen

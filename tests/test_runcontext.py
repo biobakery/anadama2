@@ -341,6 +341,21 @@ class TestRunContext(unittest.TestCase):
         self.assertNotEqual(new_mtime, os.stat(a).st_mtime)
 
 
+    def test_go_until_task(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                   for letter in ("a", "b", "c", "d")]
+        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
+        self.ctx.add_task("touch {targets[0]} {targets[1]}",
+                          targets=[b, c], name="bc", depends=a)
+        self.ctx.add_task("touch {}".format(d), depends=[c], targets=d,
+                          name="d")
+        with capture(stderr=StringIO()):
+            self.ctx.go(until_task="bc")
+        for f in (a,b,c,):
+            self.assertTrue(os.path.isfile(f))
+        self.assertFalse(os.path.isfile(d))
+
+
     def test_issue36(self):
         ctx = self.ctx
         step1_const = anadama.deps.KVContainer(a = 12)
