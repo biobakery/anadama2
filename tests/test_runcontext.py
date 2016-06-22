@@ -15,6 +15,7 @@ import anadama.deps
 import anadama.runcontext
 import anadama.util
 import anadama.backends
+import anadama.taskcontainer
 
 from util import capture
 
@@ -51,7 +52,6 @@ class TestRunContext(unittest.TestCase):
     def test_hasattributes(self):
         self.assertIsInstance(self.ctx.dag,
                               networkx.classes.digraph.DiGraph)
-        self.assertIs(type(self.ctx.tasks), list)
         self.assertTrue(hasattr(self.ctx, "task_counter"))
 
     def test_do_simple(self):
@@ -430,6 +430,17 @@ class TestRunContext(unittest.TestCase):
             self.ctx.go()
         self.assertTrue(d.compared)
 
+
+    def test_TaskContainer(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                   for letter in ("a", "b", "c", "d")]
+        t1 = self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
+        t2 = self.ctx.add_task("touch {targets[0]} {targets[1]}",
+                               targets=[b, c], name="bc")
+        t3 = self.ctx.add_task("touch {}".format(d), depends=[a,b], name="d")
+        self.assertTrue(isinstance(self.ctx.tasks, anadama.taskcontainer.TaskContainer))
+        self.assertIs(self.ctx.tasks[t1.task_no], t1)
+        self.assertIs(self.ctx.tasks[t2.name], t2)
 
 
 if __name__ == "__main__":
