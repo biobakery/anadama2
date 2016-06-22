@@ -274,11 +274,6 @@ class RunContext(object):
         self._handle_finished()
 
 
-    def run_task(self, no_or_name, **kwargs):
-        kwargs['up_to_task'] = no_or_name
-        return self.go(**kwargs)
-
-
     def _import(self, task_dict):
         keys_to_keep = ("actions", "depends", "targets",
                         "name", "interpret_deps_and_targs")
