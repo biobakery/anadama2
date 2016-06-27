@@ -212,8 +212,7 @@ class RunContext(object):
 
 
     def go(self, run_them_all=False, quit_early=False, runner=None,
-           reporter=None, storage_backend=None, n_parallel=1,
-           until_task=None):
+           reporter=None, n_parallel=1, until_task=None):
         """Kick off execution of all previously configured tasks. 
 
         :keyword run_them_all: Skip no tasks; run it all.
