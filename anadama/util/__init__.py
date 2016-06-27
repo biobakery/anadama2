@@ -314,6 +314,9 @@ def sh(cmd, **kwargs):
     return ret
 
 
+class Bag(object):
+    pass
+
 class HasNoEqual(object):
     def __eq__(self, other):
         return False

@@ -2,6 +2,7 @@ import os
 import re
 import shlex
 import logging
+import optparse
 import itertools
 from operator import attrgetter, itemgetter
 from collections import deque, defaultdict
@@ -272,6 +273,27 @@ class RunContext(object):
 
         _runner.run_tasks(task_idxs)
         self._handle_finished()
+
+
+    def cli(self, argv=None, options=None):
+        from . import cli
+        if not options:
+            options = cli.options
+        optparse.OptionParser.format_description = lambda s, t: s.description
+        parser = optparse.OptionParser(description=cli.BANNER)
+        for option in cli.options:
+            parser.add_option(option)
+        opts, args = parser.parse_args(args=argv)
+        if opts.list_tasks:
+            return cli.list_tasks(self)
+        if opts.dump_dependencies:
+            return cli.dump_dependencies(self._backend)
+        if opts.forget:
+            return cli.forget(self._backend, opts.forget)
+        return self.go(run_them_all = opts.run_them_all,
+                       quit_early   = opts.quit_early,
+                       n_parallel   = opts.n_parallel,
+                       until_task   = opts.until_task)
 
 
     def _import(self, task_dict):
