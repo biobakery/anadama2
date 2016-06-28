@@ -289,6 +289,10 @@ class RunContext(object):
             return cli.dump_dependencies(self._backend)
         if opts.forget:
             return cli.forget(self._backend, opts.forget)
+        return self._cli_go(opts)
+
+    
+    def _cli_go(self, opts):
         return self.go(run_them_all = opts.run_them_all,
                        quit_early   = opts.quit_early,
                        n_parallel   = opts.n_parallel,

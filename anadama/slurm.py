@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import Queue
+import optparse
 import itertools
 import threading
 from math import exp
@@ -203,8 +204,24 @@ class SlurmContext(RunContext):
             for task_idx, extra in self.slurm_task_data.iteritems()
         ])
         return super(SlurmContext, self).go(runner=runner, *args, **kwargs)
-        
 
+    def cli(self, argv=None, options=None):
+        from . import cli
+        cli.options.append(
+            optparse.make_option("-p", "--n_slurm_parallel", type=int,
+                                 help="The number of jobs to run on SLURM at once.")
+        )
+        return super(SlurmContext, self).cli(argv, options)
+
+
+    def _cli_go(self, opts):
+        return self.go(run_them_all     = opts.run_them_all,
+                       quit_early       = opts.quit_early,
+                       n_parallel       = opts.n_parallel,
+                       until_task       = opts.until_task,
+                       n_slurm_parallel = opts.n_slurm_parallel)
+
+    
 
 class SLURMWorker(threading.Thread):
 
