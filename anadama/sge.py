@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import Queue
+import optparse
 import tempfile
 import threading
 
@@ -120,6 +121,22 @@ class SGEContext(RunContext):
         ])
         return super(SGEContext, self).go(runner=runner, *args, **kwargs)
         
+    def cli(self, argv=None, options=None):
+        from . import cli
+        cli.options.append(
+            optparse.make_option("-p", "--n_sge_parallel", type=int,
+                                 help="The number of jobs to run on SGE at once.")
+        )
+        return super(SGEContext, self).cli(argv, options)
+
+
+    def _cli_go(self, opts):
+        return self.go(run_them_all   = opts.run_them_all,
+                       quit_early     = opts.quit_early,
+                       n_parallel     = opts.n_parallel,
+                       until_task     = opts.until_task,
+                       n_sge_parallel = opts.n_sge_parallel)
+
 
     def _kwargs_extract(self, kwargs_dict):
         time = kwargs_dict.pop("time", None)
