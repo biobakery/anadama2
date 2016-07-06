@@ -339,7 +339,8 @@ class RunContext(object):
             if idx in should_run:
                 continue
             for parent_idx in self.dag.predecessors(idx):
-                if parent_idx in should_run:
+                if parent_idx in should_run and \
+                   self.tasks[parent_idx] in self.tasks[idx].depends:
                     should_run.add(idx)
                     logger.debug("Can't skip %i because it depends "
                                  "directly on task %i, which will be rerun",
