@@ -63,7 +63,7 @@ class SerialLocalRunner(BaseRunner):
     def run_tasks(self, task_idx_deque):
         total = len(task_idx_deque)
         logger.debug("Running %i tasks locally and serially", total)
-        while total > len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks):
+        while task_idx_deque:
             idx = task_idx_deque.pop()
 
             parents = set(self.ctx.dag.predecessors(idx))
@@ -175,15 +175,13 @@ class ParallelLocalRunner(BaseRunner):
 
     def run_tasks(self, task_idx_deque):
         self.task_idx_deque = task_idx_deque
-        total = len(task_idx_deque)
         logger.debug("Running %i tasks in parallel with %i workers locally",
-                      total, len(self.workers))
+                      len(task_idx_deque), len(self.workers))
         
         while True:
             n_filled = self._fill_work_q()
             logger.debug("Added %i tasks to worker queues", n_filled)
-            n_done = len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks)
-            if n_filled == 0 and n_done >= total:
+            if n_filled == 0 and len(self.task_idx_deque) == 0:
                 logger.debug("No new tasks added to work queues and"
                              " the number of completed tasks equals the"
                              " number of tasks to do. Job's done")
@@ -301,15 +299,13 @@ class GridRunner(BaseRunner):
         if not self.workers:
             self._init_workers()
 
-        total = len(task_idx_deque)
         logger.debug("Running %i tasks in parallel with %i workers"
                       " using the grid",
-                      total, len(self.workers))
+                     len(task_idx_deque), len(self.workers))
         while True:
             n_filled = self._fill_work_qs()
             logger.debug("Added %i tasks to worker queues", n_filled)
-            n_done = len(self.ctx.failed_tasks)+len(self.ctx.completed_tasks)
-            if n_filled == 0 and n_done >= total:
+            if n_filled == 0 and len(self.task_idx_deque) == 0:
                 break
             try:
                 result = self._get_result()
