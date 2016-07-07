@@ -124,6 +124,7 @@ def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
 
     """
     kwargs.pop("shell", None)
+    args_list = map(str, args_list)
     def actually_system(task):
         files = []
         if stdin:
