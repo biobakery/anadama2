@@ -112,15 +112,18 @@ class RunContext(object):
         targs = _parse_wrapper(cmd, metachar="@")
         ds = _parse_wrapper(cmd, metachar="#")
         sh_cmd = re.sub(r'[@#]{([^{}]+)}', r'\1', cmd)
+        to_preexist = []
         if track_cmd:
             ns = os.path.abspath(deps.KVContainer.key(None))
             d = deps.KVDependency(ns, str(len(self.tasks)+1), sh_cmd)
-            self._add_do_pexist(d)
+            to_preexist.append(d)
             ds.append(d)
         if track_binaries:
             for binary in discover_binaries(cmd):
-                self._add_do_pexist(binary)
+                to_preexist.append(binary)
                 ds.append(binary)
+        if to_preexist:
+            self.already_exists(*to_preexist)
 
         return self.add_task(sh_cmd, depends=ds, targets=targs, name=sh_cmd,
                              interpret_deps_and_targs=False)
@@ -339,8 +342,7 @@ class RunContext(object):
             if idx in should_run:
                 continue
             for parent_idx in self.dag.predecessors(idx):
-                if parent_idx in should_run and \
-                   self.tasks[parent_idx] in self.tasks[idx].depends:
+                if parent_idx in should_run:
                     should_run.add(idx)
                     logger.debug("Can't skip %i because it depends "
                                  "directly on task %i, which will be rerun",
@@ -392,7 +394,7 @@ class RunContext(object):
                 self.dag.add_edge(dep.task_no, task.task_no)
                 continue
             if not _must_preexist(dep) and dep not in self._depidx:
-                self._add_do_pexist(dep)
+                self._add_pexist(dep)
             try:
                 parent_task = self._depidx[dep]
             except KeyError:
@@ -403,6 +405,7 @@ class RunContext(object):
                 # a preexisting dependency
                 if parent_task is not None:
                     self.dag.add_edge(parent_task.task_no, task.task_no)
+        self._pexist_task = None # reset pre-exist task
         for targ in task.targets: 
             # add targets to the DependencyIndex after looking up
             # dependencies for the current task. Hopefully this avoids
@@ -426,7 +429,7 @@ class RunContext(object):
         raise KeyError(msg.format(str(closest), type(closest)))
 
 
-    def _add_do_pexist(self, dep):
+    def _add_pexist(self, dep):
         if not self._pexist_task:
             self._pexist_task = self.add_task(
                 noop, targets=dep, name="Track pre-existing dependencies")
