@@ -345,8 +345,8 @@ class RunContext(object):
                 if parent_idx in should_run:
                     should_run.add(idx)
                     logger.debug("Can't skip %i because it depends "
-                                 "directly on task %i, which will be rerun",
-                                 parent_idx, idx)
+                                 "on task %i, which will be rerun",
+                                 idx, parent_idx)
 
         to_run, skipped = dichotomize(task_idxs, should_run.__contains__)
         for idx in skipped:
