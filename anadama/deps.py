@@ -183,6 +183,8 @@ class BaseDependency(object):
 
     """
 
+    must_preexist = True
+
     def __new__(cls, key, *args, **kwargs):
         global _singleton_idx
         real_key = cls.key(key)
@@ -240,6 +242,8 @@ class BaseDependency(object):
 
 class StringDependency(BaseDependency):
 
+    must_preexist = False
+
     def init(self, s):
         """
         Initialize the dependency.
@@ -266,6 +270,8 @@ class StringDependency(BaseDependency):
 
 KVDEPSEPARATOR = ":"
 class KVDependency(BaseDependency):
+    must_preexist = False
+
     def __new__(cls, namespace, key, val):
         global _singleton_idx
         real_key = cls.key(namespace, key, val)
@@ -533,6 +539,8 @@ class FunctionDependency(BaseDependency):
     method.
 
     """
+
+    must_preexist = False
 
     def init(self, key, fn):
         self.fn = fn
