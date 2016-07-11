@@ -56,7 +56,6 @@ class RunContext(object):
         #: :meth:`anadama.runcontext.RunContext.go`.
         self.task_results = list()
         self._depidx = deps.DependencyIndex()
-        self._pexist_task = None
         self._backend = storage_backend or backends.default()
         logger.debug("Instantiated run context")
 
@@ -112,18 +111,17 @@ class RunContext(object):
         targs = _parse_wrapper(cmd, metachar="@")
         ds = _parse_wrapper(cmd, metachar="#")
         sh_cmd = re.sub(r'[@#]{([^{}]+)}', r'\1', cmd)
-        to_preexist = []
         if track_cmd:
             ns = os.path.abspath(deps.KVContainer.key(None))
             d = deps.KVDependency(ns, str(len(self.tasks)+1), sh_cmd)
-            to_preexist.append(d)
             ds.append(d)
         if track_binaries:
+            to_preexist = []
             for binary in discover_binaries(cmd):
                 to_preexist.append(binary)
                 ds.append(binary)
-        if to_preexist:
-            self.already_exists(*to_preexist)
+            if to_preexist:
+                self.already_exists(*to_preexist)
 
         return self.add_task(sh_cmd, depends=ds, targets=targs, name=sh_cmd,
                              interpret_deps_and_targs=False)
@@ -320,6 +318,12 @@ class RunContext(object):
             self._backend.save(result.dep_keys, result.dep_compares)
             self.completed_tasks.add(result.task_no)
             self._reporter.task_completed(result)
+            pxdeps = [ d for d in self.tasks[result.task_no].depends
+                       if not istask(d) and d not in self._depidx ]
+            if pxdeps:
+                self._backend.save([d._key for d in pxdeps], 
+                                   [list(d.compare()) for d in pxdeps])
+                    
 
 
     def _handle_finished(self):
@@ -393,8 +397,8 @@ class RunContext(object):
             if istask(dep):
                 self.dag.add_edge(dep.task_no, task.task_no)
                 continue
-            if not _must_preexist(dep) and dep not in self._depidx:
-                self._add_pexist(dep)
+            if dep.must_preexist == False and dep not in self._depidx:
+                continue
             try:
                 parent_task = self._depidx[dep]
             except KeyError:
@@ -405,7 +409,6 @@ class RunContext(object):
                 # a preexisting dependency
                 if parent_task is not None:
                     self.dag.add_edge(parent_task.task_no, task.task_no)
-        self._pexist_task = None # reset pre-exist task
         for targ in task.targets: 
             # add targets to the DependencyIndex after looking up
             # dependencies for the current task. Hopefully this avoids
@@ -428,16 +431,6 @@ class RunContext(object):
         msg += "Perhaps you meant `{}' of type `{}'?"
         raise KeyError(msg.format(str(closest), type(closest)))
 
-
-    def _add_pexist(self, dep):
-        if not self._pexist_task:
-            self._pexist_task = self.add_task(
-                noop, targets=dep, name="Track pre-existing dependencies")
-        else:
-            d = deps.auto(dep)
-            if d not in self._depidx:
-                self._pexist_task.targets.append(deps.auto(dep))
-                self._depidx.link(dep, self._pexist_task)
 
 
 
@@ -505,13 +498,6 @@ def discover_binaries(s):
             ds.append(dep)
 
     return ds
-
-
-def _must_preexist(d):
-    t = (deps.StringDependency,
-         deps.KVDependency,
-         deps.FunctionDependency)
-    return type(d) not in t
 
 
 def allchildren(dag, task_no):
