@@ -51,6 +51,8 @@ def addtag(name_str, tag_str):
         
 
 def addext(name_str, tag_str):
+    if not tag_str:
+        return name_str
     return name_str + "." + tag_str
 
 

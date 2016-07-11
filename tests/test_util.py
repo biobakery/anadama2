@@ -3,7 +3,7 @@ import shutil
 import unittest
 
 import anadama.util
-
+from anadama.util import fname
 
 class TestUtil(unittest.TestCase):
 
@@ -30,3 +30,24 @@ class TestUtil(unittest.TestCase):
         self.assertNotEqual(first, second)
         self.assertNotEqual(second, third)
         self.assertEqual(first, third)
+
+
+    def test_fname(self):
+        indir = self.workdir+"/input"
+        infile = indir+"/data.txt"
+        outdir = self.workdir+"/output"
+        self.assertEqual(fname.mangle(infile, dir=outdir),
+                         outdir+"/data.txt")
+        self.assertEqual(fname.mangle(infile, ext="tsv"),
+                         indir+"/data.tsv")
+        self.assertEqual(fname.mangle(infile, dir=outdir, ext=""),
+                         outdir+"/data")
+        self.assertEqual(fname.mangle(infile, tag="clean"),
+                         indir+"/data_clean.txt")
+        self.assertEqual(fname.mangle(infile, dir=outdir+"/data", tag="special", ext="log"),
+                         outdir+"/data/data_special.log")
+
+
+        
+if __name__ == "__main__":
+    unittest.main()
