@@ -117,7 +117,7 @@ def worker_run_loop(work_q, result_q, run_task):
 
 def _run_task_locally(task, extra=None):
     for i, action_func in enumerate(task.actions):
-        logger.debug("Executing Task %i action %i", task.task_no, i)
+        logger.debug("Executing task %i action %i", task.task_no, i)
         try:
             action_func(task)
         except Exception:
@@ -126,7 +126,7 @@ def _run_task_locally(task, extra=None):
             return exception_result(
                 TaskFailed(msg.format(i, traceback.format_exc()), task.task_no)
                 )
-        logger.debug("Completed executing Task %i action %i", task.task_no, i)
+        logger.debug("Completed executing task %i action %i", task.task_no, i)
 
     targ_keys, targ_compares = list(), list()
     for target in task.targets:

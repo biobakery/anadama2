@@ -290,28 +290,28 @@ class LoggerReporter(BaseReporter):
                          len(self.run_context.tasks))
 
     def task_skipped(self, task_no):
-        msg = "Task %i `%s' skipped." + self._daginfo(task_no)
+        msg = "task %i `%s' skipped." + self._daginfo(task_no)
         self.logger.info(msg, task_no,
                          self.run_context.tasks[task_no].name)
 
     def task_started(self, task_no):
-        msg = "Task %i, `%s' started." + self._daginfo(task_no)
+        msg = "task %i, `%s' started." + self._daginfo(task_no)
         self.logger.info(msg, task_no,
                          self.run_context.tasks[task_no].name)
 
     def task_failed(self, task_result):
         n = task_result.task_no
         if n is None:
-            self.logger.error("Task %s, `Unknown' failed! Error generated: %s",
+            self.logger.error("task %s, `Unknown' failed! Error generated: %s",
                               n, task_result.error)
         else:
-            self.logger.error("Task %i, `%s' failed! Error generated: %s",
+            self.logger.error("task %i, `%s' failed! Error generated: %s",
                               n, self.run_context.tasks[n].name, task_result.error)
         self.any_failed = True
 
     def task_completed(self, task_result):
         n = task_result.task_no
-        self.logger.info("Task %i, `%s' completed successfully.",
+        self.logger.info("task %i, `%s' completed successfully.",
                          n, self.run_context.tasks[n])
 
     def finished(self):
