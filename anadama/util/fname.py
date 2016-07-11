@@ -2,7 +2,12 @@
 
 import os
 import re
+import traceback
 from . import mkdirp
+
+_owd = os.getcwd()
+original_wd = lambda: _owd
+cwd = os.getcwd
 
 def mangle(fname, tag=None, dir=None, ext=None):
     new = fname[:]
@@ -75,4 +80,15 @@ def rmext(name_str, all=False):
 
     return os.path.join(path, name_str)
 
+
+def script_wd():
+    """Return the directory of the first non-anadama module in the
+    stack. Most of the time, that's the directory that contains the script
+    that calls ctx.go()"""
+
+    anamodpath = os.path.dirname(__file__)
+    for stack_item in reversed(traceback.extract_stack()):
+        if not stack_item[0].startswith(anamodpath):
+            return os.path.abspath(os.path.dirname(stack_item[0]))
+    return cwd()
 
