@@ -11,7 +11,6 @@ from networkx.algorithms.traversal.depth_first_search import dfs_edges
 import anadama
 import anadama.sge
 import anadama.backends
-from anadama.util import find_on_path
 
 from util import capture
 
@@ -37,7 +36,8 @@ class TestSGE(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.sge.SGEContext(PARTITION, TMPDIR)
+        powerup = anadama.sge.SGEPowerup(PARTITION, TMPDIR)
+        self.ctx = anadama.sge.SGEContext(grid_powerup=powerup)
         self.workdir = "tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -67,7 +67,7 @@ class TestSGE(unittest.TestCase):
             if n in shall_fail:
                 cmd += " ;exit 1"
                 name = "should fail"
-            sge_add_task = lambda *a, **kw: self.ctx.sge_add_task(mem=50, time=5, cores=1, *a, **kw)
+            sge_add_task = lambda *a, **kw: self.ctx.grid_add_task(mem=50, time=5, cores=1, *a, **kw)
             add_task = self.ctx.add_task if bern(0.5) else sge_add_task
             t = add_task(
                 cmd, name=name,
@@ -77,7 +77,7 @@ class TestSGE(unittest.TestCase):
 
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama.runcontext.RunFailed):
-                self.ctx.go(n_sge_parallel=1)
+                self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:
             task_no = task_nos[n]
@@ -119,7 +119,7 @@ class TestSGE(unittest.TestCase):
             cmd = "touch /dev/null "+ " ".join(targets[n].values())
             if n in shall_fail:
                 cmd += " ;exit 1"
-            sge_add_task = lambda *a, **kw: self.ctx.sge_add_task(mem=50, time=5, cores=1, *a, **kw)
+            sge_add_task = lambda *a, **kw: self.ctx.grid_add_task(mem=50, time=5, cores=1, *a, **kw)
             add_task = self.ctx.add_task if bern(0.5) else sge_add_task
             t = add_task(cmd, name=cmd,
                          targets=list(targets[n].values()),
@@ -129,7 +129,7 @@ class TestSGE(unittest.TestCase):
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama.runcontext.RunFailed):
-                self.ctx.go(n_sge_parallel=1)
+                self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:
             task_no = task_nos[n]
@@ -154,7 +154,7 @@ class TestSGE(unittest.TestCase):
 
     @unittest.skipUnless(available, "requires qsub")
     def test_sge_do(self):
-        self.ctx.sge_do("echo true > @{true.txt}", time=5, mem=50, cores=1)
+        self.ctx.grid_do("echo true > @{true.txt}", time=5, mem=50, cores=1)
         self.assertFalse(os.path.exists("true.txt"))
         with capture(stderr=StringIO()):
             self.ctx.go()

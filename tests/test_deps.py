@@ -1,6 +1,5 @@
 import os
 import shutil
-import inspect
 import unittest
 
 import anadama

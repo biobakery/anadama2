@@ -7,7 +7,6 @@ import anadama
 import anadama.deps
 from anadama import picklerunner
 
-from util import capture
 
 class TestPicklerunner(unittest.TestCase):
 

@@ -38,7 +38,8 @@ class TestSlurm(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.slurm.SlurmContext(PARTITION, TMPDIR)
+        powerup = anadama.slurm.SlurmPowerup(PARTITION, TMPDIR)
+        self.ctx = anadama.RunContext(grid_powerup=powerup)
         self.workdir = "tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -68,7 +69,7 @@ class TestSlurm(unittest.TestCase):
             if n in shall_fail:
                 cmd += " ;exit 1"
                 name = "should fail"
-            slurm_add_task = lambda *a, **kw: self.ctx.slurm_add_task(mem=50, time=5, cores=1, *a, **kw)
+            slurm_add_task = lambda *a, **kw: self.ctx.grid_add_task(mem=50, time=5, cores=1, *a, **kw)
             add_task = self.ctx.add_task if bern(0.5) else slurm_add_task
             t = add_task(
                 cmd, name=name,
@@ -78,7 +79,7 @@ class TestSlurm(unittest.TestCase):
 
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama.runcontext.RunFailed):
-                self.ctx.go(n_slurm_parallel=2)
+                self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:
             task_no = task_nos[n]
@@ -120,7 +121,7 @@ class TestSlurm(unittest.TestCase):
             cmd = "touch /dev/null "+ " ".join(targets[n].values())
             if n in shall_fail:
                 cmd += " ;exit 1"
-            slurm_add_task = lambda *a, **kw: self.ctx.slurm_add_task(mem=50, time=5, cores=1, *a, **kw)
+            slurm_add_task = lambda *a, **kw: self.ctx.grid_add_task(mem=50, time=5, cores=1, *a, **kw)
             add_task = self.ctx.add_task if bern(0.5) else slurm_add_task
             t = add_task(cmd, name=cmd,
                          targets=list(targets[n].values()),
@@ -130,7 +131,7 @@ class TestSlurm(unittest.TestCase):
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama.runcontext.RunFailed):
-                self.ctx.go(n_slurm_parallel=2)
+                self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:
             task_no = task_nos[n]
@@ -155,7 +156,7 @@ class TestSlurm(unittest.TestCase):
 
     @unittest.skipUnless(srun_exists, "requires srun")
     def test_slurm_do(self):
-        self.ctx.slurm_do("echo true > @{true.txt}", time=5, mem=50, cores=1)
+        self.ctx.grid_do("echo true > @{true.txt}", time=5, mem=50, cores=1)
         self.assertFalse(os.path.exists("true.txt"))
         with capture(stderr=StringIO()):
             self.ctx.go()

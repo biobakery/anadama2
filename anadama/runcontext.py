@@ -12,8 +12,8 @@ from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
 from . import Task
 from . import deps
+from . import grid
 from . import reporters
-from . import runners
 from . import backends
 from .taskcontainer import TaskContainer
 from .helpers import sh, parse_sh
@@ -41,7 +41,7 @@ class RunContext(object):
     """
 
 
-    def __init__(self, storage_backend=None):
+    def __init__(self, storage_backend=None, grid_powerup=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         #: tasks is a :class:`anadama.taskcontainer.TaskContainer`
@@ -57,6 +57,7 @@ class RunContext(object):
         self.task_results = list()
         self._depidx = deps.DependencyIndex()
         self._backend = storage_backend or backends.default()
+        self.grid_powerup = grid_powerup or grid.DummyPowerup()
         logger.debug("Instantiated run context")
 
 
@@ -127,6 +128,12 @@ class RunContext(object):
                              interpret_deps_and_targs=False)
 
 
+    def grid_do(self, cmd, track_cmd=True, track_binaries=True, **gridopts):
+        t = self.do(cmd, track_cmd, track_binaries)
+        self.grid_powerup.do(t, **gridopts)
+        return t
+
+
     def add_task(self, actions=None, depends=None, targets=None,
                  name=None, interpret_deps_and_targs=True):
         """Create and add a :class:`anadama.Task` to the runcontext.  This
@@ -192,6 +199,21 @@ class RunContext(object):
             return the_task
 
 
+    def grid_add_task(self, actions=None, depends=None, targets=None,
+                      name=None, interpret_deps_and_targs=True, **gridopts):
+        if not actions: # must be a decorator
+            def finish_grid_add_task(fn):
+                t = self.add_task([fn], depends, targets, name)
+                self._add_task(t)
+                self.grid_powerup.add_task(t, **gridopts)
+            return finish_grid_add_task
+        else:
+            t = self.add_task(actions, depends, targets, name,
+                              interpret_deps_and_targs)
+            self.grid_powerup.add_task(t, **gridopts)
+            return t
+
+
     def already_exists(self, *depends):
         """Declare a dependency as pre-existing. That means that no task
         creates these dependencies; they're already there before any
@@ -213,7 +235,7 @@ class RunContext(object):
 
 
     def go(self, run_them_all=False, quit_early=False, runner=None,
-           reporter=None, n_parallel=1, until_task=None):
+           reporter=None, n_parallel=1, n_grid_parallel=1, until_task=None):
         """Kick off execution of all previously configured tasks. 
 
         :keyword run_them_all: Skip no tasks; run it all.
@@ -247,9 +269,16 @@ class RunContext(object):
           used with the ``runner`` keyword.
         :type n_parallel: int
 
+        :keyword n_grid_parallel: The number of tasks to submit to the
+          grid in parallel. This option is ignored when a custom
+          runner is used with the ``runner`` keyword. This option is
+          also a synonym for ``n_parallel`` if the context has no grid
+          powerup.
+        :type n_grid_parallel: int
+
         :keyword until_task: Stop after running the named task. Can
           refer to the end task by task number or task name.
-        :type n_parallel: int or str
+        :type until_task: int or str
 
         """
 
@@ -259,7 +288,8 @@ class RunContext(object):
         self._reporter = reporter or reporters.default(self)
         self._reporter.started()
 
-        _runner = runner or runners.default(self, n_parallel)
+        _runner = runner or self.grid_powerup.runner(self, n_parallel,
+                                                     n_grid_parallel)
         _runner.quit_early = quit_early
         logger.debug("Sorting task_nos by network topology")
         task_idxs = nx.algorithms.dag.topological_sort(self.dag, reverse=True)
@@ -294,10 +324,11 @@ class RunContext(object):
 
     
     def _cli_go(self, opts):
-        return self.go(run_them_all = opts.run_them_all,
-                       quit_early   = opts.quit_early,
-                       n_parallel   = opts.n_parallel,
-                       until_task   = opts.until_task)
+        return self.go(run_them_all    = opts.run_them_all,
+                       quit_early      = opts.quit_early,
+                       n_parallel      = opts.n_parallel,
+                       n_grid_parallel = opts.n_grid_parallel,
+                       until_task      = opts.until_task)
 
 
     def _import(self, task_dict):
