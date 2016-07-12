@@ -2,11 +2,10 @@ import os
 import sys
 import time
 import Queue
-import optparse
 import tempfile
 import threading
 
-from . import RunContext
+from . import grid
 from . import runners
 from . import picklerunner
 
@@ -24,29 +23,30 @@ available = all( bool(find_on_path(prog)) for prog in
                  ("qconf", "qsub"))
 
 
-class SGEContext(RunContext):
+class SGEPowerup(grid.DummyPowerup):
     """This class enables the RunContext class to dispatch tasks to
     Sun Grid Engine and its lookalikes. Use it like so:
 
     .. code:: python
 
-      from anadama.runcontext.grid import SGEContext
+      from anadama import RunContext
+      from anadama.sge import SGEPowerup
 
-      ctx = SGEContext(queue="general")
+      ctx = RunContext(grid_powerup=SGEPowerup(queue="general"))
       ctx.do("wget "
              "ftp://public-ftp.hmpdacc.org/"
              "HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 "
              "-O @{input/hmp1.v35.hq.otu.counts.bz2}")
 
       # run on sge with 200 MB of memory, 4 cores, and 60 minutes
-      t1 = ctx.sge_do("pbzip2 -d -p 4 < #{input/hmp1.v35.hq.otu.counts.bz2} "
-                        "> @{input/hmp1.v35.hq.otu.counts}",
-                        mem=200, cores=4, time=60)
+      t1 = ctx.grid_do("pbzip2 -d -p 4 < #{input/hmp1.v35.hq.otu.counts.bz2} "
+                       "> @{input/hmp1.v35.hq.otu.counts}",
+                       mem=200, cores=4, time=60)
 
       # run on sge on the serial_requeue queue
-      ctx.sge_add_task("some_huge_analysis {depends[0]} {targets[0]}",
-                         depends=t1.targets, targets="output.txt",
-                         mem=4000, cores=1, time=300, partition="serial_requeue")
+      ctx.grid_add_task("some_huge_analysis {depends[0]} {targets[0]}",
+                        depends=t1.targets, targets="output.txt",
+                        mem=4000, cores=1, time=300, partition="serial_requeue")
 
 
       ctx.go()
@@ -68,7 +68,6 @@ class SGEContext(RunContext):
 
     def __init__(self, queue, tmpdir="/tmp", extra_qsub_flags=[],
                  *args, **kwargs):
-        super(SGEContext, self).__init__(*args, **kwargs)
         self.sge_queue = queue
         self.sge_tmpdir = tmpdir
         self.extra_qsub_flags = extra_qsub_flags
@@ -93,49 +92,26 @@ class SGEContext(RunContext):
             return self.add_task(**keepkeys(task_dict, keys_to_keep))
 
 
-    def sge_do(self, *args, **kwargs):
+    def do(self, task, **kwargs):
         params = self._kwargs_extract(kwargs)
-        task = self.do(*args, **kwargs)
         self.sge_task_data[task.task_no] = params
-        return task
 
     
-    def sge_add_task(self, *args, **kwargs):
+    def add_task(self, task, **kwargs):
         params = self._kwargs_extract(kwargs)
-        task = self.add_task(*args, **kwargs)
         self.sge_task_data[task.task_no] = params
-        return task
 
     
-    def go(self, n_sge_parallel=1, *args, **kwargs):
-        kwargs.pop("runner", None) # ignore the runner keyword
-        local_n_parallel = kwargs.pop("n_parallel", 1)
-        runner = runners.GridRunner(self)
+    def runner(self, ctx, n_parallel=1, n_grid_parallel=1):
+        runner = runners.GridRunner(ctx)
         runner.add_worker(runners.ParallelLocalWorker,
-                          name="local", rate=local_n_parallel, default=True)
-        runner.add_worker(SGEWorker, name="sge",
-                          rate=n_sge_parallel)
+                          name="local", rate=n_parallel, default=True)
+        runner.add_worker(SGEWorker, name="sge", rate=n_grid_parallel)
         runner.routes.update([
             ( task_idx, ("sge", extra) )
             for task_idx, extra in self.sge_task_data.iteritems()
         ])
-        return super(SGEContext, self).go(runner=runner, *args, **kwargs)
-        
-    def cli(self, argv=None, options=None):
-        from . import cli
-        cli.options.append(
-            optparse.make_option("-p", "--n_sge_parallel", type=int,
-                                 help="The number of jobs to run on SGE at once.")
-        )
-        return super(SGEContext, self).cli(argv, options)
-
-
-    def _cli_go(self, opts):
-        return self.go(run_them_all   = opts.run_them_all,
-                       quit_early     = opts.quit_early,
-                       n_parallel     = opts.n_parallel,
-                       until_task     = opts.until_task,
-                       n_sge_parallel = opts.n_sge_parallel)
+        return runner
 
 
     def _kwargs_extract(self, kwargs_dict):
@@ -179,7 +155,6 @@ class SGEContext(RunContext):
 
 
 
-
 class SGEWorker(threading.Thread):
 
     def __init__(self, work_q, result_q):
@@ -195,6 +170,7 @@ class SGEWorker(threading.Thread):
     def run(self):
         return runners.worker_run_loop(self.work_q, self.result_q, 
                                        _run_task_sge)
+
 
 
 def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
@@ -233,7 +209,7 @@ def _run_task_sge(task, extra):
     except Exception as e:
         e.task_no = task.task_no
         return runners.exception_result(e)
-        
+
     try:
         result = picklerunner.decode(taskout)
     except ValueError:
@@ -247,5 +223,5 @@ def _run_task_sge(task, extra):
     elif extra_error: # (result is not None) is implicit here
         result = result._replace(error=result.error+extra_error)
     return result
-        
+
 

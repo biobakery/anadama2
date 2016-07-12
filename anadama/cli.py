@@ -32,7 +32,9 @@ options = [
                          executed: basically, keep going until you run out of tasks
                          to execute."""),
     optparse.make_option("-n", '--n-parallel', default=1, type=int,
-                         help="The number of tasks to execute in parallel."),
+                         help="The number of tasks to execute in parallel locally."),
+    optparse.make_option("-n", '--n-grid-parallel', default=1, type=int,
+                         help="The number of tasks to submit to the grid in parallel."),
     optparse.make_option("-u", '--until-task', default=None,
                          help="""Stop after running the named task. Can refer to
                          the end task by task number or task name."""),

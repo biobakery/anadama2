@@ -2,13 +2,12 @@ import os
 import re
 import sys
 import Queue
-import optparse
 import itertools
 import threading
 from math import exp
 from collections import namedtuple
 
-from . import RunContext
+from . import grid
 from . import runners
 from . import picklerunner
 
@@ -41,29 +40,31 @@ class PerformanceData(namedtuple("PerformanceData", ["time", "mem", "cores"])):
     pass # the class definition is just for the docstring
 
 
-class SlurmContext(RunContext):
-    """This class enables the RunContext class to dispatch tasks to
+class SlurmPowerup(grid.DummyPowerup):
+    """This powerup enables the RunContext class to dispatch tasks to
     SLURM. Use it like so:
 
     .. code:: python
 
-      from anadama.runcontext.grid import SlurmContext
+      from anadama import RunContext
+      from anadama.slurm import SlurmPowerup
 
-      ctx = SlurmContext(partition="general")
+      powerup = Slurmpowerup(partition="general")
+      ctx = RunContext(grid_powerup=powerup)
       ctx.do("wget "
              "ftp://public-ftp.hmpdacc.org/"
              "HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 "
              "-O @{input/hmp1.v35.hq.otu.counts.bz2}")
 
       # run on slurm with 200 MB of memory, 4 cores, and 60 minutes
-      t1 = ctx.slurm_do("pbzip2 -d -p 4 < #{input/hmp1.v35.hq.otu.counts.bz2} "
-                        "> @{input/hmp1.v35.hq.otu.counts}",
-                        mem=200, cores=4, time=60)
+      t1 = ctx.grid_do("pbzip2 -d -p 4 < #{input/hmp1.v35.hq.otu.counts.bz2} "
+                       "> @{input/hmp1.v35.hq.otu.counts}",
+                       mem=200, cores=4, time=60)
 
       # run on slurm on the serial_requeue partition
-      ctx.slurm_add_task("some_huge_analysis {depends[0]} {targets[0]}",
-                         depends=t1.targets, targets="output.txt",
-                         mem=4000, cores=1, time=300, partition="serial_requeue")
+      ctx.grid_add_task("some_huge_analysis {depends[0]} {targets[0]}",
+                        depends=t1.targets, targets="output.txt",
+                        mem=4000, cores=1, time=300, partition="serial_requeue")
 
 
       ctx.go()
@@ -83,9 +84,7 @@ class SlurmContext(RunContext):
 
     """
 
-    def __init__(self, partition, tmpdir="/tmp", extra_srun_flags=[],
-                 *args, **kwargs):
-        super(SlurmContext, self).__init__(*args, **kwargs)
+    def __init__(self, partition, tmpdir, extra_srun_flags=[]):
         self.slurm_partition = partition
         self.slurm_tmpdir = tmpdir
         self.extra_srun_flags = extra_srun_flags
@@ -120,9 +119,8 @@ class SlurmContext(RunContext):
             return self.add_task(**keepkeys(task_dict, keys_to_keep))
 
 
-    def slurm_do(self, *args, **kwargs):
-        """Use it like :meth:`anadama.runcontext.RunContext.do`. Accepts the
-        following extra arguments:
+    def do(self, task, **kwargs):
+        """Accepts the following extra arguments:
         
         :param time: The maximum time in minutes allotted to run the
           command
@@ -145,14 +143,11 @@ class SlurmContext(RunContext):
 
         """
         params = self._kwargs_extract(kwargs)
-        task = self.do(*args, **kwargs)
         self.slurm_task_data[task.task_no] = params
-        return task
 
     
-    def slurm_add_task(self, *args, **kwargs):
-        """Use it like :meth:`anadama.runcontext.RunContext.add_task`. Accepts
-        the following extra arguments:
+    def add_task(self, task, **kwargs):
+        """Accepts the following extra arguments:
         
         :keyword time: The maximum time in minutes allotted to run the
           command
@@ -175,51 +170,19 @@ class SlurmContext(RunContext):
 
         """
         params = self._kwargs_extract(kwargs)
-        task = self.add_task(*args, **kwargs)
         self.slurm_task_data[task.task_no] = params
-        return task
 
 
-    def go(self, n_slurm_parallel=1, *args, **kwargs):
-        """Launch execution of all tasks. Behaves much like
-        :meth:`anadama.runcontext.RunContext.go`, except the
-        ``runner`` keyword argument is
-        ignored; :class:`anadama.runners.GridRunner` is always used.
-        Accepts the following extra arguments:
-
-        :keyword n_slurm_parallel: The number of jobs to run on SLURM
-          at once.
-        :type n_slurm_parallel: int
-
-        """
-        kwargs.pop("runner", None) # ignore the runner keyword
-        local_n_parallel = kwargs.pop("n_parallel", 1)
-        runner = runners.GridRunner(self)
+    def runnner(self, ctx, n_parallel=1, n_grid_parallel=1):
+        runner = runners.GridRunner(ctx)
         runner.add_worker(runners.ParallelLocalWorker,
-                          name="local", rate=local_n_parallel, default=True)
-        runner.add_worker(SLURMWorker, name="slurm",
-                          rate=n_slurm_parallel)
+                          name="local", rate=n_parallel, default=True)
+        runner.add_worker(SLURMWorker, name="slurm", rate=n_grid_parallel)
         runner.routes.update([
             ( task_idx, ("slurm", extra) )
             for task_idx, extra in self.slurm_task_data.iteritems()
         ])
-        return super(SlurmContext, self).go(runner=runner, *args, **kwargs)
-
-    def cli(self, argv=None, options=None):
-        from . import cli
-        cli.options.append(
-            optparse.make_option("-p", "--n_slurm_parallel", type=int,
-                                 help="The number of jobs to run on SLURM at once.")
-        )
-        return super(SlurmContext, self).cli(argv, options)
-
-
-    def _cli_go(self, opts):
-        return self.go(run_them_all     = opts.run_them_all,
-                       quit_early       = opts.quit_early,
-                       n_parallel       = opts.n_parallel,
-                       until_task       = opts.until_task,
-                       n_slurm_parallel = opts.n_slurm_parallel)
+        return runner
 
     
 
