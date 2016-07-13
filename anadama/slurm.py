@@ -173,7 +173,7 @@ class SlurmPowerup(grid.DummyPowerup):
         self.slurm_task_data[task.task_no] = params
 
 
-    def runnner(self, ctx, n_parallel=1, n_grid_parallel=1):
+    def runner(self, ctx, n_parallel=1, n_grid_parallel=1):
         runner = runners.GridRunner(ctx)
         runner.add_worker(runners.ParallelLocalWorker,
                           name="local", rate=n_parallel, default=True)
@@ -241,7 +241,7 @@ def _run_task_slurm(task, extra):
         return runners.TaskResult(task.task_no, extra_error or "srun failed",
                                   None, None)
     elif extra_error: # (result is not None) is implicit here
-        result = result._replace(error=result.error+extra_error)
+        result = result._replace(error=str(result.error)+extra_error)
     return result
         
 
