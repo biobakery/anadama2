@@ -2,6 +2,8 @@ import os
 import re
 import sys
 import Queue
+import logging
+import optparse
 import itertools
 import threading
 from math import exp
@@ -234,6 +236,8 @@ def _run_task_slurm(task, extra):
         result = picklerunner.decode(out)
     except ValueError:
         extra_error += "Unable to decode task result\n"
+        logging.error("Unable to decode task result, \nOut: %s\nErr: %s",
+                      out, err)
         result = None
     if proc.returncode != 0:
         extra_error += "Srun error: "+err+"\n"
