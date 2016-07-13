@@ -19,6 +19,8 @@ import anadama.taskcontainer
 
 from util import capture
 
+SLEEPTIME = os.environ.get("ANADAMA_SLEEP_TIME", "0.01")
+SLEEPTIME=float(SLEEPTIME)
 
 class TestRunContext(unittest.TestCase):
 
@@ -227,7 +229,7 @@ class TestRunContext(unittest.TestCase):
         with capture(stderr=StringIO()):
             self.ctx.go()
         ctime = os.stat(outf).st_ctime
-        time.sleep(1)
+        time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
         self.assertEqual(ctime, os.stat(outf).st_ctime)
@@ -246,7 +248,7 @@ class TestRunContext(unittest.TestCase):
             self.ctx.go()
         self.assertEqual(mtime, os.stat(a).st_mtime)
         os.remove(a)
-        time.sleep(0.01)
+        time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
         self.assertNotEqual(mtime, os.stat(a).st_mtime)
@@ -272,7 +274,7 @@ class TestRunContext(unittest.TestCase):
         self.assertEqual(mtime, os.stat(out).st_mtime)
         with open(os.path.join(self.workdir, "f.txt"), 'w') as f:
             print >> f, "hi mom"
-        time.sleep(0.01)
+        time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
         new_mtime = os.stat(out).st_mtime
@@ -300,7 +302,7 @@ class TestRunContext(unittest.TestCase):
         self.assertEqual(mtime, os.stat(out).st_mtime)
         with open(os.path.join(self.workdir, "f.txt"), 'w') as f:
             print >> f, "hi mom"
-        time.sleep(0.01)
+        time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
         new_mtime = os.stat(out).st_mtime
@@ -323,19 +325,19 @@ class TestRunContext(unittest.TestCase):
             self.ctx.go()
         self.assertEqual(mtime, os.stat(a).st_mtime)
         conf.beta = 7
-        time.sleep(0.01)
+        time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
         new_mtime = os.stat(a).st_mtime
         self.assertNotEqual(mtime, new_mtime)
         conf.gamma = 10
-        time.sleep(0.01)
+        time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
         self.assertEqual(new_mtime, os.stat(a).st_mtime)
         self.ctx.add_task("echo beta > {targets[0]}",
                           depends=conf.items(), targets=a)
-        time.sleep(0.01)
+        time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
         self.assertNotEqual(new_mtime, os.stat(a).st_mtime)

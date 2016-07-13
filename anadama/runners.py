@@ -178,10 +178,10 @@ class ParallelLocalRunner(BaseRunner):
         logger.debug("Running %i tasks in parallel with %i workers locally",
                       len(task_idx_deque), len(self.workers))
         
+        self.n_to_do = len(task_idx_deque)
         while True:
-            n_filled = self._fill_work_q()
-            logger.debug("Added %i tasks to worker queues", n_filled)
-            if n_filled == 0 and len(self.task_idx_deque) == 0:
+            self._fill_work_q()
+            if self.n_to_do <= 0:
                 logger.debug("No new tasks added to work queues and"
                              " the number of completed tasks equals the"
                              " number of tasks to do. Job's done")
@@ -198,6 +198,7 @@ class ParallelLocalRunner(BaseRunner):
                 self.terminate()
                 raise
             else:
+                self.n_to_do -= 1
                 self.ctx._handle_task_result(result)
             if self.quit_early and result.error:
                 logger.debug("Quitting early.")
@@ -209,7 +210,6 @@ class ParallelLocalRunner(BaseRunner):
 
     def _fill_work_q(self):
         logger.debug("Filling work_q")
-        n_filled = 0
         for _ in range(min(self.MAX_QSIZE, len(self.task_idx_deque))):
             idx = self.task_idx_deque.pop()
             parents = set(self.ctx.dag.predecessors(idx))
@@ -217,6 +217,7 @@ class ParallelLocalRunner(BaseRunner):
             if failed_parents:
                 self.ctx._handle_task_result(
                     parent_failed_result(idx, failed_parents[0]))
+                self.n_to_do -= 1
                 continue
             elif parents.difference(self.ctx.completed_tasks):
                 # has undone parents, come back again later
@@ -232,13 +233,11 @@ class ParallelLocalRunner(BaseRunner):
             self.ctx._handle_task_started(idx)
             self.work_q.put((pkl, None))
             logger.debug("Added task %i to work_q", idx)
-            n_filled += 1
         if not self.started:
             logger.debug("Starting up workers")
             for w in self.workers:
                 w.start()
             self.started = True
-        return n_filled
 
 
     def terminate(self):
@@ -302,10 +301,10 @@ class GridRunner(BaseRunner):
         logger.debug("Running %i tasks in parallel with %i workers"
                       " using the grid",
                      len(task_idx_deque), len(self.workers))
+        self.n_to_do = len(task_idx_deque)
         while True:
-            n_filled = self._fill_work_qs()
-            logger.debug("Added %i tasks to worker queues", n_filled)
-            if n_filled == 0 and len(self.task_idx_deque) == 0:
+            self._fill_work_qs()
+            if self.n_to_do <= 0:
                 break
             try:
                 result = self._get_result()
@@ -319,6 +318,7 @@ class GridRunner(BaseRunner):
                 self.terminate()
                 raise
             else:
+                self.n_to_do -= 1
                 self.ctx._handle_task_result(result)
             if self.quit_early and result.error:
                 logger.debug("Quitting early.")
@@ -361,7 +361,6 @@ class GridRunner(BaseRunner):
 
     def _fill_work_qs(self):
         logger.debug("Filling work_qs")
-        n_filled = 0
         for _ in range(min(self.MAX_QSIZE, len(self.task_idx_deque))):
             idx = self._get_next_task()
             if idx is None:
@@ -377,14 +376,12 @@ class GridRunner(BaseRunner):
             self._worker_qs[name][0].put((pkl, extra))
             self.ctx._handle_task_started(idx)
             logger.debug("Added task %i to `%s' work_q", idx, name)
-            n_filled += 1
         if not self.started:
             logger.debug("Starting up workers")
             for w in self.workers:
                 logger.debug("Starting worker %s", w)
                 w.start()
             self.started = True
-        return n_filled
 
 
     def _init_workers(self):
@@ -410,6 +407,7 @@ class GridRunner(BaseRunner):
             self.ctx._handle_task_result(
                 parent_failed_result(idx, iter(failed_parents).next())
                 )
+            self.n_to_do -= 1
             return None
         elif parents.difference(self.ctx.completed_tasks):
             # has undone parents, come back again later
