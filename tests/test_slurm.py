@@ -127,7 +127,6 @@ class TestSlurm(unittest.TestCase):
                          targets=list(targets[n].values()),
                          depends=list(depends[n].values()))
             task_nos[n] = t.task_no
-        # self.ctx.fail_idx = task_nos[G.successors(list(shall_fail)[0])[-1]]
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama.runcontext.RunFailed):
