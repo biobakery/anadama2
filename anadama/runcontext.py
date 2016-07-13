@@ -38,6 +38,11 @@ class RunContext(object):
     :type storage_backend: instance of any
       :class:`anadama.backends.BaseBackend` subclass or None.
 
+    :keyword grid_powerup: Use this object to configure the run
+      context to submit tasks to a compute grid.  
+    :type grid_powerup: objects implementing the interface of
+      :class:`anadama.grid.DummyPowerup`
+
     """
 
 
@@ -45,12 +50,12 @@ class RunContext(object):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         #: tasks is a :class:`anadama.taskcontainer.TaskContainer`
-        #: filled with objects of type : :class:`anadama.Task`. This
-        #: list is populated as new tasks : are added via
-        #: :meth:`anadama.runcontext.RunContext.add_task` : and
+        #: filled with objects of type :class:`anadama.Task`. This
+        #: list is populated as new tasks are added via
+        #: :meth:`anadama.runcontext.RunContext.add_task` and
         #: :meth:`anadama.runcontext.RunContext.do`
         self.tasks = TaskContainer()
-        #: task_results is a list of objects of type :
+        #: task_results is a list of objects of type 
         #: :class:`anadama.runners.TaskResult`. This list is populated
         #: only after tasks have been run with
         #: :meth:`anadama.runcontext.RunContext.go`.
@@ -129,6 +134,16 @@ class RunContext(object):
 
 
     def grid_do(self, cmd, track_cmd=True, track_binaries=True, **gridopts):
+        """Add a task to be launched on a grid computing system as specified
+        in the ``grid_powerup`` option of
+        :class:`anadama.runcontext.RunContext`. By default, this
+        method is a synonym for
+        :meth:`anadama.runcontext.RunContext.do`. Please see the
+        ``add_task`` documentation for your powerup of choice
+        e.g. :meth:`anadama.slurm.SlurmPowerup.do` for information on
+        options to provide to this method.
+        """
+
         t = self.do(cmd, track_cmd, track_binaries)
         self.grid_powerup.do(t, **gridopts)
         return t
@@ -201,6 +216,16 @@ class RunContext(object):
 
     def grid_add_task(self, actions=None, depends=None, targets=None,
                       name=None, interpret_deps_and_targs=True, **gridopts):
+        """Add a task to be launched on a grid computing system as specified
+        in the ``grid_powerup`` option of
+        :class:`anadama.runcontext.RunContext`. By default, this
+        method is a synonym for
+        :meth:`anadama.runcontext.RunContext.add_task`. Please see the
+        ``add_task`` documentation for your powerup of choice
+        e.g. :meth:`anadama.slurm.SlurmPowerup.add_task` for information on
+        options to provide to this method.
+
+        """
         if not actions: # must be a decorator
             def finish_grid_add_task(fn):
                 t = self.add_task([fn], depends, targets, name)
@@ -306,6 +331,12 @@ class RunContext(object):
 
 
     def cli(self, argv=None, options=None):
+        """Expose a command line interface to
+        :meth:`anadama.runcontext.RunContext.go`. Use the ``-h`` flag
+        to see documentation for accepted options.
+
+        """
+
         from . import cli
         if not options:
             options = cli.options
