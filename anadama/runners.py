@@ -419,12 +419,14 @@ class GridRunner(BaseRunner):
 
 
     def _get_result(self):
-        for q in self._qcycle: # loops forever until we get from q
-            try:
-                ret = q.get(True, 0.05)
-            except Queue.Empty:
-                continue
-            return ret
+        while True:
+            for _ in range(len(self.workers)):
+                try:
+                    ret = next(self._qcycle).get(False)
+                except Queue.Empty:
+                    continue
+                return ret
+            time.sleep(0.05)
 
 
     def _terminate_mpq(self, q, name):
