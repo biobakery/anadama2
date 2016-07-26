@@ -47,13 +47,13 @@ def new_file(*names, **opts):
 
 def addtag(name_str, tag_str):
     path, name_str = os.path.split(name_str)
-    match = re.match(r'(.+)(\..*)', name_str)
+    match = re.match(r'(.+?)(\..*)', name_str)
     if match:
         base, ext = match.groups()
         return os.path.join(path, base + "_" + tag_str + ext)
     else:
         return os.path.join(path, name_str + "_" + tag_str)
-        
+
 
 def addext(name_str, tag_str):
     if not tag_str:

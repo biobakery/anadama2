@@ -47,6 +47,10 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(fname.mangle(infile, dir=outdir+"/data", tag="special", ext="log"),
                          outdir+"/data/data_special.log")
 
+    def test_addtag(self):
+        self.assertEqual(fname.addtag("/shares/hiibroad/data/humann2_medclean/input/Batch15_WGS_S/6819351/processed/6819351_2.fastq.bz2", "special"),
+                         "/shares/hiibroad/data/humann2_medclean/input/Batch15_WGS_S/6819351/processed/6819351_2_special.fastq.bz2")
+
 
         
 if __name__ == "__main__":
