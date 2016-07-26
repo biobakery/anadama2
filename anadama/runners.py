@@ -162,12 +162,11 @@ class ParallelLocalWorker(multiprocessing.Process):
 
 
 class ParallelLocalRunner(BaseRunner):
-    MAX_QSIZE = 1000
 
     def __init__(self, run_context, n_parallel):
         super(ParallelLocalRunner, self).__init__(run_context)
-        self.work_q = multiprocessing.Queue(self.MAX_QSIZE)
-        self.result_q = multiprocessing.Queue(self.MAX_QSIZE)
+        self.work_q = multiprocessing.Queue()
+        self.result_q = multiprocessing.Queue()
         self.workers = [ ParallelLocalWorker(self.work_q, self.result_q)
                          for _ in range(n_parallel) ]
         self.started = False
@@ -181,6 +180,7 @@ class ParallelLocalRunner(BaseRunner):
         self.n_to_do = len(task_idx_deque)
         while True:
             self._fill_work_q()
+            logger.debug("Tasks left to do: %s", self.n_to_do)
             if self.n_to_do <= 0:
                 logger.debug("No new tasks added to work queues and"
                              " the number of completed tasks equals the"
@@ -210,7 +210,7 @@ class ParallelLocalRunner(BaseRunner):
 
     def _fill_work_q(self):
         logger.debug("Filling work_q")
-        for _ in range(min(self.MAX_QSIZE, len(self.task_idx_deque))):
+        for _ in range(len(self.task_idx_deque)):
             idx = self.task_idx_deque.pop()
             parents = set(self.ctx.dag.predecessors(idx))
             failed_parents = parents.intersection(self.ctx.failed_tasks)
@@ -274,7 +274,6 @@ class ParallelLocalRunner(BaseRunner):
 
 
 class GridRunner(BaseRunner):
-    MAX_QSIZE = 5000
 
     def __init__(self, runcontext):
         super(GridRunner, self).__init__(runcontext)
@@ -304,6 +303,7 @@ class GridRunner(BaseRunner):
         self.n_to_do = len(task_idx_deque)
         while True:
             self._fill_work_qs()
+            logger.debug("Tasks left to do: %s", self.n_to_do)
             if self.n_to_do <= 0:
                 break
             try:
@@ -361,7 +361,7 @@ class GridRunner(BaseRunner):
 
     def _fill_work_qs(self):
         logger.debug("Filling work_qs")
-        for _ in range(min(self.MAX_QSIZE, len(self.task_idx_deque))):
+        for _ in range(len(self.task_idx_deque)):
             idx = self._get_next_task()
             if idx is None:
                 continue
@@ -387,8 +387,8 @@ class GridRunner(BaseRunner):
     def _init_workers(self):
         threads, procs = list(), list()
         for name, (worker_cls, n_procs) in self._worker_config.iteritems():
-            work_q = worker_cls.appropriate_q_class(self.MAX_QSIZE)
-            result_q = worker_cls.appropriate_q_class(self.MAX_QSIZE)
+            work_q = worker_cls.appropriate_q_class()
+            result_q = worker_cls.appropriate_q_class()
             self._worker_qs[name] = (work_q, result_q)
             isproc = issubclass(worker_cls, multiprocessing.Process) 
             l = procs if isproc else threads
