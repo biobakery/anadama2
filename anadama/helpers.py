@@ -86,7 +86,8 @@ def parse_sh(s, **kwargs):
 
 
 def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
-           stderr=None, stderr_clobber=None, **kwargs):
+           stderr=None, stderr_clobber=None, working_dir=None, 
+           **kwargs):
     """Execute a system call (no shell will be used). All further keywords
     are passed to :class:`subprocess.Popen`
 
@@ -125,6 +126,16 @@ def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
     """
     kwargs.pop("shell", None)
     args_list = map(str, args_list)
+    __sh = _sh
+    if working_dir is not None:
+        def __sh(*a, **kw):
+            prev = os.getcwd()
+            os.chdir(working_dir)
+            try:
+                ret = _sh(*a, **kw)
+            finally:
+                os.chdir(prev)
+            return ret
     def actually_system(task):
         files = []
         if stdin:
