@@ -7,24 +7,6 @@ AnADAMA
 
 ________________________________________________________________________________
 
-Using Version 2
-===============
-
-To start working with the new features of AnADAMA, use the ``v2`` branch.
-
-::
-
-  $ git clone https://bitbucket.org/biobakery/anadama.git
-  $ cd anadama
-  $ git checkout v2
-  $ python setup.py install
-
-
-Documentation for version 2 can be found at the `docs site <https://huttenhower.sph.harvard.edu/docs/anadamav2/guides.html>`_.
-
-
-
-
 Overview
 ========
 
@@ -37,8 +19,6 @@ workflow tasks only when necessary. Plus, you get these extra goodies for free:
 - A framework for building pipelines, for when you need an interface
   to your workflows fast.
 
-.. _doit: http://pydoit.org/
-
 Getting AnADAMA
 ===============
 
@@ -47,9 +27,8 @@ ____________________
 
 .. code:: bash
 
-  $ git clone https://bitbucket.org/biobakery/anadama.git
-  $ cd anadama
-  $ git checkout v2
+  $ hg clone https://bitbucket.org/biobakery/anadama2
+  $ cd anadama2
 
 Installation
 ____________
@@ -75,8 +54,6 @@ Usage
 
 
 
-
-
 Documentation
 =============
 
@@ -89,13 +66,5 @@ How to get help
 
 Submit an issue_.
 
-.. _issue: https://bitbucket.org/biobakery/anadama/issues
+.. _issue: https://bitbucket.org/biobakery/anadama2/issues
 
-Workflows and pipelines written for you
-=======================================
-
-Hey, it's nice to use things that are already made!
-
-Check out the ``anadama_workflows`` repository_ over on bitbucket.
-
-.. _repository: https://bitbucket.org/biobakery/anadama_workflows
