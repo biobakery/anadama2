@@ -3,6 +3,5 @@ syntax: glob
 *.pyc
 *.egg-info
 *.fuse_hidden*
-*#
 doc/build/*
 .noseids
