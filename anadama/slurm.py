@@ -3,7 +3,6 @@ import re
 import sys
 import Queue
 import logging
-import optparse
 import itertools
 import threading
 from math import exp
