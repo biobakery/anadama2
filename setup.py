@@ -1,8 +1,19 @@
+import os
+import sys
+
 from setuptools import setup, find_packages
+
+requires = [
+        'networkx==1.11',
+        'leveldb==0.193'
+]
+
+if os.name == 'posix' and sys.version_info[0] < 3:
+    requires.append("subprocess32")
 
 setup(
     name='anadama',
-    version='0.0.1',
+    version='0.1.1',
     description=('AnADAMA - '
                  'Another '
                  'Automated '
@@ -12,16 +23,9 @@ setup(
                  'Application'),
     packages=find_packages(exclude=['ez_setup', 'tests', 'tests.*']),
     zip_safe=False,
-    install_requires=[
-        'doit==0.25.0',
-        'networkx==1.9'
-    ],
+    install_requires=requires,
     classifiers=[
         "Development Status :: 2 - Pre-Alpha"
     ],
-    entry_points= {
-        'console_scripts': [
-            'anadama = anadama.cli:main',
-        ],
-    }
+    test_suite="tests.test_suite"
 )
