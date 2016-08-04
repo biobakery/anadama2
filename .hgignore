@@ -5,3 +5,4 @@ syntax: glob
 *.fuse_hidden*
 doc/build/*
 .noseids
+*.orig

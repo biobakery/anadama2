@@ -50,9 +50,13 @@ def sh(s, **kwargs):
 
     """
     def actually_sh(task=None):
-        logging.getLogger(__name__).debug("Executing with shell: "+s)
+        logger = logging.getLogger(__name__)
+        logger.debug("Executing with shell: "+s)
         kwargs['shell'] = True
-        return _sh(s, **kwargs)
+        ret = _sh(s, **kwargs)
+        logger.debug("Execution complete. Stdout: %s\nStderr: %s",
+                     ret[0] or '',
+                     ret[1] or '')
     return actually_sh
 
 
@@ -80,8 +84,12 @@ def parse_sh(s, **kwargs):
     def actually_sh(task):
         kwargs['shell'] = True
         fmtd = s.format(depends=task.depends, targets=task.targets)
-        logging.getLogger(__name__).debug("Executing with shell: "+fmtd)
-        return _sh(fmtd, **kwargs)
+        logger = logging.getLogger(__name__)
+        logger.debug("Executing with shell: "+fmtd)
+        ret = _sh(fmtd, **kwargs)
+        logger.debug("Execution complete. Stdout: %s\nStderr: %s",
+                     ret[0] or '',
+                     ret[1] or '')
     return actually_sh
 
 
@@ -154,9 +162,13 @@ def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
             f = kwargs['stderr'] = open(stderr_clobber, 'w')
             files.append(f)
         with contextlib.nested(*files):
-            logging.getLogger(__name__).debug(
+            logger = logging.getLogger(__name__)
+            logger.debug(
                 "Forking subprocess %s with args %s", args_list, kwargs)
             ret = _sh(args_list, **kwargs)
+            logger.debug("Execution complete. Stdout: %s\nStderr: %s",
+                         ret[0] or '',
+                         ret[1] or '')
         return ret
     return actually_system
 
