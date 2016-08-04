@@ -1,10 +1,25 @@
 import re
 import os
+import sys
 import json
+import zlib
 import errno
 import inspect
 import mimetypes
+from functools import wraps
+from itertools import izip_longest
+from multiprocessing import cpu_count
 from collections import namedtuple
+
+from .. import Task
+
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
+
+
+max_cpus = max(1, cpu_count()-1)
 
 class SparseMetadataException(ValueError):
     pass
@@ -15,39 +30,24 @@ biopython_to_metaphlan = {
     "bam"  : "bam",
 }
 
+
+def first(iterable):
+    return next(iter(iterable))
+
+
+def intatleast1(n):
+    return max(1, int(n))
+
+
 def generator_flatten(gen):
     for item in gen:
-        if inspect.isgenerator(item):
+        if inspect.isgenerator(item) or type(item) in (list, tuple):
             for value in generator_flatten(item):
                 yield value
         else:
             yield item
 
-def addext(name_str, tag_str):
-    return name_str + "." + tag_str
 
-
-def rmext(name_str):
-    """removes file extensions"""
-    path, name_str = os.path.split(name_str)
-    match = re.match(r'(.+)(\..*)', name_str)
-    if match:
-        noext = match.group(1)
-    else:
-        noext = name_str
-
-    return os.path.join(path, noext)
-
-
-def addtag(name_str, tag_str):
-    path, name_str = os.path.split(name_str)
-    match = re.match(r'(.+)(\..*)', name_str)
-    if match:
-        base, ext = match.groups()
-        return os.path.join(path, base + "_" + tag_str + ext)
-    else:
-        return os.path.join(path, name_str + "_" + tag_str)
-        
 def guess_seq_filetype(guess_from):
     guess_from = os.path.split(guess_from)[-1]
     if re.search(r'\.f.*q(\.gz|\.bz2)?$', guess_from): #fastq, fnq, fq
@@ -61,30 +61,40 @@ def guess_seq_filetype(guess_from):
     elif guess_from.endswith('.sam'):
         return 'sam'
 
-def dict_to_cmd_opts_iter(opts_dict, sep="=", singlesep=" "):
+
+def dict_to_cmd_opts_iter(opts_dict,
+                          shortsep=" ",  longsep="=",
+                          shortdash="-", longdash="--"):
     """sep separates long options and their values, singlesep separates
     short options and their values e.g. --long=foobar vs -M 2
 
     """
+    if longsep is None:
+        longkv = lambda k, v: (longdash+k, v)
+    else:
+        longkv = lambda k, v: longdash + k + longsep + v
+
+    if shortsep is None:
+        shortkv = lambda k, v: (shortdash+k, v)
+    else:
+        shortkv = lambda k, v: shortdash + k + shortsep + v
 
     for key, val in opts_dict.iteritems():
-        if len(key) > 1:
-            key = "--%s"% (key)
+        kv = longkv if len(key) > 1 else shortkv
+        if val is False or None:
+            continue
+        elif val is True:
+            yield longdash+key if len(key) > 1 else shortdash+key
+        elif type(val) in (tuple, list):
+            for subval in val:
+                yield kv(key, subval)
         else:
-            key = "-%s"% (key)
-            
-        if val:
-            if len(key) == 2:
-                yield key+singlesep+val
-            else:
-                yield key+sep+val
-        else:
-            yield key
+            yield kv(key, str(val))
 
         
-def dict_to_cmd_opts(opts_dict, sep="=", singlesep=" "):
-    return " ".join(dict_to_cmd_opts_iter(
-        opts_dict, sep=sep, singlesep=singlesep))
+def dict_to_cmd_opts(*args, **kwds):
+    return " ".join(dict_to_cmd_opts_iter(*args, **kwds))
+
 
 def mkdirp(path):
     try:
@@ -95,42 +105,20 @@ def mkdirp(path):
         else:
             raise
 
-def _new_file(*names, **opts):
-    basedir = opts.get("basedir")
-    for name in names:
-        if basedir:
-            name = os.path.realpath(
-                os.path.join(
-                    basedir, os.path.basename(name)
-                )
-            )
-        
-        dir = os.path.dirname(name)
-        if dir and not os.path.exists(dir):
-            mkdirp(dir)
-
-        yield name
-
-
-def new_file(*names, **opts):
-    iterator = _new_file(*names, basedir=opts.get("basedir"))
-    if len(names) == 1:
-        return iterator.next()
-    else:
-        return list(iterator)
 
 def is_compressed(fname):
     recognized_compression_types = ("gzip", "bzip2")
     return mimetypes.guess_type(fname)[1] in recognized_compression_types
 
+
 def filter_compressed(fname_list):
     """Return only files that are known to be compressed and in a
     recognized compression format"""
-
     return [
         (i,fname) for i,fname in enumerate(fname_list)
         if is_compressed(fname)
     ]
+
 
 def which_compressed_idxs(fname_mtx):
     for i, raw_tuple in enumerate(fname_mtx):
@@ -138,16 +126,19 @@ def which_compressed_idxs(fname_mtx):
             if is_compressed(fname):
                 yield i, j
 
+
 def take(raw_seq_files, index_list):
     return [
         raw_seq_files[i][j] for i, j in index_list
     ]
+
         
 ###
 # Serialization things
 
 class SerializationError(TypeError):
     pass
+
 
 def deserialize_csv(file_handle):
     for i, line in enumerate(file_handle):
@@ -165,6 +156,7 @@ def deserialize_csv(file_handle):
             cols[0], 
             [ col.strip() for col in cols[1:] ] 
             )
+
         
 def deserialize_map_file(file_handle):
     """Returns a list of namedtuples according to the contents of the
@@ -186,7 +178,7 @@ def deserialize_map_file(file_handle):
             continue
         try:
             yield cls._make([ r.strip() for r in row.split('\t') ])
-        except TypeError as e:
+        except TypeError:
             raise SparseMetadataException(
                 "Unable to deserialize sample-specific metadata:"+\
                 " The file %s has missing values at row %i" %(
@@ -205,9 +197,12 @@ def serialize_map_file(namedtuples, output_fname):
 
 
 def _defaultfunc(obj):
-    if hasattr(obj, '_serializable_attrs'):
+    try:
         return obj._serializable_attrs
-    elif hasattr(obj, 'isoformat'):
+    except AttributeError:
+        pass
+
+    if hasattr(obj, 'isoformat'):
         return obj.isoformat()
         
     raise SerializationError("Unable to serialize object %s" %(obj))
@@ -219,11 +214,13 @@ def serialize(obj, to_fp=None):
     else:
         return json.dumps(obj, default=_defaultfunc)
 
+
 def deserialize(s=None, from_fp=None):
     if s:
         return json.loads(s)
     elif from_fp:
         return json.load(from_fp)
+
 
 class SerializableMixin(object):
     """Mixin that defines a few methods to simplify serializing objects
@@ -241,11 +238,24 @@ class SerializableMixin(object):
                 for key in self.serializable_attrs
             ])
 
+
 def islambda(func):
     return getattr(func,'func_name') == '<lambda>'
 
-_PATH_list = None
 
+def memoized(func):
+    cache = func.cache = {}
+
+    @wraps(func)
+    def memoizer(*args, **kwargs):
+        if args not in cache:
+            cache[args] = func(*args, **kwargs)
+        return cache[args]
+    return memoizer
+
+
+_PATH_list = None
+@memoized
 def find_on_path(bin_str):
     """ Finds an executable living on the shells PATH variable.
     :param bin_str: String; executable to find
@@ -265,3 +275,132 @@ def find_on_path(bin_str):
 
     return False
 
+
+def partition(it, binsize, pad=None):
+    iters = [iter(it)]*binsize
+    return izip_longest(fillvalue=pad, *iters)    
+
+
+def _adler32(fname):
+    """Compute the adler32 checksum on a file.
+
+    :param fname: File path to the file to checksum
+    :type fname: str
+    """
+
+    with open(fname, 'r') as f:
+        checksum = 1
+        while True:
+            buf = f.read(1024*1024*8)
+            if not buf:
+                break
+            checksum = zlib.adler32(buf, checksum)
+            
+    return checksum
+
+
+class ShellException(OSError):
+    pass
+
+
+def sh(cmd, **kwargs):
+    kwargs['stdout'] = kwargs.get('stdout', subprocess.PIPE)
+    kwargs['stderr'] = kwargs.get('stderr', subprocess.PIPE)
+    proc = subprocess.Popen(cmd, **kwargs)
+    ret = proc.communicate()
+    if proc.returncode:
+        msg = "Command `{}' failed. \nOut: {}\nErr: {}"
+        raise ShellException(proc.returncode, msg.format(cmd, ret[0], ret[1]))
+    return ret
+
+
+class Bag(object):
+    pass
+
+class HasNoEqual(object):
+    def __eq__(self, other):
+        return False
+
+
+def noop(*args, **kwargs):
+    return None
+
+
+def istask(x):
+    return isinstance(x, Task)
+
+
+def isnottask(x):
+    return not isinstance(x, Task)
+
+
+def underscore(s, repl=r'[\s/:@\,*?]+'):
+    """Remove all whitespace and replace with underscores"""
+    return re.sub(repl, '_', s)
+
+
+def sugar_list(x):
+    """Turns just a single thing into a list containing that single thing.
+
+    """
+
+    if istask(x) or not hasattr(x, "__iter__") or isinstance(x, basestring):
+        return [x]
+    else:
+        return x
+
+
+def keepkeys(d, keys):
+    """Drop all keys from dictionary ``d`` except those in
+    ``keys``. Modifies the dictionary in place!
+    
+    :param d: The dictionary to modify
+    :type d: dict
+
+    :param keys: The keys to keep
+    :type keys: iterable
+    """
+
+    ks = set(list(keys))
+    to_rm = [k for k in d.iterkeys() if k not in ks]
+    for k in to_rm:
+        del d[k]
+    return d
+
+def keyrename(d, mapping):
+    """Change all keys in dictionary ``d`` according to
+    ``mapping``. Modifies ``d`` in place!
+
+    :param d: The dictionary to change
+    :type d: dict
+
+    :param mapping: The keys to change and to what to change them
+    :type mapping: iterable of 2-tuples
+
+    """
+
+    for frm, to in mapping:
+        d[to] = d.pop(frm)
+    return d
+
+
+def dichotomize(it, tf_func):
+    """Split an iterable into two lists by use of a function that returns
+    True or False.
+
+    :param it: The items to split
+
+    :param tf_func: A function that returns True or False
+
+    :returns: 2-Tuple of lists: the items for which the function
+      returned True, and the items for which the function returned
+      False
+
+    """
+    t, f, = list(), list()
+    for item in it:
+        if tf_func(item):
+            t.append(item)
+        else:
+            f.append(item)
+    return t, f
