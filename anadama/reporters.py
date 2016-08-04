@@ -1,8 +1,8 @@
 import sys
 import logging
 
-def default(run_context):
-    return ConsoleReporter(run_context)
+def default():
+    return LoggerReporter("INFO")
 
 class BaseReporter(object):
 
@@ -11,18 +11,14 @@ class BaseReporter(object):
 
     The runcontext that executes the hooks defined can be accessed at
     ``self.run_context``.
-
     """
 
-    def __init__(self, run_context):
-        self.run_context = run_context
-
-    def started(self):
+    def started(self, run_context):
         """Executed when a run is started, usually when
         :meth:`anadama.runcontext.RunContext.go` is executed.
 
         """
-
+        self.run_context = run_context
         raise NotImplementedError()
 
     def task_skipped(self, task_no):
@@ -138,7 +134,7 @@ class ReporterGroup(BaseReporter):
     
 
 class ConsoleReporter(BaseReporter):
-    """The default reporter. Prints out run progress to stderr.
+    """Prints out run progress to stderr.
     An example readout is as follows:
 
     ::
@@ -177,13 +173,12 @@ class ConsoleReporter(BaseReporter):
     msg_str = "({:.1})[{:3}/{:3} - {:6.2f}%] {:.57}"
 
     class stats:
-        skip = "s"
-        fail = "!"
-        done = "+"
+        skip  = "s"
+        fail  = "!"
+        done  = "+"
         start = " "
 
     def __init__(self, *args, **kwargs):
-        super(ConsoleReporter, self).__init__(*args, **kwargs)
         self.failed_results = list()
         self.n_open = 0
         self.multithread_mode = False
@@ -205,7 +200,8 @@ class ConsoleReporter(BaseReporter):
         sys.stderr.write(s)
         
 
-    def started(self):
+    def started(self, ctx):
+        self.run_context = ctx
         self.reset()
 
     def task_started(self, task_no):
@@ -245,12 +241,8 @@ class ConsoleReporter(BaseReporter):
 
 
 
-
 class LoggerReporter(BaseReporter):
     """A reporter that uses :mod:`logging`.
-
-    :param run_context: The run context to report on
-    :type run_context: :class:`anadama.runcontext.RunContext`
 
     :param loglevel_str: The logging level. Valid levels: subdebug,
       debug, info, subwarning, warning, error
@@ -266,7 +258,7 @@ class LoggerReporter(BaseReporter):
     """
 
     FORMAT = "%(asctime)s\t%(name)s\t%(funcName)s\t%(levelname)s: %(message)s"
-    def __init__(self, run_context, loglevel_str="", logfile=None,
+    def __init__(self, loglevel_str="", logfile=None,
                  fmt_str=None, *args, **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)
         logkwds = {"format": fmt_str or self.FORMAT,
@@ -277,7 +269,6 @@ class LoggerReporter(BaseReporter):
             logkwds['filename'] = logfile
         logging.basicConfig(**logkwds)
         self.any_failed = False
-        super(LoggerReporter, self).__init__(run_context, *args, **kwargs)
 
     def _daginfo(self, task_no):
         children = self.run_context.dag.successors(task_no)
@@ -285,7 +276,8 @@ class LoggerReporter(BaseReporter):
         msg = " {} parents: {}.  {} children: {}."
         return msg.format(len(parents), parents, len(children), children)
 
-    def started(self):
+    def started(self, ctx):
+        self.run_context = ctx
         self.logger.info("Beginning AnADAMA run with %i tasks.",
                          len(self.run_context.tasks))
 

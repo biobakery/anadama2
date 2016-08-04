@@ -85,6 +85,7 @@ class TestRunContext(unittest.TestCase):
 
     def test_discover_binaries(self):
         bash_script = os.path.join(self.workdir, "test.sh")
+        echoprog = anadama.util.sh(("which", "echo"))[0].strip()
         with open(bash_script, 'w') as f:
             print >> f, "#!/bin/bash"
             print >> f, "echo hi"
@@ -93,11 +94,11 @@ class TestRunContext(unittest.TestCase):
         with open(plain_file, 'w') as f:
             print >> f, "nothing to see here"
         ret = anadama.runcontext.discover_binaries("echo hi")
-        self.assertGreater(len(ret), 0, "should find /bin/echo")
+        self.assertGreater(len(ret), 0, "should find "+echoprog)
         self.assertTrue(isinstance(ret[0], anadama.deps.ExecutableDependency))
-        self.assertEqual(str(ret[0]), "/bin/echo")
+        self.assertEqual(str(ret[0]), echoprog)
 
-        ret2 = anadama.runcontext.discover_binaries("/bin/echo foo")
+        ret2 = anadama.runcontext.discover_binaries(echoprog+" foo")
         self.assertIs(ret[0], ret2[0], "should discover the same dep")
         
         ret = anadama.runcontext.discover_binaries(
