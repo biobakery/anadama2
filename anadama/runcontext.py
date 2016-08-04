@@ -310,8 +310,8 @@ class RunContext(object):
         self.completed_tasks = set()
         self.failed_tasks = set()
         self.task_results = [None for _ in range(len(self.tasks))]
-        self._reporter = reporter or reporters.default(self)
-        self._reporter.started()
+        self._reporter = reporter or reporters.default()
+        self._reporter.started(self)
 
         _runner = runner or self.grid_powerup.runner(self, n_parallel,
                                                      n_grid_parallel)

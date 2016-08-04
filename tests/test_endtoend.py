@@ -117,7 +117,7 @@ class TestEndToEnd(unittest.TestCase):
         with capture(stderr=StringIO()):
             import anadama.reporters
             with self.assertRaises(anadama.runcontext.RunFailed):
-                rep = anadama.reporters.LoggerReporter(self.ctx, "debug", "/tmp/analog")
+                rep = anadama.reporters.LoggerReporter("debug", "/tmp/analog")
                 self.ctx.go(reporter=rep)
         child_fail = set()
         for n in shall_fail:
