@@ -2,7 +2,10 @@ import sys
 import logging
 
 def default():
-    return LoggerReporter("INFO")
+    return ReporterGroup([
+        LoggerReporter("debug", "anadama.log"),
+        ConsoleReporter()
+    ])
 
 class BaseReporter(object):
 
@@ -102,9 +105,9 @@ class ReporterGroup(BaseReporter):
         self.reps = other_reporters
 
 
-    def started(self):
+    def started(self, ctx):
         for r in self.reps:
-            r.started()
+            r.started(ctx)
 
 
     def task_skipped(self, task_no):
