@@ -12,7 +12,7 @@ import networkx
 
 import anadama
 import anadama.deps
-import anadama.runcontext
+import anadama.workflow
 import anadama.util
 import anadama.backends
 import anadama.taskcontainer
@@ -35,7 +35,7 @@ class TestWorkflow(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.runcontext.Workflow()
+        self.ctx = anadama.workflow.Workflow()
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -93,21 +93,21 @@ class TestWorkflow(unittest.TestCase):
         plain_file = os.path.join(self.workdir, "blah.txt")
         with open(plain_file, 'w') as f:
             print >> f, "nothing to see here"
-        ret = anadama.runcontext.discover_binaries("echo hi")
+        ret = anadama.workflow.discover_binaries("echo hi")
         self.assertGreater(len(ret), 0, "should find "+echoprog)
         self.assertTrue(isinstance(ret[0], anadama.deps.ExecutableDependency))
         self.assertEqual(str(ret[0]), echoprog)
 
-        ret2 = anadama.runcontext.discover_binaries(echoprog+" foo")
+        ret2 = anadama.workflow.discover_binaries(echoprog+" foo")
         self.assertIs(ret[0], ret2[0], "should discover the same dep")
         
-        ret = anadama.runcontext.discover_binaries(
+        ret = anadama.workflow.discover_binaries(
             bash_script+" arguments dont matter")
         self.assertEqual(len(ret), 1, "should just find one dep")
         self.assertTrue(isinstance(ret[0], anadama.deps.ExecutableDependency))
         self.assertEqual(str(ret[0]), bash_script)
 
-        ret = anadama.runcontext.discover_binaries(plain_file+" blah blah")
+        ret = anadama.workflow.discover_binaries(plain_file+" blah blah")
         self.assertEqual(len(ret), 0, "shouldn't discover unexecutable files")
         
 
@@ -217,7 +217,7 @@ class TestWorkflow(unittest.TestCase):
                           depends=[outf], targets=[outf])
 
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.runcontext.RunFailed):
+            with self.assertRaises(anadama.workflow.RunFailed):
                 self.ctx.go(quit_early=True)
 
         self.assertFalse(
@@ -416,7 +416,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertIn(stderr_msg, err.getvalue())
        
     def test__sugar_list(self):
-        rc = anadama.runcontext
+        rc = anadama.workflow
         self.assertEqual([5], rc.sugar_list(5))
         self.assertEqual(["blah"], rc.sugar_list("blah"))
         it = iter(range(5))

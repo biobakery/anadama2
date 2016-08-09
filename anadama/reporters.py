@@ -12,13 +12,13 @@ class BaseReporter(object):
     """The base reporter defines functionality similar amongst all
     reporters.
 
-    The runcontext that executes the hooks defined can be accessed at
+    The workflow that executes the hooks defined can be accessed at
     ``self.run_context``.
     """
 
     def started(self, run_context):
         """Executed when a run is started, usually when
-        :meth:`anadama.runcontext.Workflow.go` is executed.
+        :meth:`anadama.workflow.Workflow.go` is executed.
 
         """
         self.run_context = run_context
@@ -168,7 +168,7 @@ class ConsoleReporter(BaseReporter):
       5. The task name. That's the text that comes after the ending
          square bracket. Remember that you can set the task name with
          the ``name`` option to
-         :meth:`anadama.runcontext.Workflow.add_task`.
+         :meth:`anadama.workflow.Workflow.add_task`.
 
     """
 

@@ -52,13 +52,13 @@ class Workflow(object):
         #: tasks is a :class:`anadama.taskcontainer.TaskContainer`
         #: filled with objects of type :class:`anadama.Task`. This
         #: list is populated as new tasks are added via
-        #: :meth:`anadama.runcontext.Workflow.add_task` and
-        #: :meth:`anadama.runcontext.Workflow.do`
+        #: :meth:`anadama.workflow.Workflow.add_task` and
+        #: :meth:`anadama.workflow.Workflow.do`
         self.tasks = TaskContainer()
         #: task_results is a list of objects of type 
         #: :class:`anadama.runners.TaskResult`. This list is populated
         #: only after tasks have been run with
-        #: :meth:`anadama.runcontext.Workflow.go`.
+        #: :meth:`anadama.workflow.Workflow.go`.
         self.task_results = list()
         self._depidx = deps.DependencyIndex()
         self._backend = storage_backend or backends.default()
@@ -67,7 +67,7 @@ class Workflow(object):
 
 
     def do(self, cmd, track_cmd=True, track_binaries=True):
-        """Create and add a :class:`anadama.Task` to the runcontext using a
+        """Create and add a :class:`anadama.Task` to the workflow using a
         convenient, shell-like syntax. 
 
         To explicitly mark task targets, wrap filenames within ``cmd``
@@ -99,7 +99,7 @@ class Workflow(object):
         binaries or scripts change. Set ``track_binaries`` to False to
         disable this behavior.
 
-        :param cmd: The shell command to add to the runcontext. Wrap a
+        :param cmd: The shell command to add to the workflow. Wrap a
           target filename in ``@{}`` and wrap a dependency filename in
           `#{}``.
         :type cmd: str
@@ -136,9 +136,9 @@ class Workflow(object):
     def grid_do(self, cmd, track_cmd=True, track_binaries=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
         in the ``grid_powerup`` option of
-        :class:`anadama.runcontext.Workflow`. By default, this
+        :class:`anadama.workflow.Workflow`. By default, this
         method is a synonym for
-        :meth:`anadama.runcontext.Workflow.do`. Please see the
+        :meth:`anadama.workflow.Workflow.do`. Please see the
         ``add_task`` documentation for your powerup of choice
         e.g. :meth:`anadama.slurm.SlurmPowerup.do` for information on
         options to provide to this method.
@@ -151,7 +151,7 @@ class Workflow(object):
 
     def add_task(self, actions=None, depends=None, targets=None,
                  name=None, interpret_deps_and_targs=True):
-        """Create and add a :class:`anadama.Task` to the runcontext.  This
+        """Create and add a :class:`anadama.Task` to the workflow.  This
         function can be used as a decorator to set a function as the
         sole action.
         
@@ -218,9 +218,9 @@ class Workflow(object):
                       name=None, interpret_deps_and_targs=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
         in the ``grid_powerup`` option of
-        :class:`anadama.runcontext.Workflow`. By default, this
+        :class:`anadama.workflow.Workflow`. By default, this
         method is a synonym for
-        :meth:`anadama.runcontext.Workflow.add_task`. Please see the
+        :meth:`anadama.workflow.Workflow.add_task`. Please see the
         ``add_task`` documentation for your powerup of choice
         e.g. :meth:`anadama.slurm.SlurmPowerup.add_task` for information on
         options to provide to this method.
@@ -332,7 +332,7 @@ class Workflow(object):
 
     def cli(self, argv=None, options=None):
         """Expose a command line interface to
-        :meth:`anadama.runcontext.Workflow.go`. Use the ``-h`` flag
+        :meth:`anadama.workflow.Workflow.go`. Use the ``-h`` flag
         to see documentation for accepted options.
 
         """
@@ -530,7 +530,7 @@ def _build_name(name, task_no):
 def _parse_wrapper(s, metachar):
     """search through string ``s`` and find terms wrapped in curly braces
     and a metacharacter ``metachar``. Intended for use with
-    :meth:`anadama.runcontext.Workflow.do`.
+    :meth:`anadama.workflow.Workflow.do`.
     """
 
     start = len(metachar)+1
