@@ -13,7 +13,7 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 
 setup(
     name='anadama',
-    version='0.1.1',
+    version='0.1.2',
     description=('AnADAMA - '
                  'Another '
                  'Automated '
