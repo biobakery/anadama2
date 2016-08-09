@@ -29,7 +29,7 @@ def auto(x):
     - Strings not ending in '/' ``->`` :class:`anadama.deps.FileDependency`
 
     - Instances of subclasses of :class:`anadama.Task` are handled
-      specially by :meth:`anadama.runcontext.RunContext.add_task` and
+      specially by :meth:`anadama.runcontext.Workflow.add_task` and
       are returned as is
 
     - Functions or other callables ``->`` :class:`anadama.deps.FunctionDependency`
@@ -154,11 +154,11 @@ class BaseDependency(object):
     """The Dependency object is the tool for specifying task father-child
     relationships. Dependency objects can be used in either
     ``targets`` or ``depends`` arguments of
-    :meth:`anadama.runcontext.RunContext.add_task`. Often, these targets or
+    :meth:`anadama.runcontext.Workflow.add_task`. Often, these targets or
     dependencies are specified by strings or :class:`anadama.Task`
     objects and instantiated into the appropriate BaseDependency
     subclass with :func:`anadama.deps.auto`; this behavior depends on the
-    arguments to :meth:`anadama.runcontext.RunContext.add_task`.
+    arguments to :meth:`anadama.runcontext.Workflow.add_task`.
 
     A dependency of the same name will be defined multiple times in
     the normal use of AnADAMA. To make it such that many calls of a

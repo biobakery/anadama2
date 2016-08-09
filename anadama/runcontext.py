@@ -29,8 +29,8 @@ class RunFailed(ValueError):
     pass
 
 
-class RunContext(object):
-    """Create a RunContext.
+class Workflow(object):
+    """Create a Workflow.
     
     :keyword storage_backend: Lookup and save dependency information
       from this object. If ``None`` is passed (the default), the
@@ -52,13 +52,13 @@ class RunContext(object):
         #: tasks is a :class:`anadama.taskcontainer.TaskContainer`
         #: filled with objects of type :class:`anadama.Task`. This
         #: list is populated as new tasks are added via
-        #: :meth:`anadama.runcontext.RunContext.add_task` and
-        #: :meth:`anadama.runcontext.RunContext.do`
+        #: :meth:`anadama.runcontext.Workflow.add_task` and
+        #: :meth:`anadama.runcontext.Workflow.do`
         self.tasks = TaskContainer()
         #: task_results is a list of objects of type 
         #: :class:`anadama.runners.TaskResult`. This list is populated
         #: only after tasks have been run with
-        #: :meth:`anadama.runcontext.RunContext.go`.
+        #: :meth:`anadama.runcontext.Workflow.go`.
         self.task_results = list()
         self._depidx = deps.DependencyIndex()
         self._backend = storage_backend or backends.default()
@@ -79,9 +79,9 @@ class RunContext(object):
 
         .. code:: python
 
-            from anadama import RunContext
+            from anadama import Workflow
 
-            ctx = RunContext()
+            ctx = Workflow()
             ctx.do("wget -qO- checkip.dyndns.com > @{my_ip.txt}")
             ctx.do(r"sed 's|.*Address: \(.*[0-9]\)<.*|\1|' #{my_ip.txt} > @{ip.txt}")
             ctx.do("whois $(cat #{ip.txt}) > @{whois.txt}")
@@ -136,9 +136,9 @@ class RunContext(object):
     def grid_do(self, cmd, track_cmd=True, track_binaries=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
         in the ``grid_powerup`` option of
-        :class:`anadama.runcontext.RunContext`. By default, this
+        :class:`anadama.runcontext.Workflow`. By default, this
         method is a synonym for
-        :meth:`anadama.runcontext.RunContext.do`. Please see the
+        :meth:`anadama.runcontext.Workflow.do`. Please see the
         ``add_task`` documentation for your powerup of choice
         e.g. :meth:`anadama.slurm.SlurmPowerup.do` for information on
         options to provide to this method.
@@ -218,9 +218,9 @@ class RunContext(object):
                       name=None, interpret_deps_and_targs=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
         in the ``grid_powerup`` option of
-        :class:`anadama.runcontext.RunContext`. By default, this
+        :class:`anadama.runcontext.Workflow`. By default, this
         method is a synonym for
-        :meth:`anadama.runcontext.RunContext.add_task`. Please see the
+        :meth:`anadama.runcontext.Workflow.add_task`. Please see the
         ``add_task`` documentation for your powerup of choice
         e.g. :meth:`anadama.slurm.SlurmPowerup.add_task` for information on
         options to provide to this method.
@@ -332,7 +332,7 @@ class RunContext(object):
 
     def cli(self, argv=None, options=None):
         """Expose a command line interface to
-        :meth:`anadama.runcontext.RunContext.go`. Use the ``-h`` flag
+        :meth:`anadama.runcontext.Workflow.go`. Use the ``-h`` flag
         to see documentation for accepted options.
 
         """
@@ -530,7 +530,7 @@ def _build_name(name, task_no):
 def _parse_wrapper(s, metachar):
     """search through string ``s`` and find terms wrapped in curly braces
     and a metacharacter ``metachar``. Intended for use with
-    :meth:`anadama.runcontext.RunContext.do`.
+    :meth:`anadama.runcontext.Workflow.do`.
     """
 
     start = len(metachar)+1

@@ -6,7 +6,7 @@ runcontext
    :local:
 .. currentmodule:: anadama.runcontext
 
-.. autoattribute:: anadama.runcontext.RunContext
+.. autoattribute:: anadama.runcontext.Workflow
 
 .. automodule:: anadama.runcontext
    :members:

@@ -1,7 +1,7 @@
 import anadama.deps
-from anadama import RunContext
+from anadama import Workflow
 
-ctx = RunContext()
+ctx = Workflow()
 step1_const = anadama.deps.KVContainer(a = 20)
 step1 = ctx.add_task("echo {depends[0]} > {targets[0]}",
                      depends=step1_const.a, targets="step1.txt",

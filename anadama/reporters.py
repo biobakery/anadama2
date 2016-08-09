@@ -18,7 +18,7 @@ class BaseReporter(object):
 
     def started(self, run_context):
         """Executed when a run is started, usually when
-        :meth:`anadama.runcontext.RunContext.go` is executed.
+        :meth:`anadama.runcontext.Workflow.go` is executed.
 
         """
         self.run_context = run_context
@@ -168,7 +168,7 @@ class ConsoleReporter(BaseReporter):
       5. The task name. That's the text that comes after the ending
          square bracket. Remember that you can set the task name with
          the ``name`` option to
-         :meth:`anadama.runcontext.RunContext.add_task`.
+         :meth:`anadama.runcontext.Workflow.add_task`.
 
     """
 
