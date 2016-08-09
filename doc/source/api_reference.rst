@@ -18,6 +18,6 @@ API Reference
    helpers
    reporters
    runners
-   runcontext
+   workflow
    slurm	      
    util

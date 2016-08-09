@@ -1,6 +1,6 @@
 """Contains functions that help create tasks. All functions contained
 herein are intended for use with
-:meth:`anadama.runcontext.Workflow.add_task`. This means that the functions
+:meth:`anadama.workflow.Workflow.add_task`. This means that the functions
 in here don't immediately do what they say; they return functions
 that, when called, do that they say (they're closures). Sorry if that
 breaks your brain.

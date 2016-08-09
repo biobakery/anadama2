@@ -9,7 +9,7 @@ import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
 import anadama
-import anadama.runcontext
+import anadama.workflow
 import anadama.backends
 
 from util import capture
@@ -30,7 +30,7 @@ class TestEndToEnd(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.runcontext.Workflow()
+        self.ctx = anadama.workflow.Workflow()
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -66,7 +66,7 @@ class TestEndToEnd(unittest.TestCase):
             task_nos[n] = t.task_no
 
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.runcontext.RunFailed):
+            with self.assertRaises(anadama.workflow.RunFailed):
                 self.ctx.go()
         child_fail = set()
         for n in shall_fail:
@@ -116,7 +116,7 @@ class TestEndToEnd(unittest.TestCase):
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
             import anadama.reporters
-            with self.assertRaises(anadama.runcontext.RunFailed):
+            with self.assertRaises(anadama.workflow.RunFailed):
                 rep = anadama.reporters.LoggerReporter("debug", "/tmp/analog")
                 self.ctx.go(reporter=rep)
         child_fail = set()

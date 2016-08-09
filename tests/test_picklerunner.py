@@ -21,7 +21,7 @@ class TestPicklerunner(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.runcontext.Workflow()
+        self.ctx = anadama.workflow.Workflow()
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)

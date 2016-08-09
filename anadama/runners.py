@@ -275,8 +275,8 @@ class ParallelLocalRunner(BaseRunner):
 
 class GridRunner(BaseRunner):
 
-    def __init__(self, runcontext):
-        super(GridRunner, self).__init__(runcontext)
+    def __init__(self, workflow):
+        super(GridRunner, self).__init__(workflow)
         self._worker_config = dict()
         self._worker_qs = dict()
         self.routes = dict() # task_no -> (worker_type_name, extra_args)

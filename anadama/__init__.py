@@ -5,7 +5,7 @@ class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
                                "task_no"])):
     """A unit of work. 
     
-    :param name: The task name; must be unique to all tasks within a runcontext.
+    :param name: The task name; must be unique to all tasks within a workflow.
     :type name: str or unicode
     
     :param actions: The actions to execute; do these and the work is done.
@@ -26,6 +26,6 @@ class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
     pass # the class definition is just for the docstring
 
 
-from .runcontext import Workflow
+from .workflow import Workflow
 
 Workflow # pyflakes

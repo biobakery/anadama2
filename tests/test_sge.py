@@ -76,7 +76,7 @@ class TestSGE(unittest.TestCase):
             task_nos[n] = t.task_no
 
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.runcontext.RunFailed):
+            with self.assertRaises(anadama.workflow.RunFailed):
                 self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:
@@ -128,7 +128,7 @@ class TestSGE(unittest.TestCase):
         # self.ctx.fail_idx = task_nos[G.successors(list(shall_fail)[0])[-1]]
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.runcontext.RunFailed):
+            with self.assertRaises(anadama.workflow.RunFailed):
                 self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:

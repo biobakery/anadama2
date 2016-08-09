@@ -1,6 +1,6 @@
 import itertools
 
-from .runcontext import Workflow
+from .workflow import Workflow
 from .util import dict_to_cmd_opts, dict_to_cmd_opts_iter
 
 
@@ -116,10 +116,10 @@ class Pipeline(object):
     """The pipeline class takes in lists of files and options to create a
     new workflow """
 
-    def __init__(self, runcontext=None):
-        if not runcontext:
-            runcontext = Workflow()
-        self.ctx = runcontext
+    def __init__(self, workflow=None):
+        if not workflow:
+            workflow = Workflow()
+        self.ctx = workflow
 
     def add_route(self, from_, to):
         """Add a rule to the routes table to direct files that match ``from_``
