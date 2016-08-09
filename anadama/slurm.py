@@ -42,16 +42,16 @@ class PerformanceData(namedtuple("PerformanceData", ["time", "mem", "cores"])):
 
 
 class SlurmPowerup(grid.DummyPowerup):
-    """This powerup enables the RunContext class to dispatch tasks to
+    """This powerup enables the Workflow class to dispatch tasks to
     SLURM. Use it like so:
 
     .. code:: python
 
-      from anadama import RunContext
+      from anadama import Workflow
       from anadama.slurm import SlurmPowerup
 
       powerup = Slurmpowerup(partition="general")
-      ctx = RunContext(grid_powerup=powerup)
+      ctx = Workflow(grid_powerup=powerup)
       ctx.do("wget "
              "ftp://public-ftp.hmpdacc.org/"
              "HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 "

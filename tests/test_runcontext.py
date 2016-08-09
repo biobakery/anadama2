@@ -22,7 +22,7 @@ from util import capture
 SLEEPTIME = os.environ.get("ANADAMA_SLEEP_TIME", "0.01")
 SLEEPTIME=float(SLEEPTIME)
 
-class TestRunContext(unittest.TestCase):
+class TestWorkflow(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -35,7 +35,7 @@ class TestRunContext(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.runcontext.RunContext()
+        self.ctx = anadama.runcontext.Workflow()
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)

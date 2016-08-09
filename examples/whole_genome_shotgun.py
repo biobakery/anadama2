@@ -1,12 +1,12 @@
 
-from anadama import RunContext
+from anadama import Workflow
 from anadama.helpers import system, rm_r
 from anadama.util import fname
 
 base = "http://downloads.hmpdacc.org/data/Illumina/stool/"
 srs_ids = ["SRS053214", "SRS052697", "SRS016944"]
     
-ctx = RunContext()
+ctx = Workflow()
 for srs_id in srs_ids:
     dl_task = ctx.add_task("wget "+base+srs_id+".tar.bz2",
                            targets=[srs_id+".tar.bz2"])

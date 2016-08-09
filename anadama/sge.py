@@ -24,15 +24,15 @@ available = all( bool(find_on_path(prog)) for prog in
 
 
 class SGEPowerup(grid.DummyPowerup):
-    """This class enables the RunContext class to dispatch tasks to
+    """This class enables the Workflow class to dispatch tasks to
     Sun Grid Engine and its lookalikes. Use it like so:
 
     .. code:: python
 
-      from anadama import RunContext
+      from anadama import Workflow
       from anadama.sge import SGEPowerup
 
-      ctx = RunContext(grid_powerup=SGEPowerup(queue="general"))
+      ctx = Workflow(grid_powerup=SGEPowerup(queue="general"))
       ctx.do("wget "
              "ftp://public-ftp.hmpdacc.org/"
              "HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 "

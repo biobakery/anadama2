@@ -1,6 +1,6 @@
-from anadama import RunContext
+from anadama import Workflow
 
-ctx = RunContext()
+ctx = Workflow()
 ctx.do("wget -qO- checkip.dyndns.com > @{my_ip.txt}")
 ctx.do(r"sed 's|.*Address: \(.*[0-9]\)<.*|\1|' #{my_ip.txt} > @{ip.txt}")
 ctx.do("whois $(cat #{ip.txt}) > @{whois.txt}")

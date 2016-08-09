@@ -1,5 +1,5 @@
 import os
-from anadama import RunContext
+from anadama import Workflow
 from anadama.helpers import system, rm
 from anadama.util import sh, fname
 
@@ -9,7 +9,7 @@ input_dir = "input"
 output_dir = "output"
 input_bams = os.listdir(input_dir)
 
-ctx = RunContext()
+ctx = Workflow()
 for input_bam in input_bams:
     ctx.already_exists(input_bam)
 

@@ -26,6 +26,6 @@ class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
     pass # the class definition is just for the docstring
 
 
-from .runcontext import RunContext
+from .runcontext import Workflow
 
-RunContext # pyflakes
+Workflow # pyflakes

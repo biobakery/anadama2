@@ -1,6 +1,6 @@
 """Contains functions that help create tasks. All functions contained
 herein are intended for use with
-:meth:`anadama.runcontext.RunContext.add_task`. This means that the functions
+:meth:`anadama.runcontext.Workflow.add_task`. This means that the functions
 in here don't immediately do what they say; they return functions
 that, when called, do that they say (they're closures). Sorry if that
 breaks your brain.
@@ -9,10 +9,10 @@ Using closures lets you add tasks like this:
 
 .. code:: python
 
-  from anadama import RunContext
+  from anadama import Workflow
   from anadama.helpers import sh
 
-  ctx = RunContext()
+  ctx = Workflow()
   ctx.add_task(sh("my fancy shell command"),
                targets="foobaz.txt")
 
@@ -21,10 +21,10 @@ Instead of this:
 .. code:: python
 
 
-  from anadama import RunContext
+  from anadama import Workflow
   from anadama.util import sh # <--- note the different import
 
-  ctx = RunContext()
+  ctx = Workflow()
   ctx.add_task(lambda task: sh("my fancy shell command"),
                targets="foobaz.txt")
 

@@ -24,14 +24,14 @@ You tell AnADAMA to perform your computation through a run context. It
 acts as a container for your tasks, keeps track of task dependencies,
 and ultimately runs your tasks.
 
-To start, import the :class:`anadama.runcontext.RunContext` class from
+To start, import the :class:`anadama.runcontext.Workflow` class from
 the anadama module::
 
-  >>> from anadama import RunContext
+  >>> from anadama import Workflow
 
 Now make a run context object::
 
-  >>> ctx = RunContext()
+  >>> ctx = Workflow()
 
 The run context ``ctx`` will hold your workflow.
 
@@ -40,8 +40,8 @@ Adding Tasks
 ============
 
 To actually get your workflow into the run context, use the
-:meth:`anadama.runcontext.RunContext.add_task` or the
-:meth:`anadama.runcontext.RunContext.do` methods.
+:meth:`anadama.runcontext.Workflow.add_task` or the
+:meth:`anadama.runcontext.Workflow.do` methods.
 
 The ``.do()`` method is for quickly adding simple tasks. ``.do()``
 adds a task with only one action, that action is a
@@ -69,9 +69,9 @@ the file ``gpl.html``.
 .. note:: AnADAMA considers it an error to depend on a dependency
           that's not a target of some other task. If you need to
           depend on a dependency that already exists, use
-          :meth:`anadama.runcontext.RunContext.already_exists`.
+          :meth:`anadama.runcontext.Workflow.already_exists`.
 
-The :meth:`anadama.runcontext.RunContext.add_task` method returned us
+The :meth:`anadama.runcontext.Workflow.add_task` method returned us
 the task it created. You can use this task in future tasks: use its
 targets as dependencies downstream or use the entire task as a
 dependency itself. There are a few things to note about the task
@@ -90,11 +90,11 @@ Some of these should be surprising. We gave ``add_task`` a string for
 an action, and it created a list containing a function.  This is
 merely a convenience; AnADAMA makes the easy things easy. If you take
 a look at the API reference for
-:meth:`anadama.runcontext.RunContext.add_task`, you'll see that it
+:meth:`anadama.runcontext.Workflow.add_task`, you'll see that it
 expects a list of functions for ``actions``, but will interpret
 strings as shell commands and wrap that in a function that dispatches
 commands to ``/bin/sh``. A similar thing happens for ``targets`` and
-``depends``: :meth:`anadama.runcontext.RunContext.add_task` expects a
+``depends``: :meth:`anadama.runcontext.Workflow.add_task` expects a
 list of dependencies. Read more about dependencies at
 :ref:`deps`. Finally, each task is given a name and a number. The
 number is unique and refers to its spot in the ``tasks`` attribute of
@@ -128,7 +128,7 @@ than one ``target`` or ``depends``, refer to them by index::
 Function actions
 ----------------
 
-Since :meth:`anadama.runcontext.RunContext.add_task` puts functions in
+Since :meth:`anadama.runcontext.Workflow.add_task` puts functions in
 :class:`anadama.Task` ``actions``, let's put in some of our own::
 
   >>> def lis_only(task):
@@ -161,7 +161,7 @@ exception).
 Function actions via decorator
 ------------------------------
 
-:meth:`anadama.runcontext.RunContext.add_task` has a shortcut for
+:meth:`anadama.runcontext.Workflow.add_task` has a shortcut for
 adding tasks with a single function action::
 
   >>> @ctx.add_task(depends=t2.targets, targets="changed.html", name="Change meaning")
@@ -183,7 +183,7 @@ Now we've added a task to the run context by decorator syntax.
 ``do()``
 ________
 
-The :meth:`anadama.runcontext.RunContext.do` method is a shortcut for
+The :meth:`anadama.runcontext.Workflow.do` method is a shortcut for
 adding tasks that are just one shell command. Instead of filling in
 ``depends=[...]`` and ``targets=[...]``, depends and targets are
 defined by marking up the shell command with the following decoration:
@@ -196,17 +196,17 @@ defined by marking up the shell command with the following decoration:
 
 Let's see an example::
 
-    >>> from anadama import RunContext
+    >>> from anadama import Workflow
     >>> 
-    >>> ctx = RunContext()
+    >>> ctx = Workflow()
     >>> t = ctx.do("wget -qO- checkip.dyndns.com > @{my_ip.txt}")
     >>> str(t.targets[0])
     '/home/rschwager/my_ip.txt'
   
 In this task, we want to use ``wget`` to ask checkip.dyndns.com for
 the my current IP address. Similar to
-:meth:`anadama.runcontext.RunContext.add_task`,
-:meth:`anadama.runcontext.RunContext.do` returns the task that was
+:meth:`anadama.runcontext.Workflow.add_task`,
+:meth:`anadama.runcontext.Workflow.do` returns the task that was
 just added to the run context. We can see that since we wrapped
 ``my_ip.txt`` in ``@{}``, the task that's returned has the
 ``my_ip.txt`` file listed as its first target.
@@ -234,7 +234,7 @@ track are discovered using
 binary tracking, set the keyword option ``track_binaries=False``.
 
 For more information on ``.do()``, please refer to the API reference:
-:meth:`anadama.runcontext.RunContext.do`.
+:meth:`anadama.runcontext.Workflow.do`.
   
 
 Dependencies
@@ -253,9 +253,9 @@ tasks.
 Implicitly, many tasks use the :class:`anadama.deps.FileDependency`
 type. When a string or a list of strings are passed to the
 ``targets=`` or ``depends=`` keyword of
-:meth:`anadama.runcontext.RunContext.add_task`, or if any filenames
+:meth:`anadama.runcontext.Workflow.add_task`, or if any filenames
 are wrapped with ``@{}`` or ``#{}`` when using
-:meth:`anadama.runcontext.RunContext.do`, those strings are used to
+:meth:`anadama.runcontext.Workflow.do`, those strings are used to
 initialize :class:`anadama.deps.FileDependency` objects.
 
 Other dependency types are similar to
@@ -278,7 +278,7 @@ file.
 Finally, the simplest dependency type:
 :class:`anadama.deps.StringDependency`. Use it for depending on a
 string of your choice. Doesn't seem useful? Check out how
-:meth:`anadama.runcontext.RunContext.do` uses it.
+:meth:`anadama.runcontext.Workflow.do` uses it.
 
 .. warning:: Ensure your dependencies of type
              :class:`anadama.deps.StringDependency` and
@@ -296,12 +296,12 @@ string of your choice. Doesn't seem useful? Check out how
 Running the tasks -- ``.go()``
 ==============================
 
-:meth:`anadama.runcontext.RunContext.go` kicks off the execution of
+:meth:`anadama.runcontext.Workflow.go` kicks off the execution of
 all the tasks the run context knows about. ``.go()`` can be executed
 multiple times within a script; it's perfectly acceptable to add some
 tasks, ``.go()``, add more tasks, then ``.go()`` again. All options
 pertaining to how the tasks are executed, such as runners and
 reporters, can be changed from the ``.go()`` method. Please see
-:meth:`anadama.runcontext.RunContext.go` for all available options.
+:meth:`anadama.runcontext.Workflow.go` for all available options.
 
       

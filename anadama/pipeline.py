@@ -1,6 +1,6 @@
 import itertools
 
-from .runcontext import RunContext
+from .runcontext import Workflow
 from .util import dict_to_cmd_opts, dict_to_cmd_opts_iter
 
 
@@ -118,7 +118,7 @@ class Pipeline(object):
 
     def __init__(self, runcontext=None):
         if not runcontext:
-            runcontext = RunContext()
+            runcontext = Workflow()
         self.ctx = runcontext
 
     def add_route(self, from_, to):

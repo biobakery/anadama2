@@ -6,7 +6,7 @@ from glob import glob
 
 from bunch import Bunch
 
-from anadama import RunContext
+from anadama import Workflow
 from anadama.deps import HugeFileDependency as HFD
 from anadama.deps import GlobDependency
 from anadama.deps import DirectoryDependency
@@ -42,7 +42,7 @@ def fmt_sh(s, **kwargs):
 
 
 def getctx():
-    ctx = RunContext(grid_powerup=SlurmPowerup("hii02", tmpdir="tmp"))
+    ctx = Workflow(grid_powerup=SlurmPowerup("hii02", tmpdir="tmp"))
     reporter = LoggerReporter(ctx, "DEBUG", '/shares/hiibroad/data/strains/run.log')
     return ctx, reporter
 
