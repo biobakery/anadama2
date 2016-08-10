@@ -460,6 +460,37 @@ class TestWorkflow(unittest.TestCase):
         self.assertIs(self.ctx.tasks[t1.task_no], t1)
         self.assertIs(self.ctx.tasks[t2.name], t2)
 
+    def test_autopreexist(self):
+        a = os.path.join(self.workdir, "a.txt")
+        b = os.path.join(self.workdir, "b.txt")
+        with self.assertRaises(KeyError):
+            self.ctx.add_task("cat {depends[0]} > {targets[0]}", 
+                              depends=a, targets=b, name="shouldfail")
+        self.assertEqual(len(self.ctx.tasks), 0, "should remove offending task")
+        open(a, 'w').close()
+        self.ctx.add_task("cat {depends[0]} > {targets[0]}", 
+                          depends=a, targets=b, name="shouldntfail")
+        self.assertEqual(len(self.ctx.tasks), 2)
+        self.assertIs(self.ctx.tasks[1].actions[0], anadama.util.noop)
+        self.assertEqual(str(self.ctx.tasks[1].targets[0]), a)
+        self.assertEqual(str(self.ctx.tasks[0].depends[0]), a)
+        self.assertEqual(str(self.ctx.tasks[0].targets[0]), b)
+        
+    def test_autopreexist_strict(self):
+        a = os.path.join(self.workdir, "a.txt")
+        b = os.path.join(self.workdir, "b.txt")
+        self.ctx.strict = True
+        with self.assertRaises(KeyError):
+            self.ctx.add_task("cat {depends[0]} > {targets[0]}", 
+                              depends=a, targets=b, name="shouldfail")
+        self.assertEqual(len(self.ctx.tasks), 0, "should remove offending task")
+        open(a, 'w').close()
+        with self.assertRaises(KeyError):
+            self.ctx.add_task("cat {depends[0]} > {targets[0]}", 
+                              depends=a, targets=b, name="shouldntfail")
+        self.assertEqual(len(self.ctx.tasks), 0)
 
+
+        
 if __name__ == "__main__":
     unittest.main()
