@@ -11,7 +11,7 @@ import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
 from . import Task
-from . import deps
+from . import tracked
 from . import grid
 from . import reporters
 from . import backends
@@ -60,7 +60,7 @@ class Workflow(object):
         #: only after tasks have been run with
         #: :meth:`anadama.workflow.Workflow.go`.
         self.task_results = list()
-        self._depidx = deps.DependencyIndex()
+        self._depidx = tracked.DependencyIndex()
         self._backend = storage_backend or backends.default()
         self.grid_powerup = grid_powerup or grid.DummyPowerup()
         logger.debug("Instantiated run context")
@@ -118,8 +118,8 @@ class Workflow(object):
         ds = _parse_wrapper(cmd, metachar="#")
         sh_cmd = re.sub(r'[@#]{([^{}]+)}', r'\1', cmd)
         if track_cmd:
-            ns = os.path.abspath(deps.KVContainer.key(None))
-            d = deps.KVDependency(ns, str(len(self.tasks)+1), sh_cmd)
+            ns = os.path.abspath(tracked.Container.key(None))
+            d = tracked.TrackedVariable(ns, str(len(self.tasks)+1), sh_cmd)
             ds.append(d)
         if track_binaries:
             to_preexist = []
@@ -167,21 +167,21 @@ class Workflow(object):
           have these dependencies before executing the
           actions. Strings or lists of strings are interpreted as
           filenames and turned into objects of type
-          :class:`anadama.deps.FileDependency`. If given just a string or just
-          a :class:`anadama.deps.BaseDependency`, this method treats it as a
+          :class:`anadama.tracked.TrackedFile`. If given just a string or just
+          a :class:`anadama.tracked.Base`, this method treats it as a
           one-item list of the argument provided.
-        :type depends: str or :class:`anadama.deps.BaseDependency` or list of
-          str or list of :class:`anadama.deps.BaseDependency`
+        :type depends: str or :class:`anadama.tracked.Base` or list of
+          str or list of :class:`anadama.tracked.Base`
 
         :param targets: The targets of the task. The task must produce
           these targets after executing the actions to be considered
           as "success". Strings or lists of strings are interpreted as
           filenames and turned into objects of type
-          :class:`anadama.deps.FileDependency`. If given just a string or just
-          a :class:`anadama.deps.BaseDependency`, this method treats it as a
+          :class:`anadama.tracked.TrackedFile`. If given just a string or just
+          a :class:`anadama.tracked.Base`, this method treats it as a
           one-item list of the argument provided.
-        :type targets: str or :class:`anadama.deps.BaseDependency` or list of
-          str or list of :class:`anadama.deps.BaseDependency`
+        :type targets: str or :class:`anadama.tracked.Base` or list of
+          str or list of :class:`anadama.tracked.Base`
 
         :param name: A name for the task. Task names must be unique
           within a run context.
@@ -251,11 +251,11 @@ class Workflow(object):
             like so ``ctx.already_exists(*my_bunch_of_deps)``.
 
         :param \*depends: One or many dependencies to mark as pre-existing.
-        :type \*depends: any argument recognized by :func:`anadama.deps.auto`
+        :type \*depends: any argument recognized by :func:`anadama.tracked.auto`
 
         """
 
-        self.add_task(noop, targets=map(deps.auto, depends),
+        self.add_task(noop, targets=map(tracked.auto, depends),
                       name="Track pre-existing dependencies")
 
 
@@ -398,7 +398,7 @@ class Workflow(object):
         should_run, idxs = dichotomize(task_idxs, self._always_rerun)
         should_run = set(should_run)
         for dep, idxs_set in self._aggregate_deps(idxs):
-            if deps.any_different([dep], self._backend):
+            if tracked.any_different([dep], self._backend):
                 for idx in idxs_set:
                     logger.debug("Can't skip task %i because of dep change",
                                  idx)
@@ -507,7 +507,7 @@ def _build_actions(actions, deps, targs, use_parse_sh=True):
 
 def _build_depends(depends):
     depends = filter(None, sugar_list(depends))
-    return map(deps.auto, depends)
+    return map(tracked.auto, depends)
 
 
 def _build_targets(targets):
@@ -516,7 +516,7 @@ def _build_targets(targets):
     for targ in targets:
         if istask(targ):
             raise ValueError("Can't make a task a target")
-        ret.append(deps.auto(targ))
+        ret.append(tracked.auto(targ))
     return ret
     
 
@@ -540,7 +540,7 @@ def _parse_wrapper(s, metachar):
 def discover_binaries(s):
     """Search through string ``s`` and find all existing files smaller
     than 10MB. Return those files as a list of objects of type
-    :class:`anadama.deps.FileDependency`.
+    :class:`anadama.tracked.TrackedFile`.
     """
 
     ds = list()
@@ -553,7 +553,7 @@ def discover_binaries(s):
             # doesn't exist or can't execute
             continue
         try:
-            dep = deps.ExecutableDependency(term)
+            dep = tracked.TrackedExecutable(term)
         except ValueError:
             continue
         if os.stat(dep.fname).st_size < 1<<20:

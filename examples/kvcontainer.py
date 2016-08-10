@@ -1,8 +1,8 @@
-import anadama.deps
+import anadama.tracked
 from anadama import Workflow
 
 ctx = Workflow()
-step1_const = anadama.deps.KVContainer(a = 20)
+step1_const = anadama.tracked.Container(a = 20)
 step1 = ctx.add_task("echo {depends[0]} > {targets[0]}",
                      depends=step1_const.a, targets="step1.txt",
                      name="Step 1")

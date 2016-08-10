@@ -4,7 +4,7 @@ import unittest
 import subprocess
 
 import anadama
-import anadama.deps
+import anadama.tracked
 from anadama import picklerunner
 
 
@@ -84,7 +84,7 @@ class TestPicklerunner(unittest.TestCase):
         result = picklerunner.decode(out)
         self.assertFalse(bool(result.error))
         self.assertEqual(len(result.dep_keys), 1)
-        compares = list(anadama.deps.FileDependency(outf).compare())
+        compares = list(anadama.tracked.TrackedFile(outf).compare())
         self.assertEqual(len(compares), len(result.dep_compares[0]))
         for a, b in zip(result.dep_compares[0], compares):
             self.assertEqual(a, b, "compare() not the same")
