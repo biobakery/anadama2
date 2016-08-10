@@ -557,10 +557,10 @@ class TrackedFunction(Base):
 
 
 _cached_dep_classes = (
-    Base,       TrackedString,
-    TrackedFile,       HugeTrackedFile,
-    TrackedExecutable, TrackedFunction,
-    TrackedFilePattern,       TrackedDirectory,
+    Base,               TrackedString,
+    TrackedFile,        HugeTrackedFile,
+    TrackedExecutable,  TrackedFunction,
+    TrackedFilePattern, TrackedDirectory,
     TrackedVariable
 )
 for cls in _cached_dep_classes:
