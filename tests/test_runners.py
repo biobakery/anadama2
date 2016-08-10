@@ -3,7 +3,7 @@ import shutil
 import unittest
 
 import anadama
-import anadama.deps
+import anadama.tracked
 import anadama.runners
 import anadama.helpers
 
@@ -25,8 +25,8 @@ class TestRunners(unittest.TestCase):
         t = anadama.Task(
             "my task",
             actions=[anadama.helpers.sh("wc -l /etc/hosts > "+outf)],
-            depends=[anadama.deps.auto("/etc/hosts")],
-            targets=[anadama.deps.auto(outf)],
+            depends=[anadama.tracked.auto("/etc/hosts")],
+            targets=[anadama.tracked.auto(outf)],
             task_no=1
         )
         ret = anadama.runners._run_task_locally(t)
@@ -36,7 +36,7 @@ class TestRunners(unittest.TestCase):
                         "_run_task_locally should return a TaskResult")
         self.assertIs(ret.error, None, "shouldn't return an error")
 
-        t2 = t._replace(targets=[anadama.deps.auto(outf+".doesntexist")])
+        t2 = t._replace(targets=[anadama.tracked.auto(outf+".doesntexist")])
         ret = anadama.runners._run_task_locally(t2)
         self.assertTrue(isinstance(ret, anadama.runners.TaskResult),
                         ("_run_task_locally should return an TaskResult "

@@ -6,8 +6,8 @@ deps
 
 .. contents:: 
    :local:
-.. currentmodule:: anadama.deps
+.. currentmodule:: anadama.tracked
 
-.. automodule:: anadama.deps
+.. automodule:: anadama.tracked
    :members:
    :undoc-members:

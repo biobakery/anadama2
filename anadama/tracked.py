@@ -15,24 +15,24 @@ first = itemgetter(0)
 
 def auto(x):
     """Translate a string, function or task into the appropriate subclass
-    of :class:`anadama.deps.BaseDependency`. Tildes and shell
+    of :class:`anadama.tracked.Base`. Tildes and shell
     variables are expanded using :func:`os.path.expanduser` and
     :func:`os.path.expandvars`. If that's not your game, use
-    :class:`anadama.deps.DirectoryDependency` or
-    :class:`anadama.deps.FileDependency` as appropriate. The current
+    :class:`anadama.tracked.TrackedDirectory` or
+    :class:`anadama.tracked.TrackedFile` as appropriate. The current
     mapping is as follows:
 
-    - Subclasses of :class:`anadama.deps.BaseDependency` are returned as is
+    - Subclasses of :class:`anadama.tracked.Base` are returned as is
 
-    - Strings ending in '/' ``->`` :class:`anadama.deps.DirectoryDependency`
+    - Strings ending in '/' ``->`` :class:`anadama.tracked.TrackedDirectory`
 
-    - Strings not ending in '/' ``->`` :class:`anadama.deps.FileDependency`
+    - Strings not ending in '/' ``->`` :class:`anadama.tracked.TrackedFile`
 
     - Instances of subclasses of :class:`anadama.Task` are handled
       specially by :meth:`anadama.workflow.Workflow.add_task` and
       are returned as is
 
-    - Functions or other callables ``->`` :class:`anadama.deps.FunctionDependency`
+    - Functions or other callables ``->`` :class:`anadama.tracked.TrackedFunction`
 
     :param x: The object to be translated into a dependency object
 
@@ -42,12 +42,12 @@ def auto(x):
         return _autostring(x)
     elif istask(x):
         return x
-    elif isinstance(x, BaseDependency):
+    elif isinstance(x, Base):
         return x
     elif callable(x):
         # no explicit key is given, so I have to make one up
         key = "Function ({}) <{}>".format(x.__name__, id(x))
-        return FunctionDependency(key, x)
+        return TrackedFunction(key, x)
     else:
         raise ValueError(
             "Not sure how to make `{}' into a dependency".format(x))
@@ -56,16 +56,16 @@ def auto(x):
 def _autostring(s):
     s = os.path.expanduser(os.path.expandvars(s))
     if s.endswith('/'):
-        return DirectoryDependency(s)
+        return TrackedDirectory(s)
     else:
-        return FileDependency(s)
+        return TrackedFile(s)
 
 
 def any_different(ds, backend):
     """Determine whether any dependencies have changed since last save.
 
     :param ds: The dependencies in question
-    :type ds: instances of any :class:`anadama.deps.BaseDependency` subclass
+    :type ds: instances of any :class:`anadama.tracked.Base` subclass
 
     :param backend: Backend to query past results of a dependency object
     :type backend: instances of any :class:`anadama.backends.BaseBackend` subclass
@@ -121,7 +121,7 @@ class DependencyIndex(object):
         __getitem__.
 
         :param dep: The dependency to track
-        :type dep: subclass of :class:`anadama.deps.BaseDependency`
+        :type dep: subclass of :class:`anadama.tracked.Base`
 
         :param task_or_none: The task that's supposed to create this
           dependency. Use None if the dependency isn't created by a
@@ -137,10 +137,10 @@ class DependencyIndex(object):
 
 
     def __getitem__(self, dep):
-        if not isinstance(dep, BaseDependency):
+        if not isinstance(dep, Base):
             raise TypeError(
                 "DependencyIndex can only use subclasses of"
-                " BaseDependency to perform lookups."
+                " Base to perform lookups."
                 " Received type `{}'".format(type(dep))
             )
         deptype = dep.__class__.__name__
@@ -149,37 +149,37 @@ class DependencyIndex(object):
 
 
 
-class BaseDependency(object):
+class Base(object):
 
     """The Dependency object is the tool for specifying task father-child
     relationships. Dependency objects can be used in either
     ``targets`` or ``depends`` arguments of
     :meth:`anadama.workflow.Workflow.add_task`. Often, these targets or
     dependencies are specified by strings or :class:`anadama.Task`
-    objects and instantiated into the appropriate BaseDependency
-    subclass with :func:`anadama.deps.auto`; this behavior depends on the
+    objects and instantiated into the appropriate Base
+    subclass with :func:`anadama.tracked.auto`; this behavior depends on the
     arguments to :meth:`anadama.workflow.Workflow.add_task`.
 
     A dependency of the same name will be defined multiple times in
     the normal use of AnADAMA. To make it such that many calls of a
     dependency constructor or use of the same argument to
-    :func:`anadama.deps.auto` result in the same dependency instance being
+    :func:`anadama.tracked.auto` result in the same dependency instance being
     returned, a little bit of black magic involving
-    :meth:`anadama.deps.BaseDependency.__new__` is required. The price for
-    such magics is that subclasses of BaseDependency must define the
+    :meth:`anadama.tracked.Base.__new__` is required. The price for
+    such magics is that subclasses of Base must define the
     ``init`` method to initialize the dependency, instead of the more
     commonly used ``__init__`` method. The ``init`` method is only
     called once per dependency, while ``__init__`` is called every
-    time any BaseDependency sublcasses are
-    instantiated. BaseDependency subclasses must also define a
+    time any Base sublcasses are
+    instantiated. Base subclasses must also define a
     ``key()`` staticmethod. The ``key()`` staticmethod is used to
     lookup already existing instances of that dependency; return
     values from the ``key()`` method must be unique to that
     dependency.
 
     Unrelated to the quasi-singleton magics above, sublcasses of
-    BaseDependency must define a ``compare()`` method. See
-    :meth:`anadama.deps.BaseDependency.compare` for more documentation.
+    Base must define a ``compare()`` method. See
+    :meth:`anadama.tracked.Base.compare` for more documentation.
 
     """
 
@@ -240,7 +240,7 @@ class BaseDependency(object):
 
 
 
-class StringDependency(BaseDependency):
+class TrackedString(Base):
 
     must_preexist = False
 
@@ -269,7 +269,7 @@ class StringDependency(BaseDependency):
 
 
 KVDEPSEPARATOR = ":"
-class KVDependency(BaseDependency):
+class TrackedVariable(Base):
     must_preexist = False
 
     def __new__(cls, namespace, key, val):
@@ -304,7 +304,7 @@ class KVDependency(BaseDependency):
 
 
 
-class FileDependency(BaseDependency):
+class TrackedFile(Base):
     """Track a small file. Small being small enough that you don't mind
     that the entire file is read to create a checksum of its contents.
 
@@ -340,7 +340,7 @@ class FileDependency(BaseDependency):
 
 
 
-class HugeFileDependency(FileDependency):
+class HugeTrackedFile(TrackedFile):
     """Track a large file. Large being large enough that you don't want to
     read through the entire file to create a checksum of its contents.
 
@@ -358,38 +358,38 @@ class HugeFileDependency(FileDependency):
 
 
 
-class KVContainer(object):
+class Container(object):
     """Track a collection of small strings. This is useful for rerunning
     tasks based on whether a flag has changed when running a
-    command. Using :class:`anadama.deps.StringDependency` for small
+    command. Using :class:`anadama.tracked.TrackedString` for small
     strings can run into collisions between workflows that use the
     same backend. Consider using ``logging =
-    StringDependency("debug")`` in script_a.py and ``logging =
-    StringDependency("warning")`` in script_b.py. If you change
-    script_a.py to ``logging = StringDependency("warning")`` after
+    TrackedString("debug")`` in script_a.py and ``logging =
+    TrackedString("warning")`` in script_b.py. If you change
+    script_a.py to ``logging = TrackedString("warning")`` after
     running script_b.py, script_a.py won't rerun tasks that depend on
-    the StringDependency assigned to ``logging``.
+    the TrackedString assigned to ``logging``.
 
-    This class solves StringDependency collisions by prepending a
+    This class solves TrackedString collisions by prepending a
     user-provided (or auto-generated) namespace to each key-value pair
     in the collection. The auto-generated namespace is unique to the
-    script or module creating the KVContainer, so expect to have
+    script or module creating the Container, so expect to have
     a bunch of tasks rerun if you rename a module or script between
     runs.
 
     .. code:: python
 
-      >>> import anadama.deps
-      >>> conf = anadama.deps.KVContainer(alpha="5", beta=2)
+      >>> import anadama.tracked
+      >>> conf = anadama.tracked.Container(alpha="5", beta=2)
       >>> conf.alpha
-      <anadama.deps.KVDependency object at 0x7f66445fa490> 
+      <anadama.tracked.TrackedVariable object at 0x7f66445fa490> 
       >>> str(conf.alpha)
       '5'
       >>> str(conf['beta'])
       '2'
       >>> conf.beta = 7
       >>> conf.beta
-      <anadama.deps.KVDependency object at 0x7f66445fa4d0>
+      <anadama.tracked.TrackedVariable object at 0x7f66445fa4d0>
       >>> str(conf.beta)
       '7'
     
@@ -401,7 +401,7 @@ class KVContainer(object):
                      self.__class__.__name__, self._ns)
         self.__dict__['_d'] = dict()
         for k, v in kwds.iteritems():
-            self._d[k] = KVDependency(self._ns, k, v)
+            self._d[k] = TrackedVariable(self._ns, k, v)
 
 
     @staticmethod
@@ -433,10 +433,10 @@ class KVContainer(object):
             global _singleton_idx
             dep = self._d[key]
             dep.val = val
-            dep._key = KVDependency.key(self._ns, key, val)
+            dep._key = TrackedVariable.key(self._ns, key, val)
             _singleton_idx[dep.__class__.__name__][dep._key] = dep
         else:
-            self._d[key] = KVDependency(self._ns, key, val)
+            self._d[key] = TrackedVariable(self._ns, key, val)
 
     __setitem__ = __setattr__
 
@@ -445,7 +445,7 @@ class KVContainer(object):
 
 
 
-class DirectoryDependency(FileDependency):
+class TrackedDirectory(TrackedFile):
 
     """Track a directory. A directory is considered changed if it's
     removed, the modify time has changed, the list of files within the
@@ -467,7 +467,7 @@ class DirectoryDependency(FileDependency):
 
 
 
-class GlobDependency(FileDependency):
+class TrackedFilePattern(TrackedFile):
     """Track several files according to a bash-style globbing
     pattern. Uses :func:`glob.glob` under the hood.  A Glob is
     considered changed if the names of the matched files changes, or
@@ -486,7 +486,7 @@ class GlobDependency(FileDependency):
 
 
 
-class ExecutableDependency(BaseDependency):
+class TrackedExecutable(Base):
     """Track a script or binary executable."""
 
     def init(self, name, version_cmd=None):
@@ -530,12 +530,12 @@ class ExecutableDependency(BaseDependency):
 
 
 
-class FunctionDependency(BaseDependency):
+class TrackedFunction(Base):
 
     """Useful for things like database lookups or API calls. The function
     must return a hashable type. For a tiered comparison method like
-    that seen in :class:`anadama.deps.FileDependency`, it's best to create
-    your own subclass of BaseDependency and override the ``compare()``
+    that seen in :class:`anadama.tracked.TrackedFile`, it's best to create
+    your own subclass of Base and override the ``compare()``
     method.
 
     """
@@ -557,11 +557,11 @@ class FunctionDependency(BaseDependency):
 
 
 _cached_dep_classes = (
-    BaseDependency,       StringDependency,
-    FileDependency,       HugeFileDependency,
-    ExecutableDependency, FunctionDependency,
-    GlobDependency,       DirectoryDependency,
-    KVDependency
+    Base,       TrackedString,
+    TrackedFile,       HugeTrackedFile,
+    TrackedExecutable, TrackedFunction,
+    TrackedFilePattern,       TrackedDirectory,
+    TrackedVariable
 )
 for cls in _cached_dep_classes:
     _singleton_idx[cls.__name__] = dict()

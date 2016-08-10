@@ -11,7 +11,7 @@ from cStringIO import StringIO
 import networkx
 
 import anadama
-import anadama.deps
+import anadama.tracked
 import anadama.workflow
 import anadama.util
 from anadama.util import noop

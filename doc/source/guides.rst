@@ -59,7 +59,7 @@ context, and returns it to you for later use::
 
   >>> cmd = "wget http://www.gnu.org/licenses/gpl.html"
   >>> ctx.add_task(cmd, targets=["gpl.html"])
-  Task(name='Step 0', actions=[<function actually_sh at 0x7fc5d8a9e938>], depends=[], targets=[<anadama.deps.FileDependency object at 0x7fc5d8f8dd90>], task_no=0)
+  Task(name='Step 0', actions=[<function actually_sh at 0x7fc5d8a9e938>], depends=[], targets=[<anadama.tracked.TrackedFile object at 0x7fc5d8f8dd90>], task_no=0)
 
 We just added our first task to the run context: download the GPL from
 gnu.org. We listed ``"gpl.html"`` as a target, which means that the
@@ -81,7 +81,7 @@ returned:
     one function: ``<function actually_sh at 0x7fc5d8a9e938>``
 
   * The ``targets`` attribute is a list containing a
-    :class:`anadama.deps.FileDependency`
+    :class:`anadama.tracked.TrackedFile`
 
   * The task has a name and a ``task_no``
 
@@ -144,7 +144,7 @@ Since :meth:`anadama.workflow.Workflow.add_task` puts functions in
   ... 
   >>> t2 = ctx.add_task(lis_only, depends="gpl.html", targets="lis_only.html")
   >>> t2
-  Task(name='Step 1', actions=[<function lis_only at 0x7f6326e59848>], depends=[<anadama.deps.FileDependency object at 0x7fc5d8f8dd90>], targets=[<anadama.deps.FileDependency object at 0x7f6326e55ad0>], task_no=1)
+  Task(name='Step 1', actions=[<function lis_only at 0x7f6326e59848>], depends=[<anadama.tracked.TrackedFile object at 0x7fc5d8f8dd90>], targets=[<anadama.tracked.TrackedFile object at 0x7f6326e55ad0>], task_no=1)
 	 
 This function reads an input file line by line and only prints to an
 output file when the line it's currently reading is in an ``<li>``
@@ -154,7 +154,7 @@ produces a ``lis_only.html`` file.
 When the run context runs this task, it'll call the function and pass
 the current task as the function's only argument. We can use the task
 to get input and output files. Remember that ``task.depends`` and
-``task.targets`` are lists of :class:`anadama.deps.FileDependency`;
+``task.targets`` are lists of :class:`anadama.tracked.TrackedFile`;
 use ``str`` to use them as strings (otherwise ``open()`` will raise an
 exception).
 
@@ -175,7 +175,7 @@ adding tasks with a single function action::
   ...             out_f.write(line)
   ... 
   >>> ctx.tasks[2]
-  Task(name='Change meaning', actions=[<function change_meaning at 0x7fab54d5b938>], depends=[<anadama.deps.FileDependency object at 0x7fab54d57ad0>], targets=[<anadama.deps.FileDependency object at 0x7fab54d57b90>], task_no=2)
+  Task(name='Change meaning', actions=[<function change_meaning at 0x7fab54d5b938>], depends=[<anadama.tracked.TrackedFile object at 0x7fab54d57ad0>], targets=[<anadama.tracked.TrackedFile object at 0x7fab54d57b90>], task_no=2)
 
 Now we've added a task to the run context by decorator syntax.
 
@@ -219,10 +219,10 @@ dependencies, it has two::
   >>> map(str, t.depends)
   ['wget -qO- checkip.dyndns.com > my_ip.txt', '/usr/bin/wget']
   >>> t.depends
-  [<anadama.deps.StringDependency object at 0x7fd4a6262a50>, <anadama.deps.ExecutableDependency object at 0x7fd4a6262ad0>]
+  [<anadama.tracked.TrackedString object at 0x7fd4a6262a50>, <anadama.tracked.TrackedExecutable object at 0x7fd4a6262ad0>]
 
 The ``.do()`` method automatically tracks the command string as a
-:class:`anadama.deps.StringDependency`. Thus, if the command is
+:class:`anadama.tracked.TrackedString`. Thus, if the command is
 changed within the script, the string dependency will have changed and
 the task will not be skipped. This behavior can be deactivated by
 setting the keyword option ``track_cmd=False``.
@@ -246,50 +246,50 @@ tasks to execute the tasks in the correct order and skip any task that
 doesn't need to be run.
 
 Dependencies are objects. These objects are defined by classes
-(i.e. types). The :mod:`anadama.deps` module contains a wide
+(i.e. types). The :mod:`anadama.tracked` module contains a wide
 selection of dependency types, giving you flexibility in linking your
 tasks.
 
-Implicitly, many tasks use the :class:`anadama.deps.FileDependency`
+Implicitly, many tasks use the :class:`anadama.tracked.TrackedFile`
 type. When a string or a list of strings are passed to the
 ``targets=`` or ``depends=`` keyword of
 :meth:`anadama.workflow.Workflow.add_task`, or if any filenames
 are wrapped with ``@{}`` or ``#{}`` when using
 :meth:`anadama.workflow.Workflow.do`, those strings are used to
-initialize :class:`anadama.deps.FileDependency` objects.
+initialize :class:`anadama.tracked.TrackedFile` objects.
 
 Other dependency types are similar to
-:class:`anadama.deps.FileDependency`. The
-:class:`anadama.deps.ExecutableDependency` type is meant to track
+:class:`anadama.tracked.TrackedFile`. The
+:class:`anadama.tracked.TrackedExecutable` type is meant to track
 scripts, binaries, and other executables; it searches your ``$PATH``
 for the location of the executable, and you can specify a command to
 get and track the executable's version. One of the characteristics a
-:class:`anadama.deps.FileDependency` looks at to determine if a file
+:class:`anadama.tracked.TrackedFile` looks at to determine if a file
 has changed is the file checksum. Reading a file's checksum requires
 reading through the entire file. If you're working with a huge file
 and that's not practical, try using the
-:class:`anadama.deps.HugeFileDependency`.
+:class:`anadama.tracked.HugeTrackedFile`.
 
-The :class:`anadama.deps.FunctionDependency` is for depending on the
+The :class:`anadama.tracked.TrackedFunction` is for depending on the
 output of a function. This is useful for depending on changes in
 databases or web APIs: places where you can't point to a specific
 file.
 
 Finally, the simplest dependency type:
-:class:`anadama.deps.StringDependency`. Use it for depending on a
+:class:`anadama.tracked.TrackedString`. Use it for depending on a
 string of your choice. Doesn't seem useful? Check out how
 :meth:`anadama.workflow.Workflow.do` uses it.
 
 .. warning:: Ensure your dependencies of type
-             :class:`anadama.deps.StringDependency` and
-             :class:`anadama.deps.FunctionDependency` are unique. For
+             :class:`anadama.tracked.TrackedString` and
+             :class:`anadama.tracked.TrackedFunction` are unique. For
              example, if you depend on ``"--threads=10"`` in one run
              context, and ``"--threads=10"`` in a different run
              context and use the same storage backend between the two
              contexts, **the dependencies will be shared between
              contexts**. If you need to track a bunch of small strings
              that could collide with uses in other contexts, consider
-             using :class:`anadama.deps.KVContainer`.
+             using :class:`anadama.tracked.Container`.
 
 
 

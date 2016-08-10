@@ -7,9 +7,9 @@ from glob import glob
 from bunch import Bunch
 
 from anadama import Workflow
-from anadama.deps import HugeFileDependency as HFD
-from anadama.deps import GlobDependency
-from anadama.deps import DirectoryDependency
+from anadama.tracked import HugeTrackedFile as HFD
+from anadama.tracked import TrackedFilePattern
+from anadama.tracked import TrackedDirectory
 from anadama.reporters import LoggerReporter
 from anadama.slurm import SlurmPowerup
 from anadama.util import fname
@@ -121,7 +121,7 @@ def parse_clades(fname):
 def step_2():
     ctx, reporter = getctx()
 
-    consensus_dep = GlobDependency(output.ref+"/*.markers")
+    consensus_dep = TrackedFilePattern(output.ref+"/*.markers")
     consensus_marker_files = glob(str(consensus_dep))
     clades = parse_clades(output.clades)
     ctx.already_exists(all_markers_fasta)
@@ -145,7 +145,7 @@ def step_2():
                     '--ifn_markers', clade_db_marker, '--output_dir', clade_output_folder,
                     '--nprocs_main', threads, '--clades', clade], stdout_clobber=clade_log_file),
             depends=[consensus_dep, clade_db_marker],
-            targets=[DirectoryDependency(clade_output_folder), clade_log_file],
+            targets=[TrackedDirectory(clade_output_folder), clade_log_file],
             mem=51200, time=500, cores=threads
             )
 
