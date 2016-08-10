@@ -42,11 +42,20 @@ class Workflow(object):
       context to submit tasks to a compute grid.  
     :type grid_powerup: objects implementing the interface of
       :class:`anadama.grid.DummyPowerup`
+    
+    :keyword strict: Enable strict mode. If strict, whenever a task is
+      added that depends on something that is not the target of
+      another task (or isn't marked with
+      :math:`anadama.workflow.Workflow.already_exists`), raise a
+      ``KeyError``. If not strict, and the Tracked object
+      ``.exists()`` automatically do what's necessary to track the
+      object; if ``.exists()`` is False, raise a KeyError.
+    :type strict: bool
 
     """
 
 
-    def __init__(self, storage_backend=None, grid_powerup=None):
+    def __init__(self, storage_backend=None, grid_powerup=None, strict=False):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         #: tasks is a :class:`anadama.taskcontainer.TaskContainer`
@@ -63,6 +72,7 @@ class Workflow(object):
         self._depidx = tracked.DependencyIndex()
         self._backend = storage_backend or backends.default()
         self.grid_powerup = grid_powerup or grid.DummyPowerup()
+        self.strict = strict
         logger.debug("Instantiated run context")
 
 
@@ -459,8 +469,12 @@ class Workflow(object):
             if istask(dep):
                 self.dag.add_edge(dep.task_no, task.task_no)
                 continue
-            if dep.must_preexist == False and dep not in self._depidx:
+            if dep in self._depidx:
+                pass
+            elif dep.must_preexist == False: 
                 continue
+            elif not self.strict and dep.exists():
+                self.already_exists(dep)
             try:
                 parent_task = self._depidx[dep]
             except KeyError:

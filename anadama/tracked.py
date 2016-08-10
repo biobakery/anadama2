@@ -210,6 +210,18 @@ class Base(object):
         raise NotImplementedError()
         
 
+    def exists(self):
+        """Return whether the thing that this object represents
+        exists. Examples include whether a file exists, or whether a
+        row in a database exists. This method is used when the
+        workflow is not in strict mode and the user tries to depend on
+        a Tracked object that isn't the target of another task.
+
+        :returns: bool
+
+        """
+        return False
+
     def compare(self):
         """Produce the iterator that is used to determine if this dependency
         has changed. This method is called twice: once before the
@@ -322,6 +334,8 @@ class TrackedFile(Base):
         """
         self.fname = self.__class__.key(fname)
 
+    def exists(self):
+        return os.path.exists(self.fname)
 
     def compare(self):
         stat = os.stat(self.fname)
@@ -454,6 +468,9 @@ class TrackedDirectory(TrackedFile):
 
     """
 
+    def exists(self):
+        return os.path.isdir(self.fname)
+
     def compare(self):
         stat = os.stat(self.fname)
         yield stat.st_size
@@ -474,6 +491,9 @@ class TrackedFilePattern(TrackedFile):
     any of the matched files change in size or modify time.
 
     """
+
+    def exists(self):
+        return bool(glob(self.fname))
 
     def compare(self):
         fs = glob(self.fname)
@@ -504,6 +524,10 @@ class TrackedExecutable(Base):
         self.fname = self.__class__.key(name)
         self.cmd = version_cmd
 
+
+    def exists(self):
+        return os.path.exists(self.fname)
+        
 
     def compare(self):
         if self.cmd:
