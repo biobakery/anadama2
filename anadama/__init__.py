@@ -12,11 +12,11 @@ class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
     :type actions: list of callable
     
     :param depends: The list of dependencies. 
-    :type depends: list of :class:`tracked.BaseDependendency`
+    :type depends: list of :class:`anadama.tracked.Base`
     
     :param targets: The list of targets. The task must produce all of
       these to be a successfully complete task.
-    :type targets: list of :class:`tracked.Base`
+    :type targets: list of :class:`anadama.tracked.Base`
     
     :param task_no: The unique task number. Ordered by declaration,
       not execution.
