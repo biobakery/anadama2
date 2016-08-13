@@ -1,7 +1,6 @@
 import os
 import re
 import shlex
-import atexit
 import logging
 import optparse
 import itertools
@@ -72,7 +71,6 @@ class Workflow(object):
         self.task_results = list()
         self._depidx = tracked.DependencyIndex()
         self._backend = storage_backend or backends.default()
-        self._exithook_subscribed = False
         self.grid_powerup = grid_powerup or grid.DummyPowerup()
         self.strict = strict
         logger.debug("Instantiated run context")
@@ -319,7 +317,6 @@ class Workflow(object):
 
         """
 
-        self._unsubscribe_exithook()
         self.completed_tasks = set()
         self.failed_tasks = set()
         self.task_results = [None for _ in range(len(self.tasks))]
@@ -466,7 +463,6 @@ class Workflow(object):
     def _add_task(self, task):
         """Actually add a task to the internal dependency data structure"""
         
-        self._subscribe_exithook()
         self.tasks.append(task)
         self.dag.add_node(task.task_no)
         for dep in task.depends:
@@ -511,18 +507,6 @@ class Workflow(object):
         msg += "Perhaps you meant `{}' of type `{}'?"
         raise KeyError(msg.format(str(closest), type(closest)))
 
-
-    def _subscribe_exithook(self):
-        if not self._exithook_subscribed:
-            atexit.register(_exithook)
-        self._exithook_subscribed = True
-            
-
-    def _unsubscribe_exithook(self):
-        for i, (func, _, _) in enumerate(atexit._exithandlers):
-            if hasattr(func, "ANADAMAEXITHOOK"):
-                del atexit._exithandlers[i]
-        self._exithook_subscribed = False
 
 
 
@@ -606,8 +590,3 @@ def allparents(dag, task_no):
         seen.add(idx)
         to_check.extend(dag.predecessors(idx))
     return seen
-
-def _exithook():
-    import sys
-    sys.stderr.write("Did you forget to run .go()?\n")
-_exithook.ANADAMAEXITHOOK = None
