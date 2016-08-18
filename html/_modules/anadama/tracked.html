@@ -1,0 +1,681 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>anadama.tracked &mdash; anadama 0.1.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="anadama 0.1.2 documentation" href="../../index.html" />
+    <link rel="up" title="anadama" href="../anadama.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for anadama.tracked</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
+<span class="kn">from</span> <span class="nn">operator</span> <span class="k">import</span> <span class="n">eq</span><span class="p">,</span> <span class="n">itemgetter</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">defaultdict</span>
+
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">_adler32</span><span class="p">,</span> <span class="n">find_on_path</span><span class="p">,</span> <span class="n">sh</span><span class="p">,</span> <span class="n">HasNoEqual</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">istask</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
+<span class="n">_singleton_idx</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+<span class="n">first</span> <span class="o">=</span> <span class="n">itemgetter</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+<div class="viewcode-block" id="auto"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.auto">[docs]</a><span class="k">def</span> <span class="nf">auto</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Translate a string, function or task into the appropriate subclass</span>
+<span class="sd">    of :class:`anadama.tracked.Base`. Tildes and shell</span>
+<span class="sd">    variables are expanded using :func:`os.path.expanduser` and</span>
+<span class="sd">    :func:`os.path.expandvars`. If that&#39;s not your game, use</span>
+<span class="sd">    :class:`anadama.tracked.TrackedDirectory` or</span>
+<span class="sd">    :class:`anadama.tracked.TrackedFile` as appropriate. The current</span>
+<span class="sd">    mapping is as follows:</span>
+
+<span class="sd">    - Subclasses of :class:`anadama.tracked.Base` are returned as is</span>
+
+<span class="sd">    - Strings ending in &#39;/&#39; ``-&gt;`` :class:`anadama.tracked.TrackedDirectory`</span>
+
+<span class="sd">    - Strings not ending in &#39;/&#39; ``-&gt;`` :class:`anadama.tracked.TrackedFile`</span>
+
+<span class="sd">    - Instances of subclasses of :class:`anadama.Task` are handled</span>
+<span class="sd">      specially by :meth:`anadama.workflow.Workflow.add_task` and</span>
+<span class="sd">      are returned as is</span>
+
+<span class="sd">    - Functions or other callables ``-&gt;`` :class:`anadama.tracked.TrackedFunction`</span>
+
+<span class="sd">    :param x: The object to be translated into a dependency object</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">basestring</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_autostring</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">istask</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Base</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span>
+    <span class="k">elif</span> <span class="n">callable</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="c1"># no explicit key is given, so I have to make one up</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="s2">&quot;Function (</span><span class="si">{}</span><span class="s2">) &lt;</span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="nb">id</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">TrackedFunction</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Not sure how to make `</span><span class="si">{}</span><span class="s2">&#39; into a dependency&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">_autostring</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expandvars</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">s</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">TrackedDirectory</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">TrackedFile</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="any_different"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.any_different">[docs]</a><span class="k">def</span> <span class="nf">any_different</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span> <span class="n">backend</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Determine whether any dependencies have changed since last save.</span>
+
+<span class="sd">    :param ds: The dependencies in question</span>
+<span class="sd">    :type ds: instances of any :class:`anadama.tracked.Base` subclass</span>
+
+<span class="sd">    :param backend: Backend to query past results of a dependency object</span>
+<span class="sd">    :type backend: instances of any :class:`anadama.backends.BaseBackend` subclass</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">isdebug</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+        <span class="n">past_dep_compare</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">past_dep_compare</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">isdebug</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Dep `</span><span class="si">%s</span><span class="s2">&#39; of type </span><span class="si">%s</span><span class="s2"> changed: &quot;</span>
+                             <span class="s2">&quot;wasn&#39;t previously saved in backend&quot;</span><span class="p">,</span>
+                             <span class="n">dep</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">dep</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="n">compares</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">izip_longest</span><span class="p">(</span>
+            <span class="n">dep</span><span class="o">.</span><span class="n">compare</span><span class="p">(),</span> <span class="n">past_dep_compare</span><span class="p">,</span> <span class="n">fillvalue</span><span class="o">=</span><span class="n">HasNoEqual</span><span class="p">())</span>
+        <span class="n">the_same</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">starmap</span><span class="p">(</span><span class="n">eq</span><span class="p">,</span> <span class="n">compares</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">is_different</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">the_same</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">isdebug</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Dep `</span><span class="si">%s</span><span class="s2">&#39; of type </span><span class="si">%s</span><span class="s2"> changed: &quot;</span>
+                             <span class="s2">&quot;hit an exception when running .compare()&quot;</span><span class="p">,</span>
+                             <span class="n">dep</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">dep</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">is_different</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">isdebug</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Dep `</span><span class="si">%s</span><span class="s2">&#39; of type </span><span class="si">%s</span><span class="s2"> changed: &quot;</span>
+                             <span class="s2">&quot;.compare() different since last save&quot;</span><span class="p">,</span>
+                             <span class="n">dep</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">dep</span><span class="p">))</span>
+            <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="DependencyIndex"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.DependencyIndex">[docs]</a><span class="k">class</span> <span class="nc">DependencyIndex</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Keeps track of what dependencies belong to what class and provides</span>
+<span class="sd">    efficient lookups of what task produces what dependency. Use</span>
+<span class="sd">    ``DependencyIndex[dependency_obj]`` to get the task that makes that</span>
+<span class="sd">    dependency.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_taskidx</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_taskidx</span><span class="o">.</span><span class="n">update</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">_singleton_idx</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">())</span>
+
+        
+<div class="viewcode-block" id="DependencyIndex.link"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.DependencyIndex.link">[docs]</a>    <span class="k">def</span> <span class="nf">link</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dep</span><span class="p">,</span> <span class="n">task_or_none</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Link a dependency to a task. Used later for lookups with</span>
+<span class="sd">        __getitem__.</span>
+
+<span class="sd">        :param dep: The dependency to track</span>
+<span class="sd">        :type dep: subclass of :class:`anadama.tracked.Base`</span>
+
+<span class="sd">        :param task_or_none: The task that&#39;s supposed to create this</span>
+<span class="sd">          dependency. Use None if the dependency isn&#39;t created by a</span>
+<span class="sd">          task but exists prior to any tasks running.</span>
+<span class="sd">        :type task_or_none: :class:`anadama.Task` or None</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_taskidx</span><span class="p">[</span><span class="n">dep</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">][</span><span class="n">dep</span><span class="o">.</span><span class="n">_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">task_or_none</span></div>
+
+
+    <span class="k">def</span> <span class="nf">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dep</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">dep</span><span class="o">.</span><span class="n">_key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_taskidx</span><span class="p">[</span><span class="n">dep</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">]</span>
+
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dep</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dep</span><span class="p">,</span> <span class="n">Base</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;DependencyIndex can only use subclasses of&quot;</span>
+                <span class="s2">&quot; Base to perform lookups.&quot;</span>
+                <span class="s2">&quot; Received type `</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">dep</span><span class="p">))</span>
+            <span class="p">)</span>
+        <span class="n">deptype</span> <span class="o">=</span> <span class="n">dep</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="n">dep</span> <span class="o">=</span> <span class="n">_singleton_idx</span><span class="p">[</span><span class="n">deptype</span><span class="p">][</span><span class="n">dep</span><span class="o">.</span><span class="n">_key</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_taskidx</span><span class="p">[</span><span class="n">deptype</span><span class="p">][</span><span class="n">dep</span><span class="o">.</span><span class="n">_key</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="Base"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.Base">[docs]</a><span class="k">class</span> <span class="nc">Base</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;The Dependency object is the tool for specifying task father-child</span>
+<span class="sd">    relationships. Dependency objects can be used in either</span>
+<span class="sd">    ``targets`` or ``depends`` arguments of</span>
+<span class="sd">    :meth:`anadama.workflow.Workflow.add_task`. Often, these targets or</span>
+<span class="sd">    dependencies are specified by strings or :class:`anadama.Task`</span>
+<span class="sd">    objects and instantiated into the appropriate Base</span>
+<span class="sd">    subclass with :func:`anadama.tracked.auto`; this behavior depends on the</span>
+<span class="sd">    arguments to :meth:`anadama.workflow.Workflow.add_task`.</span>
+
+<span class="sd">    A dependency of the same name will be defined multiple times in</span>
+<span class="sd">    the normal use of AnADAMA. To make it such that many calls of a</span>
+<span class="sd">    dependency constructor or use of the same argument to</span>
+<span class="sd">    :func:`anadama.tracked.auto` result in the same dependency instance being</span>
+<span class="sd">    returned, a little bit of black magic involving</span>
+<span class="sd">    :meth:`anadama.tracked.Base.__new__` is required. The price for</span>
+<span class="sd">    such magics is that subclasses of Base must define the</span>
+<span class="sd">    ``init`` method to initialize the dependency, instead of the more</span>
+<span class="sd">    commonly used ``__init__`` method. The ``init`` method is only</span>
+<span class="sd">    called once per dependency, while ``__init__`` is called every</span>
+<span class="sd">    time any Base sublcasses are</span>
+<span class="sd">    instantiated. Base subclasses must also define a</span>
+<span class="sd">    ``key()`` staticmethod. The ``key()`` staticmethod is used to</span>
+<span class="sd">    lookup already existing instances of that dependency; return</span>
+<span class="sd">    values from the ``key()`` method must be unique to that</span>
+<span class="sd">    dependency.</span>
+
+<span class="sd">    Unrelated to the quasi-singleton magics above, sublcasses of</span>
+<span class="sd">    Base must define a ``compare()`` method. See</span>
+<span class="sd">    :meth:`anadama.tracked.Base.compare` for more documentation.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">must_preexist</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">global</span> <span class="n">_singleton_idx</span>
+        <span class="n">real_key</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="n">maybe_exists</span> <span class="o">=</span> <span class="n">_singleton_idx</span><span class="p">[</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">real_key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">maybe_exists</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">maybe_exists</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_singleton_idx</span><span class="p">[</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">][</span><span class="n">real_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">dep</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span>
+            <span class="n">dep</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">real_key</span>
+            <span class="n">dep</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">dep</span>
+
+
+    <span class="k">def</span> <span class="nf">__getnewargs__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">,)</span>
+            
+
+<div class="viewcode-block" id="Base.init"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.Base.init">[docs]</a>    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the dependency. Only run once for each new dependency</span>
+<span class="sd">        object with this ``key()``.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+        
+
+<div class="viewcode-block" id="Base.exists"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.Base.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return whether the thing that this object represents</span>
+<span class="sd">        exists. Examples include whether a file exists, or whether a</span>
+<span class="sd">        row in a database exists. This method is used when the</span>
+<span class="sd">        workflow is not in strict mode and the user tries to depend on</span>
+<span class="sd">        a Tracked object that isn&#39;t the target of another task.</span>
+
+<span class="sd">        :returns: bool</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="Base.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.Base.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Produce the iterator that is used to determine if this dependency</span>
+<span class="sd">        has changed. This method is called twice: once before the</span>
+<span class="sd">        task&#39;s actions have been executed for all of a task&#39;s</span>
+<span class="sd">        dependencies and once after all of a task&#39;s actions are</span>
+<span class="sd">        executed for each of the task&#39;s targets.</span>
+
+<span class="sd">        :returns: iterator</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Base.key"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.Base.key">[docs]</a>    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="n">the_key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns the unique key for retrieving this dependency from the</span>
+<span class="sd">        storage backend and for comparing against other dependencies</span>
+<span class="sd">        of the same type.</span>
+
+<span class="sd">        :rtype: str</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TrackedString"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedString">[docs]</a><span class="k">class</span> <span class="nc">TrackedString</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+
+    <span class="n">must_preexist</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="TrackedString.init"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedString.init">[docs]</a>    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">s</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the dependency.</span>
+
+<span class="sd">        :param s: The string to keep track of</span>
+<span class="sd">        :type s: str or unicode</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">s</span></div>
+
+
+<div class="viewcode-block" id="TrackedString.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedString.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="TrackedString.key"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedString.key">[docs]</a>    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="n">s</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">s</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span></div>
+
+
+
+<span class="n">KVDEPSEPARATOR</span> <span class="o">=</span> <span class="s2">&quot;:&quot;</span>
+<div class="viewcode-block" id="TrackedVariable"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedVariable">[docs]</a><span class="k">class</span> <span class="nc">TrackedVariable</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="n">must_preexist</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">__new__</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">global</span> <span class="n">_singleton_idx</span>
+        <span class="n">real_key</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="n">maybe_exists</span> <span class="o">=</span> <span class="n">_singleton_idx</span><span class="p">[</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">real_key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">maybe_exists</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">maybe_exists</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_singleton_idx</span><span class="p">[</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">][</span><span class="n">real_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">dep</span> <span class="o">=</span> <span class="nb">object</span><span class="o">.</span><span class="n">__new__</span><span class="p">(</span><span class="n">cls</span><span class="p">)</span>
+            <span class="n">dep</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">real_key</span>
+            <span class="n">dep</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">namespace</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">dep</span>
+
+
+<div class="viewcode-block" id="TrackedVariable.init"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedVariable.init">[docs]</a>    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TrackedVariable.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedVariable.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">val</span></div>
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="TrackedVariable.key"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedVariable.key">[docs]</a>    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">KVDEPSEPARATOR</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="p">(</span><span class="n">ns</span><span class="p">,</span><span class="n">k</span><span class="p">)))</span></div>
+
+    <span class="k">def</span> <span class="nf">__getnewargs__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">ns</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">KVDEPSEPARATOR</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">ns</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">val</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="TrackedFile"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFile">[docs]</a><span class="k">class</span> <span class="nc">TrackedFile</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Track a small file. Small being small enough that you don&#39;t mind</span>
+<span class="sd">    that the entire file is read to create a checksum of its contents.</span>
+
+<span class="sd">    This dependency class is the safest option for tracking file</span>
+<span class="sd">    changes. Safety comes at the cost of disk IO; all file contents</span>
+<span class="sd">    are read to create a checksum.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TrackedFile.init"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFile.init">[docs]</a>    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the dependency.</span>
+<span class="sd">        :param fname: The filename to keep track of</span>
+<span class="sd">        :type fname: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TrackedFile.exists"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFile.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TrackedFile.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFile.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span>
+        <span class="k">yield</span> <span class="n">_adler32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="TrackedFile.key"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFile.key">[docs]</a>    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="n">fname</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">fname</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fname</span></div>
+
+
+
+<div class="viewcode-block" id="HugeTrackedFile"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.HugeTrackedFile">[docs]</a><span class="k">class</span> <span class="nc">HugeTrackedFile</span><span class="p">(</span><span class="n">TrackedFile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Track a large file. Large being large enough that you don&#39;t want to</span>
+<span class="sd">    read through the entire file to create a checksum of its contents.</span>
+
+<span class="sd">    This dependency class is the fastest option for tracking file</span>
+<span class="sd">    changes for large files. Speed comes at the cost of safety; only</span>
+<span class="sd">    the size and the modification time are used to determine</span>
+<span class="sd">    freshness.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="HugeTrackedFile.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.HugeTrackedFile.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span></div></div>
+
+
+
+<div class="viewcode-block" id="Container"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.Container">[docs]</a><span class="k">class</span> <span class="nc">Container</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Track a collection of small strings. This is useful for rerunning</span>
+<span class="sd">    tasks based on whether a flag has changed when running a</span>
+<span class="sd">    command. Using :class:`anadama.tracked.TrackedString` for small</span>
+<span class="sd">    strings can run into collisions between workflows that use the</span>
+<span class="sd">    same backend. Consider using ``logging =</span>
+<span class="sd">    TrackedString(&quot;debug&quot;)`` in script_a.py and ``logging =</span>
+<span class="sd">    TrackedString(&quot;warning&quot;)`` in script_b.py. If you change</span>
+<span class="sd">    script_a.py to ``logging = TrackedString(&quot;warning&quot;)`` after</span>
+<span class="sd">    running script_b.py, script_a.py won&#39;t rerun tasks that depend on</span>
+<span class="sd">    the TrackedString assigned to ``logging``.</span>
+
+<span class="sd">    This class solves TrackedString collisions by prepending a</span>
+<span class="sd">    user-provided (or auto-generated) namespace to each key-value pair</span>
+<span class="sd">    in the collection. The auto-generated namespace is unique to the</span>
+<span class="sd">    script or module creating the Container, so expect to have</span>
+<span class="sd">    a bunch of tasks rerun if you rename a module or script between</span>
+<span class="sd">    runs.</span>
+
+<span class="sd">    .. code:: python</span>
+
+<span class="sd">      &gt;&gt;&gt; import anadama.tracked</span>
+<span class="sd">      &gt;&gt;&gt; conf = anadama.tracked.Container(alpha=&quot;5&quot;, beta=2)</span>
+<span class="sd">      &gt;&gt;&gt; conf.alpha</span>
+<span class="sd">      &lt;anadama.tracked.TrackedVariable object at 0x7f66445fa490&gt; </span>
+<span class="sd">      &gt;&gt;&gt; str(conf.alpha)</span>
+<span class="sd">      &#39;5&#39;</span>
+<span class="sd">      &gt;&gt;&gt; str(conf[&#39;beta&#39;])</span>
+<span class="sd">      &#39;2&#39;</span>
+<span class="sd">      &gt;&gt;&gt; conf.beta = 7</span>
+<span class="sd">      &gt;&gt;&gt; conf.beta</span>
+<span class="sd">      &lt;anadama.tracked.TrackedVariable object at 0x7f66445fa4d0&gt;</span>
+<span class="sd">      &gt;&gt;&gt; str(conf.beta)</span>
+<span class="sd">      &#39;7&#39;</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s1">&#39;_ns&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="n">namespace</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Creating </span><span class="si">%s</span><span class="s2"> with namespace </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ns</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="s1">&#39;_d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">TrackedVariable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Container.key"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.Container.key">[docs]</a>    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">namespace</span><span class="p">:</span>
+            <span class="n">anamodpath</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">__file__</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">stackfile</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="n">traceback</span><span class="o">.</span><span class="n">extract_stack</span><span class="p">())):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">stackfile</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">anamodpath</span><span class="p">):</span>
+                    <span class="n">namespace</span> <span class="o">=</span> <span class="n">stackfile</span>
+                    <span class="k">break</span>
+        <span class="k">return</span> <span class="n">namespace</span></div>
+
+<div class="viewcode-block" id="Container.items"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.Container.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="o">.</span><span class="n">itervalues</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Container.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.Container.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">compare</span><span class="p">():</span>
+                <span class="k">yield</span> <span class="n">item</span></div>
+
+
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="n">__getitem__</span> <span class="o">=</span> <span class="n">__getattr__</span>
+
+    <span class="k">def</span> <span class="nf">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">:</span>
+            <span class="k">global</span> <span class="n">_singleton_idx</span>
+            <span class="n">dep</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">dep</span><span class="o">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span>
+            <span class="n">dep</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">TrackedVariable</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+            <span class="n">_singleton_idx</span><span class="p">[</span><span class="n">dep</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">][</span><span class="n">dep</span><span class="o">.</span><span class="n">_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">dep</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">TrackedVariable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ns</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+    <span class="n">__setitem__</span> <span class="o">=</span> <span class="n">__setattr__</span>
+
+    <span class="k">def</span> <span class="nf">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_d</span><span class="o">.</span><span class="n">iteritems</span><span class="p">()))</span></div>
+
+
+
+<div class="viewcode-block" id="TrackedDirectory"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedDirectory">[docs]</a><span class="k">class</span> <span class="nc">TrackedDirectory</span><span class="p">(</span><span class="n">TrackedFile</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Track a directory. A directory is considered changed if it&#39;s</span>
+<span class="sd">    removed, the modify time has changed, the list of files within the</span>
+<span class="sd">    directory has changed, or if any of the files within the directory</span>
+<span class="sd">    have changed size or modify times.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TrackedDirectory.exists"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedDirectory.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TrackedDirectory.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedDirectory.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span>
+        <span class="n">contained</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)))</span>
+        <span class="k">yield</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">contained</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">contained</span><span class="p">:</span>
+            <span class="n">stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">,</span> <span class="n">item</span><span class="p">))</span>
+            <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span>
+            <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span></div></div>
+
+
+
+<div class="viewcode-block" id="TrackedFilePattern"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFilePattern">[docs]</a><span class="k">class</span> <span class="nc">TrackedFilePattern</span><span class="p">(</span><span class="n">TrackedFile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Track several files according to a bash-style globbing</span>
+<span class="sd">    pattern. Uses :func:`glob.glob` under the hood.  A Glob is</span>
+<span class="sd">    considered changed if the names of the matched files changes, or</span>
+<span class="sd">    any of the matched files change in size or modify time.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TrackedFilePattern.exists"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFilePattern.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">glob</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="TrackedFilePattern.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFilePattern.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">fs</span> <span class="o">=</span> <span class="n">glob</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span>
+        <span class="n">fs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">fs</span><span class="p">))</span>
+        <span class="k">yield</span> <span class="nb">hash</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">fs</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fs</span><span class="p">:</span>
+            <span class="n">stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span>
+            <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span></div></div>
+
+
+
+<div class="viewcode-block" id="TrackedExecutable"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedExecutable">[docs]</a><span class="k">class</span> <span class="nc">TrackedExecutable</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Track a script or binary executable.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TrackedExecutable.init"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedExecutable.init">[docs]</a>    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">version_cmd</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize the dependency.</span>
+
+<span class="sd">        :param name: Name of a script on the shell $PATH or name of</span>
+<span class="sd">          the file to track</span>
+<span class="sd">        :type name: str</span>
+<span class="sd">        </span>
+<span class="sd">        :keyword version_cmd: Shell string to execute to get the</span>
+<span class="sd">          binary or script&#39;s version</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">key</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span> <span class="o">=</span> <span class="n">version_cmd</span></div>
+
+
+<div class="viewcode-block" id="TrackedExecutable.exists"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedExecutable.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span></div>
+        
+
+<div class="viewcode-block" id="TrackedExecutable.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedExecutable.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">sh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="k">yield</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span>
+        <span class="k">yield</span> <span class="n">_adler32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname</span><span class="p">)</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="TrackedExecutable.key"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedExecutable.key">[docs]</a>    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">find_on_path</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">p</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Unable to find binary or script `</span><span class="si">{}</span><span class="s2">&#39;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">p</span></div>
+
+    <span class="k">def</span> <span class="nf">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fname</span></div>
+
+
+
+<div class="viewcode-block" id="TrackedFunction"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFunction">[docs]</a><span class="k">class</span> <span class="nc">TrackedFunction</span><span class="p">(</span><span class="n">Base</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;Useful for things like database lookups or API calls. The function</span>
+<span class="sd">    must return a hashable type. For a tiered comparison method like</span>
+<span class="sd">    that seen in :class:`anadama.tracked.TrackedFile`, it&#39;s best to create</span>
+<span class="sd">    your own subclass of Base and override the ``compare()``</span>
+<span class="sd">    method.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">must_preexist</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="TrackedFunction.init"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFunction.init">[docs]</a>    <span class="k">def</span> <span class="nf">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn</span> <span class="o">=</span> <span class="n">fn</span></div>
+
+
+<div class="viewcode-block" id="TrackedFunction.compare"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFunction.compare">[docs]</a>    <span class="k">def</span> <span class="nf">compare</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="p">()</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="TrackedFunction.key"><a class="viewcode-back" href="../../tracked.html#anadama.tracked.TrackedFunction.key">[docs]</a>    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">key</span></div></div>
+
+
+
+<span class="n">_cached_dep_classes</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">Base</span><span class="p">,</span>               <span class="n">TrackedString</span><span class="p">,</span>
+    <span class="n">TrackedFile</span><span class="p">,</span>        <span class="n">HugeTrackedFile</span><span class="p">,</span>
+    <span class="n">TrackedExecutable</span><span class="p">,</span>  <span class="n">TrackedFunction</span><span class="p">,</span>
+    <span class="n">TrackedFilePattern</span><span class="p">,</span> <span class="n">TrackedDirectory</span><span class="p">,</span>
+    <span class="n">TrackedVariable</span>
+<span class="p">)</span>
+<span class="k">for</span> <span class="n">cls</span> <span class="ow">in</span> <span class="n">_cached_dep_classes</span><span class="p">:</span>
+    <span class="n">_singleton_idx</span><span class="p">[</span><span class="n">cls</span><span class="o">.</span><span class="n">__name__</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="k">del</span> <span class="n">cls</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  <li><a href="../anadama.html">anadama</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Randall Schwager and the Huttenhower Lab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

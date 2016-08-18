@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>util &mdash; anadama 0.1.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="anadama 0.1.2 documentation" href="index.html" />
+    <link rel="prev" title="sge" href="sge.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="util">
+<h1>util<a class="headerlink" href="#util" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-anadama.util"></span><dl class="class">
+<dt id="anadama.util.Bag">
+<em class="property">class </em><code class="descclassname">anadama.util.</code><code class="descname">Bag</code><a class="reference internal" href="_modules/anadama/util.html#Bag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.Bag" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="anadama.util.HasNoEqual">
+<em class="property">class </em><code class="descclassname">anadama.util.</code><code class="descname">HasNoEqual</code><a class="reference internal" href="_modules/anadama/util.html#HasNoEqual"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.HasNoEqual" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="anadama.util.SerializableMixin">
+<em class="property">class </em><code class="descclassname">anadama.util.</code><code class="descname">SerializableMixin</code><a class="reference internal" href="_modules/anadama/util.html#SerializableMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.SerializableMixin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mixin that defines a few methods to simplify serializing objects</p>
+<dl class="attribute">
+<dt id="anadama.util.SerializableMixin.serializable_attrs">
+<code class="descname">serializable_attrs</code><em class="property"> = []</em><a class="headerlink" href="#anadama.util.SerializableMixin.serializable_attrs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="anadama.util.SerializationError">
+<em class="property">exception </em><code class="descclassname">anadama.util.</code><code class="descname">SerializationError</code><a class="reference internal" href="_modules/anadama/util.html#SerializationError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.SerializationError" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="exception">
+<dt id="anadama.util.ShellException">
+<em class="property">exception </em><code class="descclassname">anadama.util.</code><code class="descname">ShellException</code><a class="reference internal" href="_modules/anadama/util.html#ShellException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.ShellException" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="exception">
+<dt id="anadama.util.SparseMetadataException">
+<em class="property">exception </em><code class="descclassname">anadama.util.</code><code class="descname">SparseMetadataException</code><a class="reference internal" href="_modules/anadama/util.html#SparseMetadataException"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.SparseMetadataException" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.deserialize">
+<code class="descclassname">anadama.util.</code><code class="descname">deserialize</code><span class="sig-paren">(</span><em>s=None</em>, <em>from_fp=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#deserialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.deserialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.deserialize_csv">
+<code class="descclassname">anadama.util.</code><code class="descname">deserialize_csv</code><span class="sig-paren">(</span><em>file_handle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#deserialize_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.deserialize_csv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.deserialize_map_file">
+<code class="descclassname">anadama.util.</code><code class="descname">deserialize_map_file</code><span class="sig-paren">(</span><em>file_handle</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#deserialize_map_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.deserialize_map_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a list of namedtuples according to the contents of the
+file_handle according to the customs of QIIME</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.dichotomize">
+<code class="descclassname">anadama.util.</code><code class="descname">dichotomize</code><span class="sig-paren">(</span><em>it</em>, <em>tf_func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#dichotomize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.dichotomize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Split an iterable into two lists by use of a function that returns
+True or False.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>it</strong> &#8211; The items to split</li>
+<li><strong>tf_func</strong> &#8211; A function that returns True or False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">2-Tuple of lists: the items for which the function
+returned True, and the items for which the function returned
+False</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.dict_to_cmd_opts">
+<code class="descclassname">anadama.util.</code><code class="descname">dict_to_cmd_opts</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#dict_to_cmd_opts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.dict_to_cmd_opts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.dict_to_cmd_opts_iter">
+<code class="descclassname">anadama.util.</code><code class="descname">dict_to_cmd_opts_iter</code><span class="sig-paren">(</span><em>opts_dict</em>, <em>shortsep=' '</em>, <em>longsep='='</em>, <em>shortdash='-'</em>, <em>longdash='--'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#dict_to_cmd_opts_iter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.dict_to_cmd_opts_iter" title="Permalink to this definition">¶</a></dt>
+<dd><p>sep separates long options and their values, singlesep separates
+short options and their values e.g. &#8211;long=foobar vs -M 2</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.filter_compressed">
+<code class="descclassname">anadama.util.</code><code class="descname">filter_compressed</code><span class="sig-paren">(</span><em>fname_list</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#filter_compressed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.filter_compressed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return only files that are known to be compressed and in a
+recognized compression format</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.find_on_path">
+<code class="descclassname">anadama.util.</code><code class="descname">find_on_path</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#find_on_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.find_on_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds an executable living on the shells PATH variable.
+:param bin_str: String; executable to find</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Absolute path to <cite>bin_str</cite> or False if not found</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.first">
+<code class="descclassname">anadama.util.</code><code class="descname">first</code><span class="sig-paren">(</span><em>iterable</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#first"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.first" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.generator_flatten">
+<code class="descclassname">anadama.util.</code><code class="descname">generator_flatten</code><span class="sig-paren">(</span><em>gen</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#generator_flatten"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.generator_flatten" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.guess_seq_filetype">
+<code class="descclassname">anadama.util.</code><code class="descname">guess_seq_filetype</code><span class="sig-paren">(</span><em>guess_from</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#guess_seq_filetype"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.guess_seq_filetype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.intatleast1">
+<code class="descclassname">anadama.util.</code><code class="descname">intatleast1</code><span class="sig-paren">(</span><em>n</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#intatleast1"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.intatleast1" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.is_compressed">
+<code class="descclassname">anadama.util.</code><code class="descname">is_compressed</code><span class="sig-paren">(</span><em>fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#is_compressed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.is_compressed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.islambda">
+<code class="descclassname">anadama.util.</code><code class="descname">islambda</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#islambda"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.islambda" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.isnottask">
+<code class="descclassname">anadama.util.</code><code class="descname">isnottask</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#isnottask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.isnottask" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.istask">
+<code class="descclassname">anadama.util.</code><code class="descname">istask</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#istask"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.istask" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.keepkeys">
+<code class="descclassname">anadama.util.</code><code class="descname">keepkeys</code><span class="sig-paren">(</span><em>d</em>, <em>keys</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#keepkeys"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.keepkeys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drop all keys from dictionary <code class="docutils literal"><span class="pre">d</span></code> except those in
+<code class="docutils literal"><span class="pre">keys</span></code>. Modifies the dictionary in place!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>d</strong> (<a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; The dictionary to modify</li>
+<li><strong>keys</strong> (<em>iterable</em>) &#8211; The keys to keep</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.keyrename">
+<code class="descclassname">anadama.util.</code><code class="descname">keyrename</code><span class="sig-paren">(</span><em>d</em>, <em>mapping</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#keyrename"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.keyrename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Change all keys in dictionary <code class="docutils literal"><span class="pre">d</span></code> according to
+<code class="docutils literal"><span class="pre">mapping</span></code>. Modifies <code class="docutils literal"><span class="pre">d</span></code> in place!</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>d</strong> (<a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#dict" title="(in Python v2.7)"><em>dict</em></a>) &#8211; The dictionary to change</li>
+<li><strong>mapping</strong> (<em>iterable of 2-tuples</em>) &#8211; The keys to change and to what to change them</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.memoized">
+<code class="descclassname">anadama.util.</code><code class="descname">memoized</code><span class="sig-paren">(</span><em>func</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#memoized"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.memoized" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.mkdirp">
+<code class="descclassname">anadama.util.</code><code class="descname">mkdirp</code><span class="sig-paren">(</span><em>path</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#mkdirp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.mkdirp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.noop">
+<code class="descclassname">anadama.util.</code><code class="descname">noop</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#noop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.noop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.partition">
+<code class="descclassname">anadama.util.</code><code class="descname">partition</code><span class="sig-paren">(</span><em>it</em>, <em>binsize</em>, <em>pad=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#partition"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.partition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.serialize">
+<code class="descclassname">anadama.util.</code><code class="descname">serialize</code><span class="sig-paren">(</span><em>obj</em>, <em>to_fp=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#serialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.serialize" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.serialize_map_file">
+<code class="descclassname">anadama.util.</code><code class="descname">serialize_map_file</code><span class="sig-paren">(</span><em>namedtuples</em>, <em>output_fname</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#serialize_map_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.serialize_map_file" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.sh">
+<code class="descclassname">anadama.util.</code><code class="descname">sh</code><span class="sig-paren">(</span><em>cmd</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#sh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.sh" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.sugar_list">
+<code class="descclassname">anadama.util.</code><code class="descname">sugar_list</code><span class="sig-paren">(</span><em>x</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#sugar_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.sugar_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Turns just a single thing into a list containing that single thing.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.take">
+<code class="descclassname">anadama.util.</code><code class="descname">take</code><span class="sig-paren">(</span><em>raw_seq_files</em>, <em>index_list</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#take"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.take" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.underscore">
+<code class="descclassname">anadama.util.</code><code class="descname">underscore</code><span class="sig-paren">(</span><em>s</em>, <em>repl='[\\s/:&#64;\\</em>, <em>*?]+'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#underscore"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.underscore" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove all whitespace and replace with underscores</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.util.which_compressed_idxs">
+<code class="descclassname">anadama.util.</code><code class="descname">which_compressed_idxs</code><span class="sig-paren">(</span><em>fname_mtx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/util.html#which_compressed_idxs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.util.which_compressed_idxs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="sge.html" title="previous chapter">sge</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/util.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Randall Schwager and the Huttenhower Lab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/util.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
