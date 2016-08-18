@@ -1,0 +1,249 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>runners &mdash; anadama 0.1.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="anadama 0.1.2 documentation" href="index.html" />
+    <link rel="next" title="workflow" href="workflow.html" />
+    <link rel="prev" title="reporters" href="reporters.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="runners">
+<h1>runners<a class="headerlink" href="#runners" title="Permalink to this headline">¶</a></h1>
+<span class="target" id="module-anadama.runners"></span><dl class="class">
+<dt id="anadama.runners.BaseRunner">
+<em class="property">class </em><code class="descclassname">anadama.runners.</code><code class="descname">BaseRunner</code><span class="sig-paren">(</span><em>run_context</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#BaseRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.BaseRunner" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="anadama.runners.BaseRunner.run_tasks">
+<code class="descname">run_tasks</code><span class="sig-paren">(</span><em>task_idx_deque</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#BaseRunner.run_tasks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.BaseRunner.run_tasks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="anadama.runners.GridRunner">
+<em class="property">class </em><code class="descclassname">anadama.runners.</code><code class="descname">GridRunner</code><span class="sig-paren">(</span><em>workflow</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#GridRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.GridRunner" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="anadama.runners.GridRunner.add_worker">
+<code class="descname">add_worker</code><span class="sig-paren">(</span><em>worker_class</em>, <em>name</em>, <em>rate=1</em>, <em>default=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#GridRunner.add_worker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.GridRunner.add_worker" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama.runners.GridRunner.cleanup">
+<code class="descname">cleanup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#GridRunner.cleanup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.GridRunner.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama.runners.GridRunner.route">
+<code class="descname">route</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#GridRunner.route"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.GridRunner.route" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama.runners.GridRunner.run_tasks">
+<code class="descname">run_tasks</code><span class="sig-paren">(</span><em>task_idx_deque</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#GridRunner.run_tasks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.GridRunner.run_tasks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama.runners.GridRunner.terminate">
+<code class="descname">terminate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#GridRunner.terminate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.GridRunner.terminate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="anadama.runners.ParallelLocalRunner">
+<em class="property">class </em><code class="descclassname">anadama.runners.</code><code class="descname">ParallelLocalRunner</code><span class="sig-paren">(</span><em>run_context</em>, <em>n_parallel</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#ParallelLocalRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.ParallelLocalRunner" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="anadama.runners.ParallelLocalRunner.cleanup">
+<code class="descname">cleanup</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#ParallelLocalRunner.cleanup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.ParallelLocalRunner.cleanup" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama.runners.ParallelLocalRunner.run_tasks">
+<code class="descname">run_tasks</code><span class="sig-paren">(</span><em>task_idx_deque</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#ParallelLocalRunner.run_tasks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.ParallelLocalRunner.run_tasks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama.runners.ParallelLocalRunner.terminate">
+<code class="descname">terminate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#ParallelLocalRunner.terminate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.ParallelLocalRunner.terminate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="anadama.runners.ParallelLocalWorker">
+<em class="property">class </em><code class="descclassname">anadama.runners.</code><code class="descname">ParallelLocalWorker</code><span class="sig-paren">(</span><em>work_q</em>, <em>result_q</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#ParallelLocalWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.ParallelLocalWorker" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="staticmethod">
+<dt id="anadama.runners.ParallelLocalWorker.appropriate_q_class">
+<em class="property">static </em><code class="descname">appropriate_q_class</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#ParallelLocalWorker.appropriate_q_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.ParallelLocalWorker.appropriate_q_class" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama.runners.ParallelLocalWorker.run">
+<code class="descname">run</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#ParallelLocalWorker.run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.ParallelLocalWorker.run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="anadama.runners.SerialLocalRunner">
+<em class="property">class </em><code class="descclassname">anadama.runners.</code><code class="descname">SerialLocalRunner</code><span class="sig-paren">(</span><em>run_context</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#SerialLocalRunner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.SerialLocalRunner" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="anadama.runners.SerialLocalRunner.run_tasks">
+<code class="descname">run_tasks</code><span class="sig-paren">(</span><em>task_idx_deque</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#SerialLocalRunner.run_tasks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.SerialLocalRunner.run_tasks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="exception">
+<dt id="anadama.runners.TaskFailed">
+<em class="property">exception </em><code class="descclassname">anadama.runners.</code><code class="descname">TaskFailed</code><span class="sig-paren">(</span><em>msg</em>, <em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#TaskFailed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.TaskFailed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="anadama.runners.TaskResult">
+<em class="property">class </em><code class="descclassname">anadama.runners.</code><code class="descname">TaskResult</code><a class="reference internal" href="_modules/anadama/runners.html#TaskResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.TaskResult" title="Permalink to this definition">¶</a></dt>
+<dd><p>The result of a task&#8217;s execution.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>task_no</strong> &#8211; The number of the task that produced this result.</li>
+<li><strong>error</strong> &#8211; The error generated by executing the task. None if
+the task was successful.</li>
+<li><strong>dep_keys</strong> (<em>list of list of str</em>) &#8211; The list of <code class="docutils literal"><span class="pre">._key</span></code> attributes from the objects
+of type <a class="reference internal" href="tracked.html#anadama.tracked.Base" title="anadama.tracked.Base"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.Base</span></code></a> associated with
+this task. These keys are used with the storage backend to save
+successful task results.</li>
+<li><strong>dep_compares</strong> &#8211; The list of the results of the <code class="docutils literal"><span class="pre">compare()</span></code>
+method from the objects of type
+<a class="reference internal" href="tracked.html#anadama.tracked.Base" title="anadama.tracked.Base"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.Base</span></code></a> associated with this
+task. These values are used with the storage backend to save
+successful task results.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Type:</th><td class="field-body"><p class="first">int</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Type:</th><td class="field-body"><p class="first last">str or None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.runners.current_grid_runner">
+<code class="descclassname">anadama.runners.</code><code class="descname">current_grid_runner</code><span class="sig-paren">(</span><em>context</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#current_grid_runner"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.current_grid_runner" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.runners.default">
+<code class="descclassname">anadama.runners.</code><code class="descname">default</code><span class="sig-paren">(</span><em>run_context</em>, <em>n_parallel</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#default"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.default" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.runners.exception_result">
+<code class="descclassname">anadama.runners.</code><code class="descname">exception_result</code><span class="sig-paren">(</span><em>exc</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#exception_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.exception_result" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.runners.parent_failed_result">
+<code class="descclassname">anadama.runners.</code><code class="descname">parent_failed_result</code><span class="sig-paren">(</span><em>idx</em>, <em>parent_idx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#parent_failed_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.parent_failed_result" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.runners.worker_run_loop">
+<code class="descclassname">anadama.runners.</code><code class="descname">worker_run_loop</code><span class="sig-paren">(</span><em>work_q</em>, <em>result_q</em>, <em>run_task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/runners.html#worker_run_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.runners.worker_run_loop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="reporters.html" title="previous chapter">reporters</a></li>
+      <li>Next: <a href="workflow.html" title="next chapter">workflow</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/runners.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Randall Schwager and the Huttenhower Lab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/runners.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

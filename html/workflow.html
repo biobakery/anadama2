@@ -1,0 +1,376 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>workflow &mdash; anadama 0.1.2 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="anadama 0.1.2 documentation" href="index.html" />
+    <link rel="next" title="slurm" href="slurm.html" />
+    <link rel="prev" title="runners" href="runners.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="workflow">
+<h1>workflow<a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h1>
+<dl class="attribute">
+<dt id="anadama.workflow.Workflow">
+<code class="descclassname">workflow.</code><code class="descname">Workflow</code><em class="property"> = &lt;class 'anadama.workflow.Workflow'&gt;</em><a class="headerlink" href="#anadama.workflow.Workflow" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<span class="target" id="module-anadama.workflow"></span><dl class="exception">
+<dt id="anadama.workflow.RunFailed">
+<em class="property">exception </em><code class="descclassname">anadama.workflow.</code><code class="descname">RunFailed</code><a class="reference internal" href="_modules/anadama/workflow.html#RunFailed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.RunFailed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt>
+<em class="property">class </em><code class="descclassname">anadama.workflow.</code><code class="descname">Workflow</code><span class="sig-paren">(</span><em>storage_backend=None</em>, <em>grid_powerup=None</em>, <em>strict=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#Workflow"><span class="viewcode-link">[source]</span></a></dt>
+<dd><p>Create a Workflow.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>storage_backend</strong> (instance of any
+<a class="reference internal" href="backends.html#anadama.backends.BaseBackend" title="anadama.backends.BaseBackend"><code class="xref py py-class docutils literal"><span class="pre">anadama.backends.BaseBackend</span></code></a> subclass or None.) &#8211; Lookup and save dependency information
+from this object. If <code class="docutils literal"><span class="pre">None</span></code> is passed (the default), the
+default backend from <a class="reference internal" href="backends.html#anadama.backends.default" title="anadama.backends.default"><code class="xref py py-func docutils literal"><span class="pre">anadama.backends.default()</span></code></a> is used.</li>
+<li><strong>grid_powerup</strong> (objects implementing the interface of
+<code class="xref py py-class docutils literal"><span class="pre">anadama.grid.DummyPowerup</span></code>) &#8211; Use this object to configure the run
+context to submit tasks to a compute grid.</li>
+<li><strong>strict</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Enable strict mode. If strict, whenever a task is
+added that depends on something that is not the target of
+another task (or isn&#8217;t marked with
+<span class="math">\(anadama.workflow.Workflow.already_exists\)</span>), raise a
+<code class="docutils literal"><span class="pre">KeyError</span></code>. If not strict, and the Tracked object
+<code class="docutils literal"><span class="pre">.exists()</span></code> automatically do what&#8217;s necessary to track the
+object; if <code class="docutils literal"><span class="pre">.exists()</span></code> is False, raise a KeyError.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="anadama.workflow.Workflow.add_task">
+<code class="descname">add_task</code><span class="sig-paren">(</span><em>actions=None</em>, <em>depends=None</em>, <em>targets=None</em>, <em>name=None</em>, <em>interpret_deps_and_targs=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#Workflow.add_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.Workflow.add_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and add a <a class="reference internal" href="index.html#anadama.Task" title="anadama.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama.Task</span></code></a> to the workflow.  This
+function can be used as a decorator to set a function as the
+sole action.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>actions</strong> (<em>str or callable or list of str or
+list of callable</em>) &#8211; The actions to be performed to complete the
+task. Strings or lists of strings are interpreted as shell
+commands according to <a class="reference internal" href="helpers.html#anadama.helpers.parse_sh" title="anadama.helpers.parse_sh"><code class="xref py py-func docutils literal"><span class="pre">anadama.helpers.parse_sh()</span></code></a>. If given
+just a string or just a callable, this method treats it as a
+one-item list of the string or callable.</li>
+<li><strong>depends</strong> (str or <a class="reference internal" href="tracked.html#anadama.tracked.Base" title="anadama.tracked.Base"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.Base</span></code></a> or list of
+str or list of <a class="reference internal" href="tracked.html#anadama.tracked.Base" title="anadama.tracked.Base"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.Base</span></code></a>) &#8211; The dependencies of the task. The task must
+have these dependencies before executing the
+actions. Strings or lists of strings are interpreted as
+filenames and turned into objects of type
+<a class="reference internal" href="tracked.html#anadama.tracked.TrackedFile" title="anadama.tracked.TrackedFile"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.TrackedFile</span></code></a>. If given just a string or just
+a <a class="reference internal" href="tracked.html#anadama.tracked.Base" title="anadama.tracked.Base"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.Base</span></code></a>, this method treats it as a
+one-item list of the argument provided.</li>
+<li><strong>targets</strong> (str or <a class="reference internal" href="tracked.html#anadama.tracked.Base" title="anadama.tracked.Base"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.Base</span></code></a> or list of
+str or list of <a class="reference internal" href="tracked.html#anadama.tracked.Base" title="anadama.tracked.Base"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.Base</span></code></a>) &#8211; The targets of the task. The task must produce
+these targets after executing the actions to be considered
+as &#8220;success&#8221;. Strings or lists of strings are interpreted as
+filenames and turned into objects of type
+<a class="reference internal" href="tracked.html#anadama.tracked.TrackedFile" title="anadama.tracked.TrackedFile"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.TrackedFile</span></code></a>. If given just a string or just
+a <a class="reference internal" href="tracked.html#anadama.tracked.Base" title="anadama.tracked.Base"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.Base</span></code></a>, this method treats it as a
+one-item list of the argument provided.</li>
+<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; A name for the task. Task names must be unique
+within a run context.</li>
+<li><strong>interpret_deps_and_targs</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Should I use
+<a class="reference internal" href="helpers.html#anadama.helpers.parse_sh" title="anadama.helpers.parse_sh"><code class="xref py py-func docutils literal"><span class="pre">anadama.helpers.parse_sh()</span></code></a> to change
+<code class="docutils literal"><span class="pre">{depends[0]}</span></code> and <code class="docutils literal"><span class="pre">{targets[0]}</span></code> into the first item in
+depends and the first item in targets? Default is True</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The <a class="reference internal" href="index.html#anadama.Task" title="anadama.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama.Task</span></code></a> just created</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="anadama.workflow.Workflow.already_exists">
+<code class="descname">already_exists</code><span class="sig-paren">(</span><em>*depends</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#Workflow.already_exists"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.Workflow.already_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Declare a dependency as pre-existing. That means that no task
+creates these dependencies; they&#8217;re already there before any
+tasks run.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If you have a list or other iterable containing the
+dependencies that already exist, you can declare them all
+like so <code class="docutils literal"><span class="pre">ctx.already_exists(*my_bunch_of_deps)</span></code>.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>*depends</strong> (any argument recognized by <a class="reference internal" href="tracked.html#anadama.tracked.auto" title="anadama.tracked.auto"><code class="xref py py-func docutils literal"><span class="pre">anadama.tracked.auto()</span></code></a>) &#8211; One or many dependencies to mark as pre-existing.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="anadama.workflow.Workflow.cli">
+<code class="descname">cli</code><span class="sig-paren">(</span><em>argv=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#Workflow.cli"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.Workflow.cli" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expose a command line interface to
+<a class="reference internal" href="#anadama.workflow.Workflow.go" title="anadama.workflow.Workflow.go"><code class="xref py py-meth docutils literal"><span class="pre">anadama.workflow.Workflow.go()</span></code></a>. Use the <code class="docutils literal"><span class="pre">-h</span></code> flag
+to see documentation for accepted options.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="anadama.workflow.Workflow.do">
+<code class="descname">do</code><span class="sig-paren">(</span><em>cmd</em>, <em>track_cmd=True</em>, <em>track_binaries=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#Workflow.do"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.Workflow.do" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create and add a <a class="reference internal" href="index.html#anadama.Task" title="anadama.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama.Task</span></code></a> to the workflow using a
+convenient, shell-like syntax.</p>
+<p>To explicitly mark task targets, wrap filenames within <code class="docutils literal"><span class="pre">cmd</span></code>
+with <code class="docutils literal"><span class="pre">&#64;{}</span></code>. Similarly, wrap dependencies with <code class="docutils literal"><span class="pre">#{}</span></code>. The
+literal <code class="docutils literal"><span class="pre">&#64;{}</span></code> and <code class="docutils literal"><span class="pre">#{}</span></code> characters will be stripped out
+prior to execution by the shell.</p>
+<p>Below are some examples of using <code class="docutils literal"><span class="pre">do</span></code>:</p>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama</span> <span class="k">import</span> <span class="n">Workflow</span>
+
+<span class="n">ctx</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">()</span>
+<span class="n">ctx</span><span class="o">.</span><span class="n">do</span><span class="p">(</span><span class="s2">&quot;wget -qO- checkip.dyndns.com &gt; @</span><span class="si">{my_ip.txt}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">ctx</span><span class="o">.</span><span class="n">do</span><span class="p">(</span><span class="s2">r&quot;sed &#39;s|.*Address: \(.*[0-9]\)&lt;.*||&#39; #</span><span class="si">{my_ip.txt}</span><span class="s2"> &gt; @</span><span class="si">{ip.txt}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">ctx</span><span class="o">.</span><span class="n">do</span><span class="p">(</span><span class="s2">&quot;whois $(cat #</span><span class="si">{ip.txt}</span><span class="s2">) &gt; @</span><span class="si">{whois.txt}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">ctx</span><span class="o">.</span><span class="n">go</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>By default, changes made to <code class="docutils literal"><span class="pre">cmd</span></code> are tracked; any changes
+to <code class="docutils literal"><span class="pre">cmd</span></code> will cause this task to be rerun. Set <code class="docutils literal"><span class="pre">track_cmd</span></code>
+to False to disable this behavior.</p>
+<p>Also by default, AnADAMA tries to discover pre-existing, small
+files in <code class="docutils literal"><span class="pre">cmd</span></code> and treat them as dependencies. This feature
+is intended to automatically track the scripts and binaries
+used in <code class="docutils literal"><span class="pre">cmd</span></code>. Thus, this task will be re-run if any of the
+binaries or scripts change. Set <code class="docutils literal"><span class="pre">track_binaries</span></code> to False to
+disable this behavior.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>cmd</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The shell command to add to the workflow. Wrap a
+target filename in <code class="docutils literal"><span class="pre">&#64;{}</span></code> and wrap a dependency filename in
+<cite>#{}`</cite>.</li>
+<li><strong>track_cmd</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Set to False to not track changes to <code class="docutils literal"><span class="pre">cmd</span></code>.</li>
+<li><strong>track_binaries</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Set to False to not discover files
+within <code class="docutils literal"><span class="pre">cmd</span></code> and treat them as dependencies.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">The <a class="reference internal" href="index.html#anadama.Task" title="anadama.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama.Task</span></code></a> just created</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="anadama.workflow.Workflow.go">
+<code class="descname">go</code><span class="sig-paren">(</span><em>run_them_all=False</em>, <em>quit_early=False</em>, <em>runner=None</em>, <em>reporter=None</em>, <em>n_parallel=1</em>, <em>n_grid_parallel=1</em>, <em>until_task=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#Workflow.go"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.Workflow.go" title="Permalink to this definition">¶</a></dt>
+<dd><p>Kick off execution of all previously configured tasks.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>run_them_all</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Skip no tasks; run it all.</li>
+<li><strong>quit_early</strong> &#8211; If any tasks fail, stop all execution
+immediately. If set to <code class="docutils literal"><span class="pre">False</span></code> (the default), children of
+failed tasks are <em>not</em> executed but children of successful
+or skipped tasks <em>are</em> executed: basically, keep going until
+you run out of tasks to execute.</li>
+<li><strong>runner</strong> (instance of any
+<a class="reference internal" href="runners.html#anadama.runners.BaseRunner" title="anadama.runners.BaseRunner"><code class="xref py py-class docutils literal"><span class="pre">anadama.runners.BaseRunner</span></code></a> subclass or None.) &#8211; The tasks to execute are passed to this
+object for execution.  For a list of runners that come
+bundled with anadama, see <a class="reference internal" href="runners.html#module-anadama.runners" title="anadama.runners"><code class="xref py py-mod docutils literal"><span class="pre">anadama.runners</span></code></a>. Passing
+<code class="docutils literal"><span class="pre">None</span></code> (the default) uses the default runner from
+<a class="reference internal" href="runners.html#anadama.runners.default" title="anadama.runners.default"><code class="xref py py-func docutils literal"><span class="pre">anadama.runners.default()</span></code></a>.</li>
+<li><strong>reporter</strong> (instance of any
+<a class="reference internal" href="reporters.html#anadama.reporters.BaseReporter" title="anadama.reporters.BaseReporter"><code class="xref py py-class docutils literal"><span class="pre">anadama.reporters.BaseReporter</span></code></a> subclass or None.) &#8211; As task execution proceeds, events are
+dispatched to this object for reporting purposes. For more
+information of the reporters bundled with anadama, see
+<a class="reference internal" href="reporters.html#module-anadama.reporters" title="anadama.reporters"><code class="xref py py-mod docutils literal"><span class="pre">anadama.reporters</span></code></a>. Passing <code class="docutils literal"><span class="pre">None</span></code> (the default)
+uses the default reporter from
+<a class="reference internal" href="reporters.html#anadama.reporters.default" title="anadama.reporters.default"><code class="xref py py-func docutils literal"><span class="pre">anadama.reporters.default()</span></code></a>.</li>
+<li><strong>n_parallel</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of tasks to execute in
+parallel. This option is ignored when a custom runner is
+used with the <code class="docutils literal"><span class="pre">runner</span></code> keyword.</li>
+<li><strong>n_grid_parallel</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of tasks to submit to the
+grid in parallel. This option is ignored when a custom
+runner is used with the <code class="docutils literal"><span class="pre">runner</span></code> keyword. This option is
+also a synonym for <code class="docutils literal"><span class="pre">n_parallel</span></code> if the context has no grid
+powerup.</li>
+<li><strong>until_task</strong> (<em>int or str</em>) &#8211; Stop after running the named task. Can
+refer to the end task by task number or task name.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="anadama.workflow.Workflow.grid_add_task">
+<code class="descname">grid_add_task</code><span class="sig-paren">(</span><em>actions=None</em>, <em>depends=None</em>, <em>targets=None</em>, <em>name=None</em>, <em>interpret_deps_and_targs=True</em>, <em>**gridopts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#Workflow.grid_add_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.Workflow.grid_add_task" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a task to be launched on a grid computing system as specified
+in the <code class="docutils literal"><span class="pre">grid_powerup</span></code> option of
+<a class="reference internal" href="#anadama.workflow.Workflow" title="anadama.workflow.Workflow"><code class="xref py py-class docutils literal"><span class="pre">anadama.workflow.Workflow</span></code></a>. By default, this
+method is a synonym for
+<a class="reference internal" href="#anadama.workflow.Workflow.add_task" title="anadama.workflow.Workflow.add_task"><code class="xref py py-meth docutils literal"><span class="pre">anadama.workflow.Workflow.add_task()</span></code></a>. Please see the
+<code class="docutils literal"><span class="pre">add_task</span></code> documentation for your powerup of choice
+e.g. <a class="reference internal" href="slurm.html#anadama.slurm.SlurmPowerup.add_task" title="anadama.slurm.SlurmPowerup.add_task"><code class="xref py py-meth docutils literal"><span class="pre">anadama.slurm.SlurmPowerup.add_task()</span></code></a> for information on
+options to provide to this method.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="anadama.workflow.Workflow.grid_do">
+<code class="descname">grid_do</code><span class="sig-paren">(</span><em>cmd</em>, <em>track_cmd=True</em>, <em>track_binaries=True</em>, <em>**gridopts</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#Workflow.grid_do"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.Workflow.grid_do" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a task to be launched on a grid computing system as specified
+in the <code class="docutils literal"><span class="pre">grid_powerup</span></code> option of
+<a class="reference internal" href="#anadama.workflow.Workflow" title="anadama.workflow.Workflow"><code class="xref py py-class docutils literal"><span class="pre">anadama.workflow.Workflow</span></code></a>. By default, this
+method is a synonym for
+<a class="reference internal" href="#anadama.workflow.Workflow.do" title="anadama.workflow.Workflow.do"><code class="xref py py-meth docutils literal"><span class="pre">anadama.workflow.Workflow.do()</span></code></a>. Please see the
+<code class="docutils literal"><span class="pre">add_task</span></code> documentation for your powerup of choice
+e.g. <a class="reference internal" href="slurm.html#anadama.slurm.SlurmPowerup.do" title="anadama.slurm.SlurmPowerup.do"><code class="xref py py-meth docutils literal"><span class="pre">anadama.slurm.SlurmPowerup.do()</span></code></a> for information on
+options to provide to this method.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="anadama.workflow.Workflow.task_results">
+<code class="descname">task_results</code><em class="property"> = None</em><a class="headerlink" href="#anadama.workflow.Workflow.task_results" title="Permalink to this definition">¶</a></dt>
+<dd><p>task_results is a list of objects of type
+<a class="reference internal" href="runners.html#anadama.runners.TaskResult" title="anadama.runners.TaskResult"><code class="xref py py-class docutils literal"><span class="pre">anadama.runners.TaskResult</span></code></a>. This list is populated
+only after tasks have been run with
+<a class="reference internal" href="#anadama.workflow.Workflow.go" title="anadama.workflow.Workflow.go"><code class="xref py py-meth docutils literal"><span class="pre">anadama.workflow.Workflow.go()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="anadama.workflow.Workflow.tasks">
+<code class="descname">tasks</code><em class="property"> = None</em><a class="headerlink" href="#anadama.workflow.Workflow.tasks" title="Permalink to this definition">¶</a></dt>
+<dd><p>tasks is a <code class="xref py py-class docutils literal"><span class="pre">anadama.taskcontainer.TaskContainer</span></code>
+filled with objects of type <a class="reference internal" href="index.html#anadama.Task" title="anadama.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama.Task</span></code></a>. This
+list is populated as new tasks are added via
+<a class="reference internal" href="#anadama.workflow.Workflow.add_task" title="anadama.workflow.Workflow.add_task"><code class="xref py py-meth docutils literal"><span class="pre">anadama.workflow.Workflow.add_task()</span></code></a> and
+<a class="reference internal" href="#anadama.workflow.Workflow.do" title="anadama.workflow.Workflow.do"><code class="xref py py-meth docutils literal"><span class="pre">anadama.workflow.Workflow.do()</span></code></a></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama.workflow.allchildren">
+<code class="descclassname">anadama.workflow.</code><code class="descname">allchildren</code><span class="sig-paren">(</span><em>dag</em>, <em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#allchildren"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.allchildren" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.workflow.allparents">
+<code class="descclassname">anadama.workflow.</code><code class="descname">allparents</code><span class="sig-paren">(</span><em>dag</em>, <em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#allparents"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.allparents" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="anadama.workflow.discover_binaries">
+<code class="descclassname">anadama.workflow.</code><code class="descname">discover_binaries</code><span class="sig-paren">(</span><em>s</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/workflow.html#discover_binaries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.workflow.discover_binaries" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search through string <code class="docutils literal"><span class="pre">s</span></code> and find all existing files smaller
+than 10MB. Return those files as a list of objects of type
+<a class="reference internal" href="tracked.html#anadama.tracked.TrackedFile" title="anadama.tracked.TrackedFile"><code class="xref py py-class docutils literal"><span class="pre">anadama.tracked.TrackedFile</span></code></a>.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="runners.html" title="previous chapter">runners</a></li>
+      <li>Next: <a href="slurm.html" title="next chapter">slurm</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/workflow.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Randall Schwager and the Huttenhower Lab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="_sources/workflow.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
