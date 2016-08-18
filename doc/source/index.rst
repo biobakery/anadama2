@@ -25,5 +25,6 @@ For more information on AnADAMA2, please read the `User Manual <https://bitbucke
    reporters
    runners
    workflow
-   slurm	      
+   slurm
+   sge	      
    util
