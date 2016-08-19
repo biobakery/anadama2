@@ -2,7 +2,6 @@ import os
 import re
 import shlex
 import logging
-import optparse
 import itertools
 from operator import attrgetter, itemgetter
 from collections import deque, defaultdict
@@ -15,6 +14,8 @@ from . import tracked
 from . import grid
 from . import reporters
 from . import backends
+from . import runners
+from .cli import Configuration
 from .taskcontainer import TaskContainer
 from .helpers import sh, parse_sh
 from .util import matcher, noop, find_on_path
@@ -55,7 +56,8 @@ class Workflow(object):
     """
 
 
-    def __init__(self, storage_backend=None, grid_powerup=None, strict=False):
+    def __init__(self, storage_backend=None, grid_powerup=None, strict=False,
+                 vars=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         #: tasks is a :class:`anadama.taskcontainer.TaskContainer`
@@ -73,6 +75,8 @@ class Workflow(object):
         self._backend = storage_backend or backends.default()
         self.grid_powerup = grid_powerup or grid.DummyPowerup()
         self.strict = strict
+        self.vars = vars or Configuration(defaults=True)
+        self.vars.ask_user()
         logger.debug("Instantiated run context")
 
 
@@ -270,7 +274,8 @@ class Workflow(object):
 
 
     def go(self, run_them_all=False, quit_early=False, runner=None,
-           reporter=None, n_parallel=1, n_grid_parallel=1, until_task=None):
+           reporter=None, n_parallel=1, n_grid_parallel=1, until_task=None,
+           dry_run=False):
         """Kick off execution of all previously configured tasks. 
 
         :keyword run_them_all: Skip no tasks; run it all.
@@ -323,53 +328,25 @@ class Workflow(object):
         self._reporter = reporter or reporters.default()
         self._reporter.started(self)
 
-        _runner = runner or self.grid_powerup.runner(self, n_parallel,
-                                                     n_grid_parallel)
-        _runner.quit_early = quit_early
+        _runner = runner or self.grid_powerup.runner(
+            self, n_parallel or self.vars.get("n_parallel"),
+                  n_grid_parallel or self.vars.get("n_grid_parallel"))
+        if dry_run or self.vars.get("dry_run"):
+            _runner = runners.DryRunner(self)
+        _runner.quit_early = quit_early or self.vars.get("quit_early")
         logger.debug("Sorting task_nos by network topology")
         task_idxs = nx.algorithms.dag.topological_sort(self.dag, reverse=True)
         logger.debug("Sorting complete")
+        until_task = until_task or self.vars.get("until_task")
         if until_task is not None:
             parents = allparents(self.dag, self.tasks[until_task].task_no)
             task_idxs = filter(parents.__contains__, task_idxs)
-        if not run_them_all:
+        if not run_them_all or not self.vars.get("run_them_all"):
             task_idxs = self._filter_skipped_tasks(task_idxs)
         task_idxs = deque(task_idxs)
 
         _runner.run_tasks(task_idxs)
         self._handle_finished()
-
-
-    def cli(self, argv=None, options=None):
-        """Expose a command line interface to
-        :meth:`anadama.workflow.Workflow.go`. Use the ``-h`` flag
-        to see documentation for accepted options.
-
-        """
-
-        from . import cli
-        if not options:
-            options = cli.options
-        optparse.OptionParser.format_description = lambda s, t: s.description
-        parser = optparse.OptionParser(description=cli.BANNER)
-        for option in cli.options:
-            parser.add_option(option)
-        opts, args = parser.parse_args(args=argv)
-        if opts.list_tasks:
-            return cli.list_tasks(self)
-        if opts.dump_dependencies:
-            return cli.dump_dependencies(self._backend)
-        if opts.forget:
-            return cli.forget(self._backend, opts.forget)
-        return self._cli_go(opts)
-
-    
-    def _cli_go(self, opts):
-        return self.go(run_them_all    = opts.run_them_all,
-                       quit_early      = opts.quit_early,
-                       n_parallel      = opts.n_parallel,
-                       n_grid_parallel = opts.n_grid_parallel,
-                       until_task      = opts.until_task)
 
 
     def _import(self, task_dict):

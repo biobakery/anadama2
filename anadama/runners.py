@@ -8,6 +8,7 @@ import cPickle as pickle
 from collections import namedtuple
 
 from .pickler import cloudpickle
+from .util import istask
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,28 @@ class BaseRunner(object):
 
     def run_tasks(self, task_idx_deque):
         raise NotImplementedError()
+
+
+class DryRunner(BaseRunner):
+    def run_tasks(self, task_idx_deque):
+        for idx in task_idx_deque:
+            task = self.ctx.tasks[idx]
+            print "{} - {}".format(task.task_no, task.name)
+            print "  Dependencies ({})".format(len(task.depends))
+            for dep in task.depends:
+                print self._depformat(dep)
+            print "  Targets ({})".format(len(task.targets))
+            for dep in task.targets:
+                print self._depformat(dep)
+            print "------------------"
+
+
+    def _depformat(self, d):
+        if istask(d):
+            return "    Task {} - {}".format(d.task_no, d.name)
+        else:
+            return "    {} ({})".format(d._key, type(d))
+
 
 
 class SerialLocalRunner(BaseRunner):

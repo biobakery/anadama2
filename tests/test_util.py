@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import os
 import shutil
 import unittest
@@ -50,6 +51,16 @@ class TestUtil(unittest.TestCase):
     def test_addtag(self):
         self.assertEqual(fname.addtag("/shares/hiibroad/data/humann2_medclean/input/Batch15_WGS_S/6819351/processed/6819351_2.fastq.bz2", "special"),
                          "/shares/hiibroad/data/humann2_medclean/input/Batch15_WGS_S/6819351/processed/6819351_2_special.fastq.bz2")
+
+    def test_kebab(self):
+        self.assertEqual(anadama.util.kebab("drunken     sailor"), "drunken-sailor")
+        self.assertEqual(anadama.util.kebab(u"drunken-säilor"), "drunken-sailor")
+        self.assertEqual(anadama.util.kebab("drunken-209sailor"), "drunken-sailor")
+        self.assertEqual(anadama.util.kebab("drunken-,.!@#$%^&*()sailor"), "drunken-sailor")
+        self.assertEqual(anadama.util.kebab("drunken-_+|\\sailor"), "drunken-sailor")
+        self.assertEqual(anadama.util.kebab("drunken-[]}{'sailor"), "drunken-sailor")
+        self.assertEqual(anadama.util.kebab('drunken-"sailor'), "drunken-sailor")
+        self.assertEqual(anadama.util.kebab('drunken-~`><sailor'), "drunken-sailor")
 
 
         

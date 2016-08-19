@@ -1,9 +1,8 @@
+import re
 import sys
-import json
 import optparse
-import itertools
 
-from .util import istask, Bag
+from .util import kebab, Directory
 
 BANNER = """
                           _____          __  __
@@ -15,67 +14,100 @@ BANNER = """
 
 """
 
-options = [
-    optparse.make_option("-l", '--list-tasks', action="store_true",
-                         help="Print all configured tasks."),
-    optparse.make_option("-d", "--dump-dependencies", action="store_true",
-                         help="Print all known dependencies to standard out."),
-    optparse.make_option("-f", "--forget",
-                         help="""Remove dependency from storage backend. Also accepts
-                         keys line-by-line to standard in"""),
-    optparse.make_option("-a", '--run-them-all', action="store_true",
+default_options = {
+    "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
+                         help="Print tasks to be run but don't execute their actions."),
+    "run_them_all": optparse.make_option("-a", '--run-them-all', action="store_true",
                          help="Skip no tasks; run it all."),
-    optparse.make_option("-e", '--quit-early', action="store_true",
+    "quit_early": optparse.make_option("-e", '--quit-early', action="store_true",
                          help="""If any tasks fail, stop all execution immediately. If set to
                          ``False`` (the default), children of failed tasks are *not*
                          executed but children of successful or skipped tasks *are*
                          executed: basically, keep going until you run out of tasks
                          to execute."""),
-    optparse.make_option("-n", '--n-parallel', default=1, type=int,
+    "n_parallel": optparse.make_option("-n", '--n-parallel', default=1, type=int,
                          help="The number of tasks to execute in parallel locally."),
-    optparse.make_option("-p", '--n-grid-parallel', default=1, type=int,
+    "n_grid_parallel": optparse.make_option("-p", '--n-grid-parallel', default=1, type=int,
                          help="The number of tasks to submit to the grid in parallel."),
-    optparse.make_option("-u", '--until-task', default=None,
+    "until_task": optparse.make_option("-u", '--until-task', default=None,
                          help="""Stop after running the named task. Can refer to
                          the end task by task number or task name."""),
-]
+}
 
 
-def _depformat(d):
-    if istask(d):
-        return "    Task {} - {}".format(d.task_no, d.name)
-    else:
-        return "    {} ({})".format(d._key, type(d))
+class Configuration(object):
+    def __init__(self, name=None, version=None, description=None, defaults=False):
+        optparse.OptionParser.format_description = lambda s, t: s.description
+        self.version = version
+        self.description = description
+        self.name = name
+        self.args = []
+
+        self._directives = {}
+        self._shorts = set()
+        self._directories = set()
+        self._user_asked = False
+
+        self.parser = optparse.OptionParser(
+            description=self.description or BANNER,
+            version=self.version or None
+        )
+        if defaults:
+            self._directives.update(default_options)
+            for opt in default_options.values():
+                self._shorts.add(opt._short_opts[0][1])
 
 
-def list_tasks(ctx):
-    for task in ctx.tasks:
-        print "{} - {}".format(task.task_no, task.name)
-        print "  Dependencies ({})".format(len(task.depends))
-        for dep in task.depends:
-            print _depformat(dep)
-        print "  Targets ({})".format(len(task.targets))
-        for dep in task.targets:
-            print _depformat(dep)
-        print "------------------"
+    def add(self, name, desc=None, type="str", default=None, short=None):
+        d = optparse.make_option(self._find_short(name, short),
+                                 "--"+kebab(name), help=desc,
+                                 type=self._reg_type(type, name), default=default)
+        self._directives[name] = d
+        return self
 
 
-def dump_dependencies(backend):
-    for key in backend.keys():
-        b = Bag()
-        b._key = key
-        print key, "\t", json.dumps(backend.lookup(b))
+    def get(self, name):
+        return getattr(self, name, None)
 
 
-def forget(backend, key=None):
-    keys = []
-    if key:
-        keys.append(key)
-    if sys.stdin.isatty():
-        stdin_keys = iter(line.strip() for line in sys.stdin)
-        keys = itertools.chain(keys, stdin_keys)
-    for key in keys:
-        try:
-            backend.delete(key)
-        except Exception as e:
-            print >> sys.stderr, "Error inserting key {}: {}".format(key, e)
+    def reset(self):
+        self._user_asked = False
+
+
+    def ask_user(self, override=False, argv=sys.argv[1:]):
+        if self._user_asked and not override:
+            pass
+        for opt in self._directives.values():
+            self.parser.add_option(opt)
+        opts, args = self.parser.parse_args(argv)
+        for name in self._directives:
+            name = re.sub(r'-', '_', name)
+            val = getattr(opts, name, None)
+            if name in self._directories:
+                val = Directory(val)
+            setattr(self, name, val)
+        self._user_asked = True
+        return self
+
+        
+    def _find_short(self, name, short=None):
+        s = None
+        if short and short[0] not in self._shorts:
+            s = short[0]
+        for char in name.lower():
+            if 96 < ord(char) < 123 and char not in self._shorts:
+                s = char
+                break
+        if s is None:
+            raise ValueError("Unable to find short option flag for "+name)
+        self._shorts.add(s)
+        return "-"+s
+
+
+    def _reg_type(self, t, name):
+        if t in ("dir", dir, "directory"):
+            self._directories.add(name)
+            return "string"
+        return t
+        
+    

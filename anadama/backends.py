@@ -26,6 +26,11 @@ def discover_data_directory():
     else:
         return _fallback_datadir()
 
+def auto(data_dir, *args, **kwargs):
+    """Return the right type of backend for the given data_dir"""
+    # just one type of backend for now
+    return LevelDBBackend(data_dir, *args, **kwargs)
+
 
 def _try_dir(maybe_datadir):
     if os.path.isdir(maybe_datadir):

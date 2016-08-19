@@ -6,6 +6,7 @@ import zlib
 import errno
 import inspect
 import mimetypes
+import unicodedata
 from functools import wraps
 from itertools import izip_longest
 from multiprocessing import cpu_count
@@ -321,6 +322,19 @@ class HasNoEqual(object):
     def __eq__(self, other):
         return False
 
+class Directory(object):
+    def __init__(self, name):
+        self.name = os.path.abspath(name)
+
+    def files(self):
+        return filter(os.path.isfile, os.path.listdir(self.name))
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return "Directory({})".format(self.name)
+
 
 def noop(*args, **kwargs):
     return None
@@ -404,3 +418,11 @@ def dichotomize(it, tf_func):
         else:
             f.append(item)
     return t, f
+
+def kebab(s):
+    """Kebab-case a string. Intra-string whitespace is converted to ``-``
+    and unfriendly characters are dropped."""
+    if type(s) is unicode:
+        s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore")
+    s = re.sub(r"[\s-]+", '-', s)
+    return re.sub(r"""['".,\[\]{}!@#$%^&*()_=+|\\`~><\d]+""", '', s).rstrip('-')
