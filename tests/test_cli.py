@@ -21,7 +21,6 @@ class TestCli(unittest.TestCase):
     def test_Configuraion_instantiate(self):
         c = anadama.cli.Configuration()
         self.assertIs(type(c), anadama.cli.Configuration)
-        self.assertTrue(hasattr(c, "name"))
         self.assertTrue(hasattr(c, "description"))
         self.assertTrue(hasattr(c, "version"))
         self.assertTrue(hasattr(c, "args"))
