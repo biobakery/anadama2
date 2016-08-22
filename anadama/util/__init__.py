@@ -327,13 +327,14 @@ class Directory(object):
         self.name = os.path.abspath(name)
 
     def files(self):
-        return filter(os.path.isfile, os.path.listdir(self.name))
+        return [ f for f in os.path.listdir(self.name)
+                 if f not in ('.', '..') ]
 
     def __str__(self):
-        return self.name
+        return self.name+"/"
 
     def __repr__(self):
-        return "Directory({})".format(self.name)
+        return "Directory('{}/')".format(self.name)
 
 
 def noop(*args, **kwargs):
