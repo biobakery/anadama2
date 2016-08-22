@@ -326,31 +326,31 @@ class TrackedFile(Base):
 
     """
 
-    def init(self, fname):
+    def init(self, name):
         """
         Initialize the dependency.
-        :param fname: The filename to keep track of
-        :type fname: str
+        :param name: The filename to keep track of
+        :type name: str
         """
-        self.fname = self.__class__.key(fname)
+        self.name = self.__class__.key(name)
 
     def exists(self):
-        return os.path.exists(self.fname)
+        return os.path.exists(self.name)
 
     def compare(self):
-        stat = os.stat(self.fname)
+        stat = os.stat(self.name)
         yield stat.st_size
         yield stat.st_mtime
-        yield _adler32(self.fname)
+        yield _adler32(self.name)
 
 
     @staticmethod
-    def key(fname):
-        return os.path.abspath(fname)
+    def key(name):
+        return os.path.abspath(name)
 
 
     def __str__(self):
-        return self.fname
+        return self.name
 
 
 
@@ -366,7 +366,7 @@ class HugeTrackedFile(TrackedFile):
     """
 
     def compare(self):
-        stat = os.stat(self.fname)
+        stat = os.stat(self.name)
         yield stat.st_size
         yield stat.st_mtime
 
@@ -469,16 +469,16 @@ class TrackedDirectory(TrackedFile):
     """
 
     def exists(self):
-        return os.path.isdir(self.fname)
+        return os.path.isdir(self.name)
 
     def compare(self):
-        stat = os.stat(self.fname)
+        stat = os.stat(self.name)
         yield stat.st_size
         yield stat.st_mtime
-        contained = list(sorted(os.listdir(self.fname)))
+        contained = list(sorted(os.listdir(self.name)))
         yield hash(tuple(contained))
         for item in contained:
-            stat = os.stat(os.path.join(self.fname, item))
+            stat = os.stat(os.path.join(self.name, item))
             yield stat.st_size
             yield stat.st_mtime
 
@@ -493,10 +493,10 @@ class TrackedFilePattern(TrackedFile):
     """
 
     def exists(self):
-        return bool(glob(self.fname))
+        return bool(glob(self.name))
 
     def compare(self):
-        fs = glob(self.fname)
+        fs = glob(self.name)
         fs = list(sorted(fs))
         yield hash(tuple(fs))
         for f in fs:
@@ -521,21 +521,21 @@ class TrackedExecutable(Base):
         
         """
 
-        self.fname = self.__class__.key(name)
+        self.name = self.__class__.key(name)
         self.cmd = version_cmd
 
 
     def exists(self):
-        return os.path.exists(self.fname)
+        return os.path.exists(self.name)
         
 
     def compare(self):
         if self.cmd:
             yield sh(self.cmd)[0]
-        stat = os.stat(self.fname)
+        stat = os.stat(self.name)
         yield stat.st_size
         yield stat.st_mtime
-        yield _adler32(self.fname)
+        yield _adler32(self.name)
 
 
     @staticmethod
@@ -550,7 +550,7 @@ class TrackedExecutable(Base):
         return p
 
     def __str__(self):
-        return self.fname
+        return self.name
 
 
 
@@ -568,7 +568,7 @@ class TrackedFunction(Base):
 
     def init(self, key, fn):
         self.fn = fn
-
+        self.name = key
 
     def compare(self):
         yield self.fn()
