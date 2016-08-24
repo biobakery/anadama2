@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+import logging
 import optparse
 
 from .util import kebab, Directory
@@ -35,6 +36,8 @@ default_options = {
                          the end task by task number or task name."""),
 }
 
+
+logger = logging.getLogger(__name__)
 
 class Configuration(object):
     """The Configuration class makes objects that get user input via a
@@ -197,11 +200,12 @@ class Configuration(object):
         opts, self.args = self.parser.parse_args(argv)
         for name in self._directives:
             name = re.sub(r'-', '_', name)
-            val = getattr(opts, name, None)
+            val = getattr(opts, name)
             if name in self._directories:
                 val = Directory(val)
             if name in self._callbacks and val is True:
                 self._callbacks[name]()
+            logger.info("Configured variable `%s' : `%s'", name, val)
             setattr(self, name, val)
         self._user_asked = True
         return self
