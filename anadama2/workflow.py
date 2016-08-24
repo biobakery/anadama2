@@ -547,7 +547,7 @@ def discover_binaries(s):
             dep = tracked.TrackedExecutable(term)
         except ValueError:
             continue
-        if os.stat(dep.fname).st_size < 1<<20:
+        if os.stat(dep.name).st_size < 1<<20:
             ds.append(dep)
 
     return ds

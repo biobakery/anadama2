@@ -7,7 +7,7 @@ import anadama2.tracked
 import anadama2.backends
 
 
-class TestDeps(unittest.TestCase):
+class TestTracked(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
