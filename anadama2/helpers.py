@@ -51,12 +51,12 @@ def sh(s, **kwargs):
     """
     def actually_sh(task=None):
         logger = logging.getLogger(__name__)
-        logger.debug("Executing with shell: "+s)
+        logger.info("Executing with shell: "+s)
         kwargs['shell'] = True
         ret = _sh(s, **kwargs)
-        logger.debug("Execution complete. Stdout: %s\nStderr: %s",
-                     ret[0] or '',
-                     ret[1] or '')
+        logger.info("Execution complete. Stdout: %s\nStderr: %s",
+                    ret[0] or '',
+                    ret[1] or '')
     return actually_sh
 
 
@@ -85,11 +85,11 @@ def parse_sh(s, **kwargs):
         kwargs['shell'] = True
         fmtd = s.format(depends=task.depends, targets=task.targets)
         logger = logging.getLogger(__name__)
-        logger.debug("Executing with shell: "+fmtd)
+        logger.info("Executing with shell: "+fmtd)
         ret = _sh(fmtd, **kwargs)
-        logger.debug("Execution complete. Stdout: %s\nStderr: %s",
-                     ret[0] or '',
-                     ret[1] or '')
+        logger.info("Execution complete. Stdout: %s\nStderr: %s",
+                    ret[0] or '',
+                    ret[1] or '')
     return actually_sh
 
 
@@ -163,12 +163,12 @@ def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
             files.append(f)
         with contextlib.nested(*files):
             logger = logging.getLogger(__name__)
-            logger.debug(
+            logger.info(
                 "Forking subprocess %s with args %s", args_list, kwargs)
             ret = _sh(args_list, **kwargs)
-            logger.debug("Execution complete. Stdout: %s\nStderr: %s",
-                         ret[0] or '',
-                         ret[1] or '')
+            logger.info("Execution complete. Stdout: %s\nStderr: %s",
+                        ret[0] or '',
+                        ret[1] or '')
         return ret
     return actually_system
 
@@ -188,7 +188,7 @@ def rm(to_rm, ignore_missing=True):
     def actually_rm(task):
         for f in sugar_list(to_rm):
             if os.path.isfile(f) or not ignore_missing:
-                logging.getLogger(__name__).debug("Removing "+f)
+                logging.getLogger(__name__).info("Removing "+f)
                 os.remove(f)
     return actually_rm
 
@@ -207,7 +207,7 @@ def rm_r(to_rm, ignore_missing=True):
     """
     def actually_rm_r(task):
         for f in sugar_list(to_rm):
-            logging.getLogger(__name__).debug("Removing recursively: "+f)
+            logging.getLogger(__name__).info("Removing recursively: "+f)
             shutil.rmtree(f, ignore_errors=ignore_missing)
     return actually_rm_r
 
