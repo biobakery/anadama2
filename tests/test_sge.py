@@ -8,9 +8,9 @@ from collections import defaultdict
 import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
-import anadama
-import anadama.sge
-import anadama.backends
+import anadama2
+import anadama2.sge
+import anadama2.backends
 
 from util import capture
 
@@ -20,14 +20,14 @@ def bern(p):
 PARTITION = os.environ.get("ANASGE_QUEUE")
 TMPDIR = os.environ.get("ANASGE_TMPDIR")
 
-available = all(map(bool, (anadama.sge.available, PARTITION, TMPDIR) ))
+available = all(map(bool, (anadama2.sge.available, PARTITION, TMPDIR) ))
 
 
 class TestSGE(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ[anadama.backends.ENV_VAR] = "/tmp/anadamatest"
+        os.environ[anadama2.backends.ENV_VAR] = "/tmp/anadamatest"
     
     @classmethod
     def tearDownClass(cls):
@@ -36,8 +36,8 @@ class TestSGE(unittest.TestCase):
 
 
     def setUp(self):
-        powerup = anadama.sge.SGEPowerup(PARTITION, TMPDIR)
-        self.ctx = anadama.sge.SGEContext(grid_powerup=powerup)
+        powerup = anadama2.sge.SGEPowerup(PARTITION, TMPDIR)
+        self.ctx = anadama2.sge.SGEContext(grid_powerup=powerup)
         self.workdir = "tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -47,7 +47,7 @@ class TestSGE(unittest.TestCase):
             self.ctx._backend.close()
             del self.ctx._backend
             self.ctx._backend = None
-            anadama.backends._default_backend = None
+            anadama2.backends._default_backend = None
             
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
@@ -76,7 +76,7 @@ class TestSGE(unittest.TestCase):
             task_nos[n] = t.task_no
 
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.workflow.RunFailed):
+            with self.assertRaises(anadama2.workflow.RunFailed):
                 self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:
@@ -128,7 +128,7 @@ class TestSGE(unittest.TestCase):
         # self.ctx.fail_idx = task_nos[G.successors(list(shall_fail)[0])[-1]]
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.workflow.RunFailed):
+            with self.assertRaises(anadama2.workflow.RunFailed):
                 self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:
@@ -158,7 +158,7 @@ class TestSGE(unittest.TestCase):
         self.assertFalse(os.path.exists("true.txt"))
         with capture(stderr=StringIO()):
             self.ctx.go()
-        anadama.sge._wait_on_file("true.txt", rm=False)
+        anadama2.sge._wait_on_file("true.txt", rm=False)
         self.assertTrue(os.path.exists("true.txt"))
         os.remove("true.txt")
                                                                     

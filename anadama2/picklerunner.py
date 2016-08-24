@@ -19,7 +19,7 @@ import sys
 import cPickle as pickle
 from base64 import b64encode
 
-from anadama.runners import _run_task_locally
+from anadama2.runners import _run_task_locally
 
 
 the_pickle = {pickle}

@@ -58,7 +58,7 @@ class CommandOptions(object):
 
 
     def flags(self, **kwargs):
-        """ kwargs are passed to :func:`anadama.util.dict_to_cmd_opts_iter`
+        """ kwargs are passed to :func:`anadama2.util.dict_to_cmd_opts_iter`
         
         :returns: iterable of strings
         """
@@ -70,7 +70,7 @@ class CommandOptions(object):
 
 
     def flags_str(self, **kwargs):
-        """ kwargs are passed to :func:`anadama.util.dict_to_cmd_opts_iter`
+        """ kwargs are passed to :func:`anadama2.util.dict_to_cmd_opts_iter`
 
         :returns: str
         """

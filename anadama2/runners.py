@@ -25,7 +25,7 @@ class TaskResult(namedtuple(
     :type: str or None
 
     :param dep_keys: The list of ``._key`` attributes from the objects
-      of type :class:`anadama.tracked.Base` associated with
+      of type :class:`anadama2.tracked.Base` associated with
       this task. These keys are used with the storage backend to save
       successful task results.
 
@@ -33,7 +33,7 @@ class TaskResult(namedtuple(
 
     :param dep_compares: The list of the results of the ``compare()``
       method from the objects of type
-      :class:`anadama.tracked.Base` associated with this
+      :class:`anadama2.tracked.Base` associated with this
       task. These values are used with the storage backend to save
       successful task results.
 

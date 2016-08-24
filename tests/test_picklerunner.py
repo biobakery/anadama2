@@ -3,16 +3,16 @@ import shutil
 import unittest
 import subprocess
 
-import anadama
-import anadama.tracked
-from anadama import picklerunner
+import anadama2
+import anadama2.tracked
+from anadama2 import picklerunner
 
 
 class TestPicklerunner(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ[anadama.backends.ENV_VAR] = "/tmp/anadamatest"
+        os.environ[anadama2.backends.ENV_VAR] = "/tmp/anadamatest"
     
     @classmethod
     def tearDownClass(cls):
@@ -21,7 +21,7 @@ class TestPicklerunner(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.workflow.Workflow()
+        self.ctx = anadama2.workflow.Workflow()
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -31,7 +31,7 @@ class TestPicklerunner(unittest.TestCase):
             self.ctx._backend.close()
             del self.ctx._backend
             self.ctx._backend = None
-            anadama.backends._default_backend = None
+            anadama2.backends._default_backend = None
             
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
@@ -84,7 +84,7 @@ class TestPicklerunner(unittest.TestCase):
         result = picklerunner.decode(out)
         self.assertFalse(bool(result.error))
         self.assertEqual(len(result.dep_keys), 1)
-        compares = list(anadama.tracked.TrackedFile(outf).compare())
+        compares = list(anadama2.tracked.TrackedFile(outf).compare())
         self.assertEqual(len(compares), len(result.dep_compares[0]))
         for a, b in zip(result.dep_compares[0], compares):
             self.assertEqual(a, b, "compare() not the same")

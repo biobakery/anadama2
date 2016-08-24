@@ -35,19 +35,19 @@ class Workflow(object):
     
     :keyword storage_backend: Lookup and save dependency information
       from this object. If ``None`` is passed (the default), the
-      default backend from :func:`anadama.backends.default` is used.
+      default backend from :func:`anadama2.backends.default` is used.
     :type storage_backend: instance of any
-      :class:`anadama.backends.BaseBackend` subclass or None.
+      :class:`anadama2.backends.BaseBackend` subclass or None.
 
     :keyword grid_powerup: Use this object to configure the run
       context to submit tasks to a compute grid.  
     :type grid_powerup: objects implementing the interface of
-      :class:`anadama.grid.DummyPowerup`
+      :class:`anadama2.grid.DummyPowerup`
     
     :keyword strict: Enable strict mode. If strict, whenever a task is
       added that depends on something that is not the target of
       another task (or isn't marked with
-      :math:`anadama.workflow.Workflow.already_exists`), raise a
+      :math:`anadama2.workflow.Workflow.already_exists`), raise a
       ``KeyError``. If not strict, and the Tracked object
       ``.exists()`` automatically do what's necessary to track the
       object; if ``.exists()`` is False, raise a KeyError.
@@ -60,16 +60,16 @@ class Workflow(object):
                  vars=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
-        #: tasks is a :class:`anadama.taskcontainer.TaskContainer`
-        #: filled with objects of type :class:`anadama.Task`. This
+        #: tasks is a :class:`anadama2.taskcontainer.TaskContainer`
+        #: filled with objects of type :class:`anadama2.Task`. This
         #: list is populated as new tasks are added via
-        #: :meth:`anadama.workflow.Workflow.add_task` and
-        #: :meth:`anadama.workflow.Workflow.do`
+        #: :meth:`anadama2.workflow.Workflow.add_task` and
+        #: :meth:`anadama2.workflow.Workflow.do`
         self.tasks = TaskContainer()
         #: task_results is a list of objects of type 
-        #: :class:`anadama.runners.TaskResult`. This list is populated
+        #: :class:`anadama2.runners.TaskResult`. This list is populated
         #: only after tasks have been run with
-        #: :meth:`anadama.workflow.Workflow.go`.
+        #: :meth:`anadama2.workflow.Workflow.go`.
         self.task_results = list()
         self._depidx = tracked.DependencyIndex()
         self._backend = storage_backend or backends.default()
@@ -81,7 +81,7 @@ class Workflow(object):
 
 
     def do(self, cmd, track_cmd=True, track_binaries=True):
-        """Create and add a :class:`anadama.Task` to the workflow using a
+        """Create and add a :class:`anadama2.Task` to the workflow using a
         convenient, shell-like syntax. 
 
         To explicitly mark task targets, wrap filenames within ``cmd``
@@ -93,7 +93,7 @@ class Workflow(object):
 
         .. code:: python
 
-            from anadama import Workflow
+            from anadama2 import Workflow
 
             ctx = Workflow()
             ctx.do("wget -qO- checkip.dyndns.com > @{my_ip.txt}")
@@ -125,7 +125,7 @@ class Workflow(object):
           within ``cmd`` and treat them as dependencies.
         :type track_binaries: bool
 
-        :returns: The :class:`anadama.Task` just created
+        :returns: The :class:`anadama2.Task` just created
 
         """
         targs = _parse_wrapper(cmd, metachar="@")
@@ -150,11 +150,11 @@ class Workflow(object):
     def grid_do(self, cmd, track_cmd=True, track_binaries=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
         in the ``grid_powerup`` option of
-        :class:`anadama.workflow.Workflow`. By default, this
+        :class:`anadama2.workflow.Workflow`. By default, this
         method is a synonym for
-        :meth:`anadama.workflow.Workflow.do`. Please see the
+        :meth:`anadama2.workflow.Workflow.do`. Please see the
         ``add_task`` documentation for your powerup of choice
-        e.g. :meth:`anadama.slurm.SlurmPowerup.do` for information on
+        e.g. :meth:`anadama2.slurm.SlurmPowerup.do` for information on
         options to provide to this method.
         """
 
@@ -165,13 +165,13 @@ class Workflow(object):
 
     def add_task(self, actions=None, depends=None, targets=None,
                  name=None, interpret_deps_and_targs=True):
-        """Create and add a :class:`anadama.Task` to the workflow.  This
+        """Create and add a :class:`anadama2.Task` to the workflow.  This
         function can be used as a decorator to set a function as the
         sole action.
         
         :param actions: The actions to be performed to complete the
           task. Strings or lists of strings are interpreted as shell
-          commands according to :func:`anadama.helpers.parse_sh`. If given
+          commands according to :func:`anadama2.helpers.parse_sh`. If given
           just a string or just a callable, this method treats it as a
           one-item list of the string or callable.
         :type actions: str or callable or list of str or
@@ -181,33 +181,33 @@ class Workflow(object):
           have these dependencies before executing the
           actions. Strings or lists of strings are interpreted as
           filenames and turned into objects of type
-          :class:`anadama.tracked.TrackedFile`. If given just a string or just
-          a :class:`anadama.tracked.Base`, this method treats it as a
+          :class:`anadama2.tracked.TrackedFile`. If given just a string or just
+          a :class:`anadama2.tracked.Base`, this method treats it as a
           one-item list of the argument provided.
-        :type depends: str or :class:`anadama.tracked.Base` or list of
-          str or list of :class:`anadama.tracked.Base`
+        :type depends: str or :class:`anadama2.tracked.Base` or list of
+          str or list of :class:`anadama2.tracked.Base`
 
         :param targets: The targets of the task. The task must produce
           these targets after executing the actions to be considered
           as "success". Strings or lists of strings are interpreted as
           filenames and turned into objects of type
-          :class:`anadama.tracked.TrackedFile`. If given just a string or just
-          a :class:`anadama.tracked.Base`, this method treats it as a
+          :class:`anadama2.tracked.TrackedFile`. If given just a string or just
+          a :class:`anadama2.tracked.Base`, this method treats it as a
           one-item list of the argument provided.
-        :type targets: str or :class:`anadama.tracked.Base` or list of
-          str or list of :class:`anadama.tracked.Base`
+        :type targets: str or :class:`anadama2.tracked.Base` or list of
+          str or list of :class:`anadama2.tracked.Base`
 
         :param name: A name for the task. Task names must be unique
           within a run context.
         :type name: str
 
         :keyword interpret_deps_and_targs: Should I use
-          :func:`anadama.helpers.parse_sh` to change
+          :func:`anadama2.helpers.parse_sh` to change
           ``{depends[0]}`` and ``{targets[0]}`` into the first item in
           depends and the first item in targets? Default is True 
         :type interpret_deps_and_targs: bool
 
-        :returns: The :class:`anadama.Task` just created
+        :returns: The :class:`anadama2.Task` just created
 
         """
 
@@ -232,11 +232,11 @@ class Workflow(object):
                       name=None, interpret_deps_and_targs=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
         in the ``grid_powerup`` option of
-        :class:`anadama.workflow.Workflow`. By default, this
+        :class:`anadama2.workflow.Workflow`. By default, this
         method is a synonym for
-        :meth:`anadama.workflow.Workflow.add_task`. Please see the
+        :meth:`anadama2.workflow.Workflow.add_task`. Please see the
         ``add_task`` documentation for your powerup of choice
-        e.g. :meth:`anadama.slurm.SlurmPowerup.add_task` for information on
+        e.g. :meth:`anadama2.slurm.SlurmPowerup.add_task` for information on
         options to provide to this method.
 
         """
@@ -265,7 +265,7 @@ class Workflow(object):
             like so ``ctx.already_exists(*my_bunch_of_deps)``.
 
         :param \*depends: One or many dependencies to mark as pre-existing.
-        :type \*depends: any argument recognized by :func:`anadama.tracked.auto`
+        :type \*depends: any argument recognized by :func:`anadama2.tracked.auto`
 
         """
 
@@ -289,20 +289,20 @@ class Workflow(object):
 
         :keyword runner: The tasks to execute are passed to this
           object for execution.  For a list of runners that come
-          bundled with anadama, see :mod:`anadama.runners`. Passing
+          bundled with anadama, see :mod:`anadama2.runners`. Passing
           ``None`` (the default) uses the default runner from
-          :func:`anadama.runners.default`.
+          :func:`anadama2.runners.default`.
         :type runner: instance of any
-          :class:`anadama.runners.BaseRunner` subclass or None.
+          :class:`anadama2.runners.BaseRunner` subclass or None.
 
         :keyword reporter: As task execution proceeds, events are
           dispatched to this object for reporting purposes. For more
           information of the reporters bundled with anadama, see
-          :mod:`anadama.reporters`. Passing ``None`` (the default)
+          :mod:`anadama2.reporters`. Passing ``None`` (the default)
           uses the default reporter from
-          :func:`anadama.reporters.default`.
+          :func:`anadama2.reporters.default`.
         :type reporter: instance of any
-          :class:`anadama.reporters.BaseReporter` subclass or None.
+          :class:`anadama2.reporters.BaseReporter` subclass or None.
 
         :keyword n_parallel: The number of tasks to execute in
           parallel. This option is ignored when a custom runner is
@@ -521,7 +521,7 @@ def _build_name(name, task_no):
 def _parse_wrapper(s, metachar):
     """search through string ``s`` and find terms wrapped in curly braces
     and a metacharacter ``metachar``. Intended for use with
-    :meth:`anadama.workflow.Workflow.do`.
+    :meth:`anadama2.workflow.Workflow.do`.
     """
 
     start = len(metachar)+1
@@ -531,7 +531,7 @@ def _parse_wrapper(s, metachar):
 def discover_binaries(s):
     """Search through string ``s`` and find all existing files smaller
     than 10MB. Return those files as a list of objects of type
-    :class:`anadama.tracked.TrackedFile`.
+    :class:`anadama2.tracked.TrackedFile`.
     """
 
     ds = list()

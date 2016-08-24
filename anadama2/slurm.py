@@ -47,8 +47,8 @@ class SlurmPowerup(grid.DummyPowerup):
 
     .. code:: python
 
-      from anadama import Workflow
-      from anadama.slurm import SlurmPowerup
+      from anadama2 import Workflow
+      from anadama2.slurm import SlurmPowerup
 
       powerup = Slurmpowerup(partition="general")
       ctx = Workflow(grid_powerup=powerup)
@@ -76,7 +76,7 @@ class SlurmPowerup(grid.DummyPowerup):
 
     :keyword tmpdir: A directory to store temporary files in. All
       machines in the cluster must be able to read the contents of
-      this directory; uses :mod:`anadama.picklerunner` to create
+      this directory; uses :mod:`anadama2.picklerunner` to create
       self-contained scripts to run individual tasks and calls
       ``srun`` to run the script on the cluster.
     :type tmpdir: str

@@ -44,7 +44,7 @@ class Configuration(object):
 
     .. code:: python
 
-        from anadama.cli import Configuration
+        from anadama2.cli import Configuration
 
         conf = Configuration(
             "StrainPhlan workflow"
@@ -68,7 +68,7 @@ class Configuration(object):
 
     :keyword defaults: Add a set of default options to the
       Configuration object. These defaults change behavior of
-      :meth:`anadama.workflow.Workflow.go`. Default: False.
+      :meth:`anadama2.workflow.Workflow.go`. Default: False.
     :type defaults: bool
 
     """
@@ -104,7 +104,7 @@ class Configuration(object):
         """Add an option to the Configuration object.
 
         :param name: Set the name of the option. This name is
-          transformed with :func:`anadama.util.kebab` to the long
+          transformed with :func:`anadama2.util.kebab` to the long
           option flag in the command line interface e.g. ``entry_point
           -> --entry-point``.
         :type name: str
@@ -119,7 +119,7 @@ class Configuration(object):
           understood by optparse. Additionally, "bool" and "dir" types
           are accepted. Bool types store boolean options (True or
           False). Dir types store objects of type
-          :class:`anadama.util.Directory`. If any option of type "dir"
+          :class:`anadama2.util.Directory`. If any option of type "dir"
           is added, an additional option ``--deploy`` is added to the
           Configuration object. The ``--deploy`` option creates the
           directories specified. Default: str.
@@ -164,7 +164,7 @@ class Configuration(object):
 
     def reset(self):
         """Invalidate caching behavior of
-        :meth:`anadama.cli.Configuration.ask_user`. Use this method if
+        :meth:`anadama2.cli.Configuration.ask_user`. Use this method if
         you want to re-ask the user for input.
 
         """

@@ -10,12 +10,12 @@ from cStringIO import StringIO
 
 import networkx
 
-import anadama
-import anadama.tracked
-import anadama.workflow
-import anadama.util
-import anadama.backends
-import anadama.taskcontainer
+import anadama2
+import anadama2.tracked
+import anadama2.workflow
+import anadama2.util
+import anadama2.backends
+import anadama2.taskcontainer
 
 from util import capture
 
@@ -26,7 +26,7 @@ class TestWorkflow(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ[anadama.backends.ENV_VAR] = "/tmp/anadamatest"
+        os.environ[anadama2.backends.ENV_VAR] = "/tmp/anadamatest"
     
     @classmethod
     def tearDownClass(cls):
@@ -35,7 +35,7 @@ class TestWorkflow(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.workflow.Workflow()
+        self.ctx = anadama2.workflow.Workflow()
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -45,7 +45,7 @@ class TestWorkflow(unittest.TestCase):
             self.ctx._backend.close()
             del self.ctx._backend
             self.ctx._backend = None
-            anadama.backends._default_backend = None
+            anadama2.backends._default_backend = None
             
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
@@ -58,7 +58,7 @@ class TestWorkflow(unittest.TestCase):
 
     def test_do_simple(self):
         t1 = self.ctx.do("echo true", track_cmd=False, track_binaries=False)
-        self.assertTrue(isinstance(t1, anadama.Task))
+        self.assertTrue(isinstance(t1, anadama2.Task))
         self.assertIs(t1, self.ctx.tasks[0])
         self.assertEqual(len(t1.depends), 0)
         self.assertEqual(len(t1.targets), 0)
@@ -70,7 +70,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(len(t1.targets), 0)
         self.assertEqual(len(t1.actions), 1)
         self.assertTrue(isinstance(t1.depends[0],
-                                   anadama.tracked.TrackedVariable))
+                                   anadama2.tracked.TrackedVariable))
         
     def test_do_track_binaries(self):
         t1 = self.ctx.do("echo true", track_cmd=False)
@@ -78,14 +78,14 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(len(t1.targets), 0)
         self.assertEqual(len(t1.actions), 1)
         self.assertTrue(isinstance(t1.depends[0],
-                                   anadama.tracked.TrackedExecutable))
+                                   anadama2.tracked.TrackedExecutable))
         self.assertTrue(isinstance(t1.depends[1],
-                                   anadama.tracked.TrackedExecutable))
+                                   anadama2.tracked.TrackedExecutable))
 
 
     def test_discover_binaries(self):
         bash_script = os.path.join(self.workdir, "test.sh")
-        echoprog = anadama.util.sh(("which", "echo"))[0].strip()
+        echoprog = anadama2.util.sh(("which", "echo"))[0].strip()
         with open(bash_script, 'w') as f:
             print >> f, "#!/bin/bash"
             print >> f, "echo hi"
@@ -93,21 +93,21 @@ class TestWorkflow(unittest.TestCase):
         plain_file = os.path.join(self.workdir, "blah.txt")
         with open(plain_file, 'w') as f:
             print >> f, "nothing to see here"
-        ret = anadama.workflow.discover_binaries("echo hi")
+        ret = anadama2.workflow.discover_binaries("echo hi")
         self.assertGreater(len(ret), 0, "should find "+echoprog)
-        self.assertTrue(isinstance(ret[0], anadama.tracked.TrackedExecutable))
+        self.assertTrue(isinstance(ret[0], anadama2.tracked.TrackedExecutable))
         self.assertEqual(str(ret[0]), echoprog)
 
-        ret2 = anadama.workflow.discover_binaries(echoprog+" foo")
+        ret2 = anadama2.workflow.discover_binaries(echoprog+" foo")
         self.assertIs(ret[0], ret2[0], "should discover the same dep")
         
-        ret = anadama.workflow.discover_binaries(
+        ret = anadama2.workflow.discover_binaries(
             bash_script+" arguments dont matter")
         self.assertEqual(len(ret), 1, "should just find one dep")
-        self.assertTrue(isinstance(ret[0], anadama.tracked.TrackedExecutable))
+        self.assertTrue(isinstance(ret[0], anadama2.tracked.TrackedExecutable))
         self.assertEqual(str(ret[0]), bash_script)
 
-        ret = anadama.workflow.discover_binaries(plain_file+" blah blah")
+        ret = anadama2.workflow.discover_binaries(plain_file+" blah blah")
         self.assertEqual(len(ret), 0, "shouldn't discover unexecutable files")
         
 
@@ -145,28 +145,28 @@ class TestWorkflow(unittest.TestCase):
 
     
     def test_add_task(self):
-        t1 = self.ctx.add_task(anadama.util.noop)
-        self.assertIsInstance(t1, anadama.Task)
-        self.assertIs(t1.actions[0], anadama.util.noop)
+        t1 = self.ctx.add_task(anadama2.util.noop)
+        self.assertIsInstance(t1, anadama2.Task)
+        self.assertIs(t1.actions[0], anadama2.util.noop)
         self.assertEqual(len(t1.depends), 0)
         self.assertEqual(len(t1.targets), 0)
         
 
     def test_add_task_deps(self):
         self.ctx.already_exists("/etc/hosts")
-        t1 = self.ctx.add_task(anadama.util.noop, depends=["/etc/hosts"])
+        t1 = self.ctx.add_task(anadama2.util.noop, depends=["/etc/hosts"])
         self.assertEqual(len(t1.depends), 1)
         self.assertEqual(len(t1.targets), 0)
-        self.assertIs(t1.depends[0], anadama.tracked.TrackedFile("/etc/hosts"),
+        self.assertIs(t1.depends[0], anadama2.tracked.TrackedFile("/etc/hosts"),
                       "the dep should be a filedependency, /etc/hosts")
 
 
     def test_add_task_targs(self):
-        t1 = self.ctx.add_task(anadama.util.noop, targets=["/tmp/test.txt"])
+        t1 = self.ctx.add_task(anadama2.util.noop, targets=["/tmp/test.txt"])
         self.assertEqual(len(t1.depends), 0)
         self.assertEqual(len(t1.targets), 1)
         self.assertIs(t1.targets[0],
-                      anadama.tracked.TrackedFile("/tmp/test.txt"),
+                      anadama2.tracked.TrackedFile("/tmp/test.txt"),
                       "the target should be a filedependency, /tmp/test.txt")
 
     def test_add_task_decorator(self):
@@ -177,12 +177,12 @@ class TestWorkflow(unittest.TestCase):
 
         self.assertEqual(len(ctx.tasks), 1, "decorator should add one task")
         self.assertIsInstance(
-            ctx.tasks[0], anadama.Task,
+            ctx.tasks[0], anadama2.Task,
             "decorator should add a task instance to context.tasks")
         self.assertEqual(len(ctx.tasks[0].targets), 1,
                          "The created task should have one target")
         self.assertIs(ctx.tasks[0].targets[0],
-                      anadama.tracked.TrackedFile("/tmp/test.txt"),
+                      anadama2.tracked.TrackedFile("/tmp/test.txt"),
                       "the target should be a filedependency, /tmp/test.txt")
         ret = ctx.tasks[0].actions[0]()
         self.assertEqual(ret, "testvalue",
@@ -217,7 +217,7 @@ class TestWorkflow(unittest.TestCase):
                           depends=[outf], targets=[outf])
 
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.workflow.RunFailed):
+            with self.assertRaises(anadama2.workflow.RunFailed):
                 self.ctx.go(quit_early=True)
 
         self.assertFalse(
@@ -258,13 +258,13 @@ class TestWorkflow(unittest.TestCase):
     def test_go_skip_glob(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        globdep = anadama.tracked.TrackedFilePattern(
+        globdep = anadama2.tracked.TrackedFilePattern(
             os.path.join(self.workdir, "*.txt")
         )
         out = os.path.join(self.workdir, "out")
         self.ctx.already_exists(globdep)
         for letter in (a,b,c,d):
-            anadama.util.sh("echo {a} > {a}".format(a=letter), shell=True)
+            anadama2.util.sh("echo {a} > {a}".format(a=letter), shell=True)
         self.ctx.add_task("ls {depends[0]} > {targets[0]}",
                           depends=globdep, targets=out)
         with capture(stderr=StringIO()):
@@ -288,11 +288,11 @@ class TestWorkflow(unittest.TestCase):
     def test_go_skip_dir(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        dirdep = anadama.tracked.TrackedDirectory(self.workdir)
+        dirdep = anadama2.tracked.TrackedDirectory(self.workdir)
         out = "/tmp/foobaz"
         self.ctx.already_exists(dirdep)
         for letter in (a,b,c,d):
-            anadama.util.sh("echo {a} > {a}".format(a=letter), shell=True)
+            anadama2.util.sh("echo {a} > {a}".format(a=letter), shell=True)
         self.ctx.add_task("ls {depends[0]} > {targets[0]}",
                           depends=dirdep, targets=out)
         with capture(stderr=StringIO()):
@@ -316,7 +316,7 @@ class TestWorkflow(unittest.TestCase):
 
     def test_go_skip_config(self):
         a = os.path.join(self.workdir, "a.txt")
-        conf = anadama.tracked.Container(alpha="5", beta=2)
+        conf = anadama2.tracked.Container(alpha="5", beta=2)
         self.ctx.add_task("echo beta:{depends[0]} > {targets[0]}",
                           depends=conf.beta, targets=a)
         with capture(stderr=StringIO()):
@@ -361,19 +361,19 @@ class TestWorkflow(unittest.TestCase):
 
     def test_issue36(self):
         ctx = self.ctx
-        step1_const = anadama.tracked.Container(a = 12)
+        step1_const = anadama2.tracked.Container(a = 12)
         step1_out = os.path.join(self.workdir, "step1.txt")
         step1_cmd = " ".join(["echo", str(step1_const.a), ">", step1_out])
-        ctx.already_exists(anadama.tracked.TrackedString(step1_cmd))
+        ctx.already_exists(anadama2.tracked.TrackedString(step1_cmd))
         step1 = ctx.add_task(step1_cmd,
                              depends=[step1_const.a,
-                                      anadama.tracked.TrackedString(step1_cmd)],
+                                      anadama2.tracked.TrackedString(step1_cmd)],
                              targets=[step1_out])
 
         step2_out = os.path.join(self.workdir, "step2.txt")
         step2_cmd = "; ".join(["p=$(cat " + step1_out + ")",
                                "echo $p > " + step2_out ])
-        ctx.already_exists(anadama.tracked.TrackedString(step2_cmd))
+        ctx.already_exists(anadama2.tracked.TrackedString(step2_cmd))
 
         step2 = ctx.add_task(step2_cmd,
                              depends=[step1_out],
@@ -383,7 +383,7 @@ class TestWorkflow(unittest.TestCase):
             ctx.go()
 
         step2skipped = False
-        class CustomReporter(anadama.reporters.ConsoleReporter):
+        class CustomReporter(anadama2.reporters.ConsoleReporter):
             def task_skipped(self, task_no, *args, **kwargs):
                 if task_no == step2.task_no:
                     step2skipped = True
@@ -416,18 +416,18 @@ class TestWorkflow(unittest.TestCase):
         self.assertIn(stderr_msg, err.getvalue())
        
     def test__sugar_list(self):
-        rc = anadama.workflow
+        rc = anadama2.workflow
         self.assertEqual([5], rc.sugar_list(5))
         self.assertEqual(["blah"], rc.sugar_list("blah"))
         it = iter(range(5))
         self.assertIs(it, rc.sugar_list(it))
-        t = anadama.Task("dummy task", [], [], [], 0)
+        t = anadama2.Task("dummy task", [], [], [], 0)
         self.assertEqual([t], rc.sugar_list(t))
         self.assertEqual((5,), rc.sugar_list((5,)))
 
 
     def test_add_task_custom_dependency(self):
-        class CustomDependency(anadama.tracked.Base):
+        class CustomDependency(anadama2.tracked.Base):
             @staticmethod
             def key(the_key):
                 return str(the_key)
@@ -441,7 +441,7 @@ class TestWorkflow(unittest.TestCase):
                 self.compared = False
 
         d = CustomDependency("blah")
-        self.ctx.add_task(anadama.util.noop, targets=d)
+        self.ctx.add_task(anadama2.util.noop, targets=d)
         self.assertTrue(d.initialized)
         self.assertFalse(d.compared)
         with capture(stdout=StringIO(), stderr=StringIO()):
@@ -456,7 +456,7 @@ class TestWorkflow(unittest.TestCase):
         t2 = self.ctx.add_task("touch {targets[0]} {targets[1]}",
                                targets=[b, c], name="bc")
         t3 = self.ctx.add_task("touch {}".format(d), depends=[a,b], name="d")
-        self.assertTrue(isinstance(self.ctx.tasks, anadama.taskcontainer.TaskContainer))
+        self.assertTrue(isinstance(self.ctx.tasks, anadama2.taskcontainer.TaskContainer))
         self.assertIs(self.ctx.tasks[t1.task_no], t1)
         self.assertIs(self.ctx.tasks[t2.name], t2)
 
@@ -471,7 +471,7 @@ class TestWorkflow(unittest.TestCase):
         self.ctx.add_task("cat {depends[0]} > {targets[0]}", 
                           depends=a, targets=b, name="shouldntfail")
         self.assertEqual(len(self.ctx.tasks), 2)
-        self.assertIs(self.ctx.tasks[1].actions[0], anadama.util.noop)
+        self.assertIs(self.ctx.tasks[1].actions[0], anadama2.util.noop)
         self.assertEqual(str(self.ctx.tasks[1].targets[0]), a)
         self.assertEqual(str(self.ctx.tasks[0].depends[0]), a)
         self.assertEqual(str(self.ctx.tasks[0].targets[0]), b)

@@ -4,7 +4,7 @@ slurm
 
 .. contents:: 
    :local:
-.. currentmodule:: anadama.slurm
+.. currentmodule:: anadama2.slurm
 
-.. automodule:: anadama.slurm
+.. automodule:: anadama2.slurm
    :members:

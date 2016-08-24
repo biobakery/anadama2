@@ -4,7 +4,7 @@ import optparse
 import itertools
 
 from . import backends
-from anadama.util import Bag
+from .util import Bag
 
 
 desc = "Manipulate the AnADAMA dependency database"

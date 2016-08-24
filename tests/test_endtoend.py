@@ -8,9 +8,9 @@ from collections import defaultdict
 import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
-import anadama
-import anadama.workflow
-import anadama.backends
+import anadama2
+import anadama2.workflow
+import anadama2.backends
 
 from util import capture
 
@@ -21,7 +21,7 @@ class TestEndToEnd(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ[anadama.backends.ENV_VAR] = "/tmp/anadamatest"
+        os.environ[anadama2.backends.ENV_VAR] = "/tmp/anadamatest"
     
     @classmethod
     def tearDownClass(cls):
@@ -30,7 +30,7 @@ class TestEndToEnd(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.workflow.Workflow()
+        self.ctx = anadama2.workflow.Workflow()
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -40,7 +40,7 @@ class TestEndToEnd(unittest.TestCase):
             self.ctx._backend.close()
             del self.ctx._backend
             self.ctx._backend = None
-            anadama.backends._default_backend = None
+            anadama2.backends._default_backend = None
             
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
@@ -66,7 +66,7 @@ class TestEndToEnd(unittest.TestCase):
             task_nos[n] = t.task_no
 
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.workflow.RunFailed):
+            with self.assertRaises(anadama2.workflow.RunFailed):
                 self.ctx.go()
         child_fail = set()
         for n in shall_fail:
@@ -115,9 +115,9 @@ class TestEndToEnd(unittest.TestCase):
         # self.ctx.fail_idx = task_nos[G.successors(list(shall_fail)[0])[-1]]
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
-            import anadama.reporters
-            with self.assertRaises(anadama.workflow.RunFailed):
-                rep = anadama.reporters.LoggerReporter("debug", "/tmp/analog")
+            import anadama2.reporters
+            with self.assertRaises(anadama2.workflow.RunFailed):
+                rep = anadama2.reporters.LoggerReporter("debug", "/tmp/analog")
                 self.ctx.go(reporter=rep)
         child_fail = set()
         for n in shall_fail:

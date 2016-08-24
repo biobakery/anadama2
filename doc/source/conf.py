@@ -49,7 +49,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'anadama'
+project = u'anadama2'
 copyright = u'2016, Randall Schwager and the Huttenhower Lab'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -182,7 +182,7 @@ html_show_sourcelink = True
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'anadamadoc'
+htmlhelp_basename = 'anadama2doc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -202,7 +202,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'anadama.tex', u'anadama Documentation',
+  ('index', 'anadama2.tex', u'anadama Documentation',
    u'Randall Schwager and the Huttenhower Lab', 'manual'),
 ]
 
@@ -232,7 +232,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'anadama', u'anadama Documentation',
+    ('index', 'anadama2', u'anadama Documentation',
      [u'Randall Schwager and the Huttenhower Lab'], 1)
 ]
 
@@ -246,8 +246,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'anadama', u'anadama Documentation',
-   u'Randall Schwager and the Huttenhower Lab', 'anadama', 'One line description of project.',
+  ('index', 'anadama2', u'anadama Documentation',
+   u'Randall Schwager and the Huttenhower Lab', 'anadama2', 'One line description of project.',
    'Miscellaneous'),
 ]
 
