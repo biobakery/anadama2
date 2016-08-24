@@ -4,7 +4,7 @@ sge
 
 .. contents:: 
    :local:
-.. currentmodule:: anadama.sge
+.. currentmodule:: anadama2.sge
 
-.. automodule:: anadama.sge
+.. automodule:: anadama2.sge
    :members:

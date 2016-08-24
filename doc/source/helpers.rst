@@ -4,8 +4,8 @@ helpers
 
 .. contents:: 
    :local:
-.. currentmodule:: anadama.helpers
+.. currentmodule:: anadama2.helpers
 
-.. automodule:: anadama.helpers
+.. automodule:: anadama2.helpers
    :members:
    :undoc-members:

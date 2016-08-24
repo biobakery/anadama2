@@ -3,8 +3,8 @@ import os
 import shutil
 import unittest
 
-import anadama.util
-from anadama.util import fname
+import anadama2.util
+from anadama2.util import fname
 
 class TestUtil(unittest.TestCase):
 
@@ -22,12 +22,12 @@ class TestUtil(unittest.TestCase):
     def test__adler32(self):
         f = os.path.join(self.workdir, "test.txt")
         open(f, 'w').close()
-        first = anadama.util._adler32(f)
+        first = anadama2.util._adler32(f)
         with open(f, 'w+') as _f:
             print >> _f, "blah blah"
-        second = anadama.util._adler32(f)
+        second = anadama2.util._adler32(f)
         open(f, 'w').close()
-        third = anadama.util._adler32(f)
+        third = anadama2.util._adler32(f)
         self.assertNotEqual(first, second)
         self.assertNotEqual(second, third)
         self.assertEqual(first, third)
@@ -53,14 +53,14 @@ class TestUtil(unittest.TestCase):
                          "/shares/hiibroad/data/humann2_medclean/input/Batch15_WGS_S/6819351/processed/6819351_2_special.fastq.bz2")
 
     def test_kebab(self):
-        self.assertEqual(anadama.util.kebab("drunken     sailor"), "drunken-sailor")
-        self.assertEqual(anadama.util.kebab(u"drunken-säilor"), "drunken-sailor")
-        self.assertEqual(anadama.util.kebab("drunken-209sailor"), "drunken-sailor")
-        self.assertEqual(anadama.util.kebab("drunken-,.!@#$%^&*()sailor"), "drunken-sailor")
-        self.assertEqual(anadama.util.kebab("drunken-_+|\\sailor"), "drunken-sailor")
-        self.assertEqual(anadama.util.kebab("drunken-[]}{'sailor"), "drunken-sailor")
-        self.assertEqual(anadama.util.kebab('drunken-"sailor'), "drunken-sailor")
-        self.assertEqual(anadama.util.kebab('drunken-~`><sailor'), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab("drunken     sailor"), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab(u"drunken-säilor"), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab("drunken-209sailor"), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab("drunken-,.!@#$%^&*()sailor"), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab("drunken-_+|\\sailor"), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab("drunken-[]}{'sailor"), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab('drunken-"sailor'), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab('drunken-~`><sailor'), "drunken-sailor")
 
 
         

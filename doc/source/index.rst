@@ -10,9 +10,9 @@ AnADAMA2 is the next generation of AnADAMA (Another Automated Data Analysis Mana
 
 For more information on AnADAMA2, please read the `User Manual <https://bitbucket.org/biobakery/anadama2/wiki/Home>`_.
 
-.. currentmodule:: anadama
+.. currentmodule:: anadama2
 
-.. automodule:: anadama
+.. automodule:: anadama2
    :members:
 
 

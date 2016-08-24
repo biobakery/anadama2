@@ -9,10 +9,10 @@ from collections import defaultdict
 import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
-import anadama
-import anadama.slurm
-import anadama.backends
-from anadama.util import find_on_path
+import anadama2
+import anadama2.slurm
+import anadama2.backends
+from anadama2.util import find_on_path
 
 from util import capture
 
@@ -29,7 +29,7 @@ class TestSlurm(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ[anadama.backends.ENV_VAR] = "/tmp/anadamatest"
+        os.environ[anadama2.backends.ENV_VAR] = "/tmp/anadamatest"
     
     @classmethod
     def tearDownClass(cls):
@@ -38,8 +38,8 @@ class TestSlurm(unittest.TestCase):
 
 
     def setUp(self):
-        powerup = anadama.slurm.SlurmPowerup(PARTITION, TMPDIR)
-        self.ctx = anadama.Workflow(grid_powerup=powerup)
+        powerup = anadama2.slurm.SlurmPowerup(PARTITION, TMPDIR)
+        self.ctx = anadama2.Workflow(grid_powerup=powerup)
         self.workdir = "tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -49,7 +49,7 @@ class TestSlurm(unittest.TestCase):
             self.ctx._backend.close()
             del self.ctx._backend
             self.ctx._backend = None
-            anadama.backends._default_backend = None
+            anadama2.backends._default_backend = None
             
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
@@ -78,7 +78,7 @@ class TestSlurm(unittest.TestCase):
             task_nos[n] = t.task_no
 
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.workflow.RunFailed):
+            with self.assertRaises(anadama2.workflow.RunFailed):
                 self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:
@@ -129,7 +129,7 @@ class TestSlurm(unittest.TestCase):
             task_nos[n] = t.task_no
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
-            with self.assertRaises(anadama.workflow.RunFailed):
+            with self.assertRaises(anadama2.workflow.RunFailed):
                 self.ctx.go(n_grid_parallel=2)
         child_fail = set()
         for n in shall_fail:

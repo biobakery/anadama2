@@ -50,7 +50,7 @@ class SphinxBuild(distutils.cmd.Command):
             sys.exit("ERROR: Unable to run sphinx build")
 
 setup(
-    name='anadama',
+    name='anadama2',
     version='0.1.2',
     description=('AnADAMA - '
                  'Another '

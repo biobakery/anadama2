@@ -10,24 +10,24 @@ from cStringIO import StringIO
 
 import networkx
 
-import anadama
-import anadama.tracked
-import anadama.workflow
-import anadama.util
-from anadama.util import noop
-import anadama.backends
-import anadama.taskcontainer
+import anadama2
+import anadama2.tracked
+import anadama2.workflow
+import anadama2.util
+from anadama2.util import noop
+import anadama2.backends
+import anadama2.taskcontainer
 
 from util import capture
 
 SLEEPTIME = os.environ.get("ANADAMA_SLEEP_TIME", "0.01")
 SLEEPTIME=float(SLEEPTIME)
 
-class TestWorkflow(unittest.TestCase):
+class TestStructure(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        os.environ[anadama.backends.ENV_VAR] = "/tmp/anadamatest"
+        os.environ[anadama2.backends.ENV_VAR] = "/tmp/anadamatest"
     
     @classmethod
     def tearDownClass(cls):
@@ -36,7 +36,7 @@ class TestWorkflow(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama.workflow.Workflow()
+        self.ctx = anadama2.workflow.Workflow()
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
@@ -46,7 +46,7 @@ class TestWorkflow(unittest.TestCase):
             self.ctx._backend.close()
             del self.ctx._backend
             self.ctx._backend = None
-            anadama.backends._default_backend = None
+            anadama2.backends._default_backend = None
             
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)

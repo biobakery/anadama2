@@ -18,7 +18,7 @@ class BaseReporter(object):
 
     def started(self, run_context):
         """Executed when a run is started, usually when
-        :meth:`anadama.workflow.Workflow.go` is executed.
+        :meth:`anadama2.workflow.Workflow.go` is executed.
 
         """
         self.run_context = run_context
@@ -28,7 +28,7 @@ class BaseReporter(object):
         """Executed when anadama determines that a task needn't be run.
 
         :param task_no: The task number of the task that is
-          skipped. To get the actual :class:`anadama.Task` object
+          skipped. To get the actual :class:`anadama2.Task` object
           that's being skipped, do ``self.run_context.tasks[task_no]``.
 
         :type task_no: int
@@ -41,7 +41,7 @@ class BaseReporter(object):
         """Executed when anadama is just about to execute a task.
 
         :param task_no: The task number of the task that is
-          being started. To get the actual :class:`anadama.Task` object
+          being started. To get the actual :class:`anadama2.Task` object
           that's being executed, do ``self.run_context.tasks[task_no]``.
 
         :type task_no: int
@@ -54,7 +54,7 @@ class BaseReporter(object):
         """Executed when a task fails.
 
         :param task_no: The task number of the task that failed . To
-          get the actual :class:`anadama.Task` object that failed, do
+          get the actual :class:`anadama2.Task` object that failed, do
           ``self.run_context.tasks[task_no]``. To get the task result
           of the task that failed,
           do``self.run_context.task_results[task_no]``
@@ -68,7 +68,7 @@ class BaseReporter(object):
         """Executed when a task completes with no errors.
 
         :param task_no: The task number of the task that succeeded . To
-          get the actual :class:`anadama.Task` object that succeeded, do
+          get the actual :class:`anadama2.Task` object that succeeded, do
           ``self.run_context.tasks[task_no]``. To get the task result
           of the task that succeeded,
           do``self.run_context.task_results[task_no]``
@@ -92,7 +92,7 @@ class ReporterGroup(BaseReporter):
 
     .. code:: python
 
-      from anadama.reporters import ReporterGroup
+      from anadama2.reporters import ReporterGroup
       my_grouped_reporter = ReporterGroup([custom_reporter_a, 
                                            custom_reporter_b, 
                                            custom_reporter_c])
@@ -168,7 +168,7 @@ class ConsoleReporter(BaseReporter):
       5. The task name. That's the text that comes after the ending
          square bracket. Remember that you can set the task name with
          the ``name`` option to
-         :meth:`anadama.workflow.Workflow.add_task`.
+         :meth:`anadama2.workflow.Workflow.add_task`.
 
     """
 

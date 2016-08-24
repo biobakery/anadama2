@@ -3,8 +3,8 @@ import shutil
 import unittest
 import optparse
 
-import anadama.cli
-import anadama.util
+import anadama2.cli
+import anadama2.util
 
 
 class TestCli(unittest.TestCase):
@@ -19,14 +19,14 @@ class TestCli(unittest.TestCase):
             shutil.rmtree(self.workdir)
 
     def test_Configuraion_instantiate(self):
-        c = anadama.cli.Configuration()
-        self.assertIs(type(c), anadama.cli.Configuration)
+        c = anadama2.cli.Configuration()
+        self.assertIs(type(c), anadama2.cli.Configuration)
         self.assertTrue(hasattr(c, "description"))
         self.assertTrue(hasattr(c, "version"))
         self.assertTrue(hasattr(c, "args"))
 
     def test_Configuration_add(self):
-        c = anadama.cli.Configuration()
+        c = anadama2.cli.Configuration()
         ret = c.add("foo", desc="it's a foo", default="bar", type="str")
         self.assertIs(ret, c)
         self.assertTrue("foo" in c._directives)
@@ -39,22 +39,22 @@ class TestCli(unittest.TestCase):
         self.assertEqual(o.type, "string")
 
     def test_Configuration_defaults(self):
-        c = anadama.cli.Configuration(defaults=True)
+        c = anadama2.cli.Configuration(defaults=True)
         self.assertGreater(len(c._directives), 1)
         self.assertGreater(len(c._shorts), 1)
 
     def test_Configuration_ask_user(self):
-        c = anadama.cli.Configuration(defaults=True)
+        c = anadama2.cli.Configuration(defaults=True)
         c.ask_user(argv=["--until-task", "blarg"])
         self.assertTrue(hasattr(c, "until_task"))
         self.assertEqual(c.until_task, "blarg")
         self.assertTrue(c._user_asked)
 
     def test_Configureation_directory(self):
-        c = anadama.cli.Configuration().add(
+        c = anadama2.cli.Configuration().add(
             "input", type="dir"
         ).ask_user(argv=["--input", self.workdir])
-        self.assertIs(type(c.input), anadama.util.Directory)
+        self.assertIs(type(c.input), anadama2.util.Directory)
         self.assertEqual(c.input.name, self.workdir)
         
     

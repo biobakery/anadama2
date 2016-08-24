@@ -15,24 +15,24 @@ first = itemgetter(0)
 
 def auto(x):
     """Translate a string, function or task into the appropriate subclass
-    of :class:`anadama.tracked.Base`. Tildes and shell
+    of :class:`anadama2.tracked.Base`. Tildes and shell
     variables are expanded using :func:`os.path.expanduser` and
     :func:`os.path.expandvars`. If that's not your game, use
-    :class:`anadama.tracked.TrackedDirectory` or
-    :class:`anadama.tracked.TrackedFile` as appropriate. The current
+    :class:`anadama2.tracked.TrackedDirectory` or
+    :class:`anadama2.tracked.TrackedFile` as appropriate. The current
     mapping is as follows:
 
-    - Subclasses of :class:`anadama.tracked.Base` are returned as is
+    - Subclasses of :class:`anadama2.tracked.Base` are returned as is
 
-    - Strings ending in '/' ``->`` :class:`anadama.tracked.TrackedDirectory`
+    - Strings ending in '/' ``->`` :class:`anadama2.tracked.TrackedDirectory`
 
-    - Strings not ending in '/' ``->`` :class:`anadama.tracked.TrackedFile`
+    - Strings not ending in '/' ``->`` :class:`anadama2.tracked.TrackedFile`
 
-    - Instances of subclasses of :class:`anadama.Task` are handled
-      specially by :meth:`anadama.workflow.Workflow.add_task` and
+    - Instances of subclasses of :class:`anadama2.Task` are handled
+      specially by :meth:`anadama2.workflow.Workflow.add_task` and
       are returned as is
 
-    - Functions or other callables ``->`` :class:`anadama.tracked.TrackedFunction`
+    - Functions or other callables ``->`` :class:`anadama2.tracked.TrackedFunction`
 
     :param x: The object to be translated into a dependency object
 
@@ -65,10 +65,10 @@ def any_different(ds, backend):
     """Determine whether any dependencies have changed since last save.
 
     :param ds: The dependencies in question
-    :type ds: instances of any :class:`anadama.tracked.Base` subclass
+    :type ds: instances of any :class:`anadama2.tracked.Base` subclass
 
     :param backend: Backend to query past results of a dependency object
-    :type backend: instances of any :class:`anadama.backends.BaseBackend` subclass
+    :type backend: instances of any :class:`anadama2.backends.BaseBackend` subclass
     """
     isdebug = logger.isEnabledFor(logging.DEBUG)
     
@@ -121,12 +121,12 @@ class DependencyIndex(object):
         __getitem__.
 
         :param dep: The dependency to track
-        :type dep: subclass of :class:`anadama.tracked.Base`
+        :type dep: subclass of :class:`anadama2.tracked.Base`
 
         :param task_or_none: The task that's supposed to create this
           dependency. Use None if the dependency isn't created by a
           task but exists prior to any tasks running.
-        :type task_or_none: :class:`anadama.Task` or None
+        :type task_or_none: :class:`anadama2.Task` or None
 
         """
         self._taskidx[dep.__class__.__name__][dep._key] = task_or_none
@@ -154,18 +154,18 @@ class Base(object):
     """The Dependency object is the tool for specifying task father-child
     relationships. Dependency objects can be used in either
     ``targets`` or ``depends`` arguments of
-    :meth:`anadama.workflow.Workflow.add_task`. Often, these targets or
-    dependencies are specified by strings or :class:`anadama.Task`
+    :meth:`anadama2.workflow.Workflow.add_task`. Often, these targets or
+    dependencies are specified by strings or :class:`anadama2.Task`
     objects and instantiated into the appropriate Base
-    subclass with :func:`anadama.tracked.auto`; this behavior depends on the
-    arguments to :meth:`anadama.workflow.Workflow.add_task`.
+    subclass with :func:`anadama2.tracked.auto`; this behavior depends on the
+    arguments to :meth:`anadama2.workflow.Workflow.add_task`.
 
     A dependency of the same name will be defined multiple times in
     the normal use of AnADAMA. To make it such that many calls of a
     dependency constructor or use of the same argument to
-    :func:`anadama.tracked.auto` result in the same dependency instance being
+    :func:`anadama2.tracked.auto` result in the same dependency instance being
     returned, a little bit of black magic involving
-    :meth:`anadama.tracked.Base.__new__` is required. The price for
+    :meth:`anadama2.tracked.Base.__new__` is required. The price for
     such magics is that subclasses of Base must define the
     ``init`` method to initialize the dependency, instead of the more
     commonly used ``__init__`` method. The ``init`` method is only
@@ -179,7 +179,7 @@ class Base(object):
 
     Unrelated to the quasi-singleton magics above, sublcasses of
     Base must define a ``compare()`` method. See
-    :meth:`anadama.tracked.Base.compare` for more documentation.
+    :meth:`anadama2.tracked.Base.compare` for more documentation.
 
     """
 
@@ -375,7 +375,7 @@ class HugeTrackedFile(TrackedFile):
 class Container(object):
     """Track a collection of small strings. This is useful for rerunning
     tasks based on whether a flag has changed when running a
-    command. Using :class:`anadama.tracked.TrackedString` for small
+    command. Using :class:`anadama2.tracked.TrackedString` for small
     strings can run into collisions between workflows that use the
     same backend. Consider using ``logging =
     TrackedString("debug")`` in script_a.py and ``logging =
@@ -393,17 +393,17 @@ class Container(object):
 
     .. code:: python
 
-      >>> import anadama.tracked
-      >>> conf = anadama.tracked.Container(alpha="5", beta=2)
+      >>> import anadama2.tracked
+      >>> conf = anadama2.tracked.Container(alpha="5", beta=2)
       >>> conf.alpha
-      <anadama.tracked.TrackedVariable object at 0x7f66445fa490> 
+      <anadama2.tracked.TrackedVariable object at 0x7f66445fa490> 
       >>> str(conf.alpha)
       '5'
       >>> str(conf['beta'])
       '2'
       >>> conf.beta = 7
       >>> conf.beta
-      <anadama.tracked.TrackedVariable object at 0x7f66445fa4d0>
+      <anadama2.tracked.TrackedVariable object at 0x7f66445fa4d0>
       >>> str(conf.beta)
       '7'
     
@@ -558,7 +558,7 @@ class TrackedFunction(Base):
 
     """Useful for things like database lookups or API calls. The function
     must return a hashable type. For a tiered comparison method like
-    that seen in :class:`anadama.tracked.TrackedFile`, it's best to create
+    that seen in :class:`anadama2.tracked.TrackedFile`, it's best to create
     your own subclass of Base and override the ``compare()``
     method.
 

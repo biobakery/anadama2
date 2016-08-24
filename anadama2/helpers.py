@@ -1,6 +1,6 @@
 """Contains functions that help create tasks. All functions contained
 herein are intended for use with
-:meth:`anadama.workflow.Workflow.add_task`. This means that the functions
+:meth:`anadama2.workflow.Workflow.add_task`. This means that the functions
 in here don't immediately do what they say; they return functions
 that, when called, do that they say (they're closures). Sorry if that
 breaks your brain.
@@ -9,8 +9,8 @@ Using closures lets you add tasks like this:
 
 .. code:: python
 
-  from anadama import Workflow
-  from anadama.helpers import sh
+  from anadama2 import Workflow
+  from anadama2.helpers import sh
 
   ctx = Workflow()
   ctx.add_task(sh("my fancy shell command"),
@@ -21,8 +21,8 @@ Instead of this:
 .. code:: python
 
 
-  from anadama import Workflow
-  from anadama.util import sh # <--- note the different import
+  from anadama2 import Workflow
+  from anadama2.util import sh # <--- note the different import
 
   ctx = Workflow()
   ctx.add_task(lambda task: sh("my fancy shell command"),
@@ -61,7 +61,7 @@ def sh(s, **kwargs):
 
 
 def parse_sh(s, **kwargs):
-    """Do the same thing as :func:`anadama.helpers.sh`, but do some extra
+    """Do the same thing as :func:`anadama2.helpers.sh`, but do some extra
     interpreting and formatting of the shell command before handing it
     over to the shell. For those familiar with python's
     :meth:`str.format()` method, the list of dependencies and the list
