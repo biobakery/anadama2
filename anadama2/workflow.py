@@ -540,6 +540,9 @@ def discover_binaries(s):
             term = find_on_path(term)
         if not term:
             continue
+        if os.path.isdir(term):
+            # don't want directories
+            continue
         if not os.access(term, os.F_OK | os.X_OK):
             # doesn't exist or can't execute
             continue

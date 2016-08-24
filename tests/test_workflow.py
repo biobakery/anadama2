@@ -109,6 +109,10 @@ class TestWorkflow(unittest.TestCase):
 
         ret = anadama2.workflow.discover_binaries(plain_file+" blah blah")
         self.assertEqual(len(ret), 0, "shouldn't discover unexecutable files")
+
+        ret = anadama2.workflow.discover_binaries("ls /bin/")
+        self.assertEqual(len(ret), 1, "shouldn't discover directories")
+
         
 
     def test_do_targets(self):
