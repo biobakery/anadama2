@@ -2,6 +2,7 @@
 
 import os
 import re
+import sys
 import traceback
 from . import mkdirp
 
@@ -10,6 +11,21 @@ original_wd = lambda: _owd
 cwd = os.getcwd
 
 def mangle(fname, tag=None, dir=None, ext=None):
+    """Create a new filename from an old filename.
+
+    :param fname: The old filename used as a template for the new
+      filename
+    
+    :keyword tag: Add this tag to the new filename. See
+      :func:`anadama2.util.fname.addtag`.
+    
+    :keyword dir: Change the path of the filename to ``dir``
+
+    :keyword ext: Swap out the extension for ``ext``.
+
+    :returns: The new filename
+    """
+
     new = fname[:]
     if tag: # don't want empty strings
         new = addtag(new, tag)
@@ -46,6 +62,19 @@ def new_file(*names, **opts):
 
 
 def addtag(name_str, tag_str):
+
+    """Add a tag to a filename. The tag is placed at the end of the
+    filename just before the extension. If the filename has no extension,
+    it's placed right on the end.
+
+    Here's an example::
+
+      >>> from anadama2.util.fname import addtag
+      >>> addtag("myfile.txt", "big")
+      'myfile_big.txt'
+      >>>
+
+    """
     path, name_str = os.path.split(name_str)
     match = re.match(r'(.+?)(\..*)', name_str)
     if match:
@@ -55,17 +84,29 @@ def addtag(name_str, tag_str):
         return os.path.join(path, name_str + "_" + tag_str)
 
 
-def addext(name_str, tag_str):
-    if not tag_str:
+def addext(name_str, ext_str):
+    """Add a file extension to a filename
+    
+    :param name_str: The filename that will get the extension
+
+    :param ext_str: The extension (no leading ``.`` required)
+
+    :returns: The filename with the extension
+    """
+
+    if not ext_str:
         return name_str
-    return name_str + "." + tag_str
+    return name_str + "." + ext_str
 
 
 def rmext(name_str, all=False):
-    """remove file extensions 
+    """Remove file extensions 
 
-    :keyword all: Boolean; removes all extensions if True, else just
-      the outside one
+    :param name_str: The filename to remove extensions from
+    :type name_str: str or unicode
+
+    :keyword all: remove all extensions.
+    :type all: bool
 
     """
 
@@ -82,13 +123,11 @@ def rmext(name_str, all=False):
 
 
 def script_wd():
-    """Return the directory of the first non-anadama module in the
-    stack. Most of the time, that's the directory that contains the script
-    that calls ctx.go()"""
+    """Return the directory of script being executed (sys.argv[0]). Most
+    of the time, that's the directory that contains the script that
+    calls ctx.go()
 
-    anamodpath = os.path.dirname(__file__)
-    for stack_item in reversed(traceback.extract_stack()):
-        if not stack_item[0].startswith(anamodpath):
-            return os.path.abspath(os.path.dirname(stack_item[0]))
-    return cwd()
+    """
+
+    return os.path.abspath(os.path.dirname(sys.argv[0]))
 
