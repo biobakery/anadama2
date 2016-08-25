@@ -1,9 +1,13 @@
+import os
 import sys
 import logging
 
-def default():
+def default(output_dir=None):
+    log = "anadama.log"
+    if output_dir:
+        log = os.path.join(str(output_dir), log)
     return ReporterGroup([
-        LoggerReporter("debug", "anadama.log"),
+        LoggerReporter("debug", log),
         ConsoleReporter()
     ])
 

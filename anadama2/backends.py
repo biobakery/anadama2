@@ -10,8 +10,12 @@ ENV_VAR = "ANADAMA_BACKEND_DIR"
 
 _default_backend = None
 
-def default():
+def default(output_dir=None):
     global _default_backend
+    if output_dir is not None:
+        return LevelDBBackend(
+            _try_dir(os.path.join(str(output_dir), ".anadama", "db"))
+            )
     if _default_backend is None:
         _default_backend = LevelDBBackend()
     return _default_backend

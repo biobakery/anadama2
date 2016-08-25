@@ -72,11 +72,14 @@ class Workflow(object):
         #: :meth:`anadama2.workflow.Workflow.go`.
         self.task_results = list()
         self._depidx = tracked.DependencyIndex()
-        self._backend = storage_backend or backends.default()
         self.grid_powerup = grid_powerup or grid.DummyPowerup()
         self.strict = strict
         self.vars = vars or Configuration(defaults=True)
         self.vars.ask_user()
+        if storage_backend:
+            self._backend = storage_backend
+        else:
+            self._backend = backends.default(self.vars.get("output"))
         logger.debug("Instantiated run context")
 
 
@@ -325,7 +328,7 @@ class Workflow(object):
         self.completed_tasks = set()
         self.failed_tasks = set()
         self.task_results = [None for _ in range(len(self.tasks))]
-        self._reporter = reporter or reporters.default()
+        self._reporter = reporter or reporters.default(self.vars.get("output"))
         self._reporter.started(self)
 
         _runner = runner or self.grid_powerup.runner(

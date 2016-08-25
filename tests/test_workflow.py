@@ -14,6 +14,7 @@ import anadama2
 import anadama2.tracked
 import anadama2.workflow
 import anadama2.util
+import anadama2.cli
 import anadama2.backends
 import anadama2.taskcontainer
 
@@ -35,10 +36,13 @@ class TestWorkflow(unittest.TestCase):
 
 
     def setUp(self):
-        self.ctx = anadama2.workflow.Workflow()
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
+        cfg = anadama2.cli.Configuration()
+        cfg._directives['output'].default = self.workdir
+        self.ctx = anadama2.workflow.Workflow(vars=cfg)
+
 
     def tearDown(self):
         if self.ctx._backend:

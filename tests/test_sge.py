@@ -36,11 +36,13 @@ class TestSGE(unittest.TestCase):
 
 
     def setUp(self):
-        powerup = anadama2.sge.SGEPowerup(PARTITION, TMPDIR)
-        self.ctx = anadama2.sge.SGEContext(grid_powerup=powerup)
         self.workdir = "tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
+        cfg = anadama2.cli.Configuration()
+        cfg._directives['output'].default = self.workdir
+        powerup = anadama2.sge.SGEPowerup(PARTITION, TMPDIR)
+        self.ctx = anadama2.workflow.Workflow(vars=cfg, grid_powerup=powerup)
 
     def tearDown(self):
         if self.ctx._backend:

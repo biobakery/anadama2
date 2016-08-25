@@ -4,7 +4,9 @@ import sys
 import logging
 import optparse
 
+from .tracked import TrackedVariable
 from .util import kebab, Directory
+from .util.fname import script_wd
 
 BANNER = """
                           _____          __  __
@@ -17,6 +19,12 @@ BANNER = """
 """
 
 default_options = {
+    "output": optparse.make_option("-o", '--output', default=script_wd(), type="str",
+                         help="""Store output in this directory. By default the 
+                         dependency database and run log are also put in 
+                         this directory"""),
+    "input": optparse.make_option("-i", '--input', default=script_wd(), type="str",
+                         help="Collect inputs from this directory. "),
     "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
                          help="Print tasks to be run but don't execute their actions."),
     "run_them_all": optparse.make_option("-a", '--run-them-all', action="store_true",
@@ -35,6 +43,8 @@ default_options = {
                          help="""Stop after running the named task. Can refer to
                          the end task by task number or task name."""),
 }
+
+_default_dir = ("output","input")
 
 
 logger = logging.getLogger(__name__)
@@ -71,39 +81,44 @@ class Configuration(object):
 
     :keyword defaults: Add a set of default options to the
       Configuration object. These defaults change behavior of
-      :meth:`anadama2.workflow.Workflow.go`. Default: False.
+      :meth:`anadama2.workflow.Workflow.go`. 
     :type defaults: bool
 
     """
     
-    def __init__(self, description=None, version=None, defaults=False):
+    def __init__(self, description=None, version=None, defaults=True,
+                 namespace=None):
         self.description = description
         self.version = version
         #: args is a list containing any positional arguments passed at
         #: the command line. Think sys.argv.
         self.args = []
+        self.namespace = namespace if namespace is not None else script_wd()
 
         self._directives = {}
         self._shorts = set()
         self._directories = {}
         self._user_asked = False
         self._callbacks = {}
+        self._tracked = set()
 
         if not description:
             optparse.OptionParser.format_description = lambda s, t: s.description
             self.description = BANNER
         self.parser = optparse.OptionParser(
             description=self.description,
-            version=self.version or None
+            version=self.version or "%prog v1.0.0"
         )
         if defaults:
             self._directives.update(default_options)
             for opt in default_options.values():
                 self._shorts.add(opt._short_opts[0][1])
+            for name in _default_dir:
+                self._directories[name] = self._directives[name].default
 
 
     def add(self, name, desc=None, type="str", default=None, short=None,
-            callback=None):
+            callback=None, tracked=False):
         """Add an option to the Configuration object.
 
         :param name: Set the name of the option. This name is
@@ -153,13 +168,29 @@ class Configuration(object):
         return self
 
 
-    def get(self, name):
+    def remove(self, name):
+        """ Remove an option from the Configuration object.
+        :param name: The name of the option to remove
+
+        :returns: self (the current Configuration object)
+
+        """
+        self._shorts.remove(self._directives[name]._short_opts[0][1])
+        del self._directives[name]
+        self._directories.pop(name, None)
+        self._callbacks.pop(name, None)
+        if name in self._tracked:
+            self._tracked.remove(name)
+        return self
+
+
+    def get(self, name, default=None):
         """Get a stored option value from the Configuration object.
         
         :param name: The name of the value to get
         """
 
-        return getattr(self, name, None)
+        return getattr(self, name, default)
 
 
     __getitem__ = get
@@ -197,14 +228,16 @@ class Configuration(object):
                      callback=self._deploy, type="bool")
         for opt in self._directives.values():
             self.parser.add_option(opt)
-        opts, self.args = self.parser.parse_args(argv)
+        opts, self.args = self.parser.parse_args(args=argv)
         for name in self._directives:
             name = re.sub(r'-', '_', name)
             val = getattr(opts, name)
             if name in self._directories:
                 val = Directory(val)
+            if name in self._tracked:
+                val = TrackedVariable(self.namespace, name, val)
             if name in self._callbacks and val is True:
-                self._callbacks[name]()
+                self._callbacks[name](val)
             logger.info("Configured variable `%s' : `%s'", name, val)
             setattr(self, name, val)
         self._user_asked = True

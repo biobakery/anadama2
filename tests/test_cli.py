@@ -26,7 +26,7 @@ class TestCli(unittest.TestCase):
         self.assertTrue(hasattr(c, "args"))
 
     def test_Configuration_add(self):
-        c = anadama2.cli.Configuration()
+        c = anadama2.cli.Configuration(defaults=False)
         ret = c.add("foo", desc="it's a foo", default="bar", type="str")
         self.assertIs(ret, c)
         self.assertTrue("foo" in c._directives)
@@ -37,6 +37,13 @@ class TestCli(unittest.TestCase):
         self.assertEqual(o.help, "it's a foo")
         self.assertEqual(o.default, "bar")
         self.assertEqual(o.type, "string")
+
+    def test_Configuration_remove(self):
+        c = anadama2.cli.Configuration()
+        c.remove("output")
+        self.assertFalse("output" in c._directives)
+        c.ask_user()
+        self.assertIs(c.get("output"), None)
 
     def test_Configuration_defaults(self):
         c = anadama2.cli.Configuration(defaults=True)
