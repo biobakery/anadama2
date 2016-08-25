@@ -39,10 +39,13 @@ class TestSlurm(unittest.TestCase):
 
     def setUp(self):
         powerup = anadama2.slurm.SlurmPowerup(PARTITION, TMPDIR)
-        self.ctx = anadama2.Workflow(grid_powerup=powerup)
-        self.workdir = "tmp/anadama_testdir"
+        self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
+        cfg = anadama2.cli.Configuration()
+        cfg._directives['output'].default = self.workdir
+        self.ctx = anadama2.workflow.Workflow(vars=cfg, grid_powerupt=powerup)
+
 
     def tearDown(self):
         if self.ctx._backend:

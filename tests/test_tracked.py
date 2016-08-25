@@ -15,11 +15,11 @@ class TestTracked(unittest.TestCase):
     
 
     def setUp(self):
-        self.be = anadama2.backends.default()        
         self.workdir = "/tmp/anadama_testdir"
         self.db_dir = "/tmp/anadama_testdb"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
+        self.be = anadama2.backends.default(self.db_dir)
 
 
     def tearDown(self):
