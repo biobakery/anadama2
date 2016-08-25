@@ -1,8 +1,8 @@
-from anadama import Workflow
+from anadama2 import Workflow
 import os
 import sys
 
-## Set script working directory                                                                                                                                                                
+## Set script working directory
 os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
 
 ctx = Workflow()

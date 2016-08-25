@@ -1,7 +1,7 @@
 import os
-from anadama import Workflow
-from anadama.helpers import system, rm
-from anadama.util import sh, fname
+from anadama2 import Workflow
+from anadama2.helpers import system, rm
+from anadama2.util import sh, fname
 
 from sixteen import find_cutoff
 

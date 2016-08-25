@@ -1,4 +1,4 @@
-from anadama import Workflow
+from anadama2 import Workflow
 
 workflow = Workflow()
 workflow.do("ls /usr/bin/ | sort > @{global_exe.txt}")
