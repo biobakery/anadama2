@@ -1,4 +1,4 @@
-from anadama import Workflow
+from anadama2 import Workflow
 
 ctx = Workflow()
 ctx.do("wget -qO- checkip.dyndns.com > @{my_ip.txt}")

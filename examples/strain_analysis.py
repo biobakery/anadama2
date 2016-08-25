@@ -6,16 +6,16 @@ from glob import glob
 
 from bunch import Bunch
 
-from anadama import Workflow
-from anadama.tracked import HugeTrackedFile as HFD
-from anadama.tracked import TrackedFilePattern
-from anadama.tracked import TrackedDirectory
-from anadama.reporters import LoggerReporter
-from anadama.slurm import SlurmPowerup
-from anadama.util import fname
-from anadama.util import sh as _sh
-from anadama.helpers import system
-from anadama.helpers import rm
+from anadama2 import Workflow
+from anadama2.tracked import HugeTrackedFile as HFD
+from anadama2.tracked import TrackedFilePattern
+from anadama2.tracked import TrackedDirectory
+from anadama2.reporters import LoggerReporter
+from anadama2.slurm import SlurmPowerup
+from anadama2.util import fname
+from anadama2.util import sh as _sh
+from anadama2.helpers import system
+from anadama2.helpers import rm
 
 threads = 10
 

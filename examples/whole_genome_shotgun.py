@@ -1,7 +1,7 @@
 
-from anadama import Workflow
-from anadama.helpers import system, rm_r
-from anadama.util import fname
+from anadama2 import Workflow
+from anadama2.helpers import system, rm_r
+from anadama2.util import fname
 
 base = "http://downloads.hmpdacc.org/data/Illumina/stool/"
 srs_ids = ["SRS053214", "SRS052697", "SRS016944"]
