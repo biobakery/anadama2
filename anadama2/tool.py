@@ -30,7 +30,7 @@ def forget(backend, key=None):
             print >> sys.stderr, "Error inserting key {}: {}".format(key, e)
 
 
-def entry_point(argv):
+def entry_point(argv=None):
     parser = optparse.OptionParser(description=desc)
     parser.add_option("-d", "--dump-dependencies", action="store_true",
                       help="Print all known dependencies to standard out.")
@@ -39,7 +39,7 @@ def entry_point(argv):
                       keys line-by-line from standard in""")
     parser.add_option("-b", "--backend-dir", default=None,
                       help="Specify explicitly where to look for backend data")
-    opts, _ = parser.parse_args(argv)
+    opts, _ = parser.parse_args(args=argv)
     if not opts.backend_dir:
         be_dir = backends.discover_data_directory()
     else:
