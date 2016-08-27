@@ -40,7 +40,7 @@ class TestTracked(unittest.TestCase):
                          "should be a difference between None and the "
                          "current dep"))
         compare = list(f.compare())
-        self.be.save([f._key], [compare])
+        self.be.save([f.name], [compare])
         self.assertFalse(anadama2.tracked.any_different([f], self.be),
                          ("The backend has seen this dep before and the "
                           "dep hasn't changed, so there should be no "

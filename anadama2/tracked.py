@@ -78,7 +78,7 @@ def any_different(ds, backend):
             if isdebug:
                 logger.debug("Dep `%s' of type %s changed: "
                              "wasn't previously saved in backend",
-                             dep._key, type(dep))
+                             dep.name, type(dep))
             return True
 
         compares = itertools.izip_longest(
@@ -90,13 +90,13 @@ def any_different(ds, backend):
             if isdebug:
                 logger.debug("Dep `%s' of type %s changed: "
                              "hit an exception when running .compare()",
-                             dep._key, type(dep))
+                             dep.name, type(dep))
             return True
         if is_different:
             if isdebug:
                 logger.debug("Dep `%s' of type %s changed: "
                              ".compare() different since last save",
-                             dep._key, type(dep))
+                             dep.name, type(dep))
             return True
     return False
 
@@ -129,11 +129,11 @@ class DependencyIndex(object):
         :type task_or_none: :class:`anadama2.Task` or None
 
         """
-        self._taskidx[dep.__class__.__name__][dep._key] = task_or_none
+        self._taskidx[dep.__class__.__name__][dep.name] = task_or_none
 
 
     def __contains__(self, dep):
-        return dep._key in self._taskidx[dep.__class__.__name__]
+        return dep.name in self._taskidx[dep.__class__.__name__]
 
 
     def __getitem__(self, dep):
@@ -144,8 +144,8 @@ class DependencyIndex(object):
                 " Received type `{}'".format(type(dep))
             )
         deptype = dep.__class__.__name__
-        dep = _singleton_idx[deptype][dep._key]
-        return self._taskidx[deptype][dep._key]
+        dep = _singleton_idx[deptype][dep.name]
+        return self._taskidx[deptype][dep.name]
 
 
 
@@ -193,13 +193,13 @@ class Base(object):
             return maybe_exists
         else:
             _singleton_idx[cls.__name__][real_key] = dep = object.__new__(cls)
-            dep._key = real_key
+            dep.name = real_key
             dep.init(key, *args, **kwargs)
             return dep
 
 
     def __getnewargs__(self):
-        return (self._key,)
+        return (self.name,)
             
 
     def init(self, key):
@@ -248,7 +248,7 @@ class Base(object):
 
 
     def __hash__(self):
-        return hash(self._key)
+        return hash(self.name)
 
 
 
@@ -292,7 +292,7 @@ class TrackedVariable(Base):
             return maybe_exists
         else:
             _singleton_idx[cls.__name__][real_key] = dep = object.__new__(cls)
-            dep._key = real_key
+            dep.name = real_key
             dep.init(namespace, key, val)
             return dep
 
@@ -308,7 +308,7 @@ class TrackedVariable(Base):
         return KVDEPSEPARATOR.join(map(str, (ns,k)))
 
     def __getnewargs__(self):
-        ns, k = self._key.split(KVDEPSEPARATOR)
+        ns, k = self.name.split(KVDEPSEPARATOR)
         return (ns, k, self.val)
 
     def __str__(self):
@@ -447,8 +447,8 @@ class Container(object):
             global _singleton_idx
             dep = self._d[key]
             dep.val = val
-            dep._key = TrackedVariable.key(self._ns, key, val)
-            _singleton_idx[dep.__class__.__name__][dep._key] = dep
+            dep.name = TrackedVariable.key(self._ns, key, val)
+            _singleton_idx[dep.__class__.__name__][dep.name] = dep
         else:
             self._d[key] = TrackedVariable(self._ns, key, val)
 

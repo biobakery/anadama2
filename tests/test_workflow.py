@@ -442,7 +442,7 @@ class TestWorkflow(unittest.TestCase):
 
             def compare(self):
                 self.compared = True
-                yield str(self._key)
+                yield str(self.name)
 
             def init(self, key):
                 self.initialized = True
