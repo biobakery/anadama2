@@ -318,9 +318,11 @@ def sh(cmd, **kwargs):
 class Bag(object):
     pass
 
+
 class HasNoEqual(object):
     def __eq__(self, other):
         return False
+
 
 class Directory(object):
     def __init__(self, name):
@@ -382,6 +384,7 @@ def keepkeys(d, keys):
         del d[k]
     return d
 
+
 def keyrename(d, mapping):
     """Change all keys in dictionary ``d`` according to
     ``mapping``. Modifies ``d`` in place!
@@ -420,6 +423,7 @@ def dichotomize(it, tf_func):
             f.append(item)
     return t, f
 
+
 def kebab(s):
     """Kebab-case a string. Intra-string whitespace is converted to ``-``
     and unfriendly characters are dropped."""
@@ -427,3 +431,14 @@ def kebab(s):
         s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore")
     s = re.sub(r"[\s-]+", '-', s)
     return re.sub(r"""['".,\[\]{}!@#$%^&*()_=+|\\`~><\d]+""", '', s).rstrip('-')
+
+
+def get_name(t):
+    """Get the name of a tracked object
+
+    :param t: The tracked object
+    :type t: objects implementing the :class:`anadama2.tracked.Base`
+      interface
+
+    """
+    return t.name

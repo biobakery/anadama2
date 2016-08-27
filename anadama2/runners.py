@@ -24,7 +24,7 @@ class TaskResult(namedtuple(
       the task was successful.
     :type: str or None
 
-    :param dep_keys: The list of ``._key`` attributes from the objects
+    :param dep_keys: The list of ``.name`` attributes from the objects
       of type :class:`anadama2.tracked.Base` associated with
       this task. These keys are used with the storage backend to save
       successful task results.
@@ -77,7 +77,7 @@ class DryRunner(BaseRunner):
         if istask(d):
             return "    Task {} - {}".format(d.task_no, d.name)
         else:
-            return "    {} ({})".format(d._key, type(d))
+            return "    {} ({})".format(d.name, type(d))
 
 
 
@@ -153,7 +153,7 @@ def _run_task_locally(task, extra=None):
 
     targ_keys, targ_compares = list(), list()
     for target in task.targets:
-        targ_keys.append(target._key)
+        targ_keys.append(target.name)
         try:
             targ_compares.append(list(target.compare()))
         except Exception:

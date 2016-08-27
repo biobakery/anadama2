@@ -12,7 +12,7 @@ desc = "Manipulate the AnADAMA dependency database"
 def dump_dependencies(backend):
     for key in backend.keys():
         b = Bag()
-        b._key = key
+        b.name = key
         print key, "\t", json.dumps(backend.lookup(b))
 
 

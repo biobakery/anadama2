@@ -373,7 +373,7 @@ class Workflow(object):
             pxdeps = [ d for d in self.tasks[result.task_no].depends
                        if not istask(d) and d not in self._depidx ]
             if pxdeps:
-                self._backend.save([d._key for d in pxdeps], 
+                self._backend.save([d.name for d in pxdeps], 
                                    [list(d.compare()) for d in pxdeps])
                     
 
@@ -481,7 +481,7 @@ class Workflow(object):
             [list(t.depends) + list(t.targets) for t in self.tasks]
         )
         try:
-            closest = matcher.find_match(dep, alldeps, key=attrgetter("_key"))
+            closest = matcher.find_match(dep, alldeps, key=attrgetter("name"))
         except:
             raise KeyError(msg)
         msg += "Perhaps you meant `{}' of type `{}'?"

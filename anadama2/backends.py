@@ -124,7 +124,7 @@ class LevelDBBackend(BaseBackend):
 
 
     def lookup(self, dep):
-        return self._get(dep._key)
+        return self._get(dep.name)
 
 
     def lookup_many(self, deps):
