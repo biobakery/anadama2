@@ -120,10 +120,13 @@ class TestWorkflow(unittest.TestCase):
         
 
     def test_do_targets(self):
-        t = self.ctx.do("echo true > @{true.txt}")
+        t = self.ctx.do("echo true > [t:true.txt]")
         self.assertIn("true.txt", t.name,
                       "target shouldn't be removed from command string")
-        self.assertNotIn(t.name, "@{true.txt}", "target metachar not removed")
+        self.assertNotIn("[t:true.txt]",t.name, "target markup unchanged")
+        self.assertNotIn(":", t.name, "target markup colon not removed")
+        self.assertFalse("[" in t.name or "]" in t.name,
+                         "target markup square brackets not removed")
         self.assertEqual(len(t.targets), 1, "Should only be one target")
         self.assertEqual(os.path.basename(str(t.targets[0])), "true.txt",
                          "the target should be a filedependency, true.txt")
@@ -132,25 +135,86 @@ class TestWorkflow(unittest.TestCase):
         def closure(*args, **kwargs):
             return args, kwargs
         self.ctx.add_task = closure
-        args, kws = self.ctx.do("cat #{/etc/hosts} > @{hosts.txt}",
+        args, kws = self.ctx.do("cat [d:/etc/hosts] > [t:hosts.txt]",
                                 track_cmd=False, track_binaries=False)
-        
-        self.assertNotIn("@{hosts}", kws["targets"],
-                         "targ metachar not removed")
+
+        self.assertNotIn("[t:hosts]", kws["targets"], 
+                         "targ markup not removed")
         self.assertIn("hosts.txt", map(os.path.basename, kws["targets"]),
                       "targ should be in targets")
         self.assertIn("hosts.txt", kws['name'],
                       "targ shouldn't be removed from command string")
         self.assertIn("/etc/hosts", kws['name'],
                       "dep shouldn't be removed from command string")
-        self.assertNotIn("#{/etc/hosts}", kws["depends"],
-                         "dep metachar not removed")
+        self.assertNotIn("[d:/etc/hosts]", kws["depends"],
+                         "dep markup not removed")
+        self.assertNotIn(":", kws['name'], "markup colon not removed")
+        self.assertFalse("[" in kws['name'] or "]" in kws['name'],
+                         "target markup square brackets not removed")
         self.assertIn("/etc/hosts", kws["depends"], "dep should be in deps")
         self.assertEqual(len(kws["depends"]), 1, "Should only be one dep")
         self.assertEqual(kws["depends"][0], "/etc/hosts",
                          "the dep should be a filedependency, /etc/hosts")
 
 
+    def test_do_vars(self):
+        def closure(*args, **kwargs):
+            return args, kwargs
+        self.ctx.add_task = closure
+        args, kws = self.ctx.do("cat [d:/etc/hosts] > [v:output]/[t:hosts.txt]",
+                                track_cmd=False, track_binaries=False)
+
+        self.assertNotIn("[v:output]", kws["depends"],
+                         "var markup not removed")
+        self.assertNotIn(":", kws['name'], "markup colon not removed")
+        self.assertFalse("[" in kws['name'] or "]" in kws['name'],
+                         "target markup square brackets not removed")
+        self.assertIn(self.ctx.vars.output.name, kws["name"],
+                      "output variable should be replaced with the var value")
+        self.assertNotIn("output", kws["name"],
+                         "output variable should be replaced")
+
+        
+    def test_do_mixmatch(self):
+        def closure(*args, **kwargs):
+            return args, kwargs
+        self.ctx.add_task = closure
+        args, kws = self.ctx.do("ls -alh [vd:output]",
+                                track_cmd=False, track_binaries=False)
+
+        self.assertNotIn("[vd:output]", kws["depends"],
+                         "var markup not removed")
+        self.assertNotIn(":", kws['name'], "markup colon not removed")
+        self.assertFalse("[" in kws['name'] or "]" in kws['name'],
+                         "target markup square brackets not removed")
+        self.assertNotIn("vd", kws['name'], "vd markup not removed")
+        self.assertIn(self.ctx.vars.output.name, kws["name"],
+                      "output variable should be replaced with the var value")
+        self.assertNotIn("output", kws["name"],
+                         "output variable should be replaced")
+        self.assertIn(self.ctx.vars.output, kws['depends'],
+                      "output variable not tracked as dependency")
+        
+    def test_do_mixmatch_transpose(self):
+        def closure(*args, **kwargs):
+            return args, kwargs
+        self.ctx.add_task = closure
+        args, kws = self.ctx.do("ls -alh [dv:output]",
+                                track_cmd=False, track_binaries=False)
+
+        self.assertNotIn("[dv:output]", kws["depends"],
+                         "var markup not removed")
+        self.assertNotIn(":", kws['name'], "markup colon not removed")
+        self.assertFalse("[" in kws['name'] or "]" in kws['name'],
+                         "target markup square brackets not removed")
+        self.assertNotIn("dv", kws['name'], "vd markup not removed")
+        self.assertIn(self.ctx.vars.output.name, kws["name"],
+                      "output variable should be replaced with the var value")
+        self.assertNotIn("output", kws["name"],
+                         "output variable should be replaced")
+        self.assertIn(self.ctx.vars.output, kws['depends'],
+                      "output variable not tracked as dependency")
+        
     
     def test_add_task(self):
         t1 = self.ctx.add_task(anadama2.util.noop)
@@ -176,6 +240,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertIs(t1.targets[0],
                       anadama2.tracked.TrackedFile("/tmp/test.txt"),
                       "the target should be a filedependency, /tmp/test.txt")
+
 
     def test_add_task_decorator(self):
         ctx = self.ctx

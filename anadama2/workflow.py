@@ -88,8 +88,8 @@ class Workflow(object):
         convenient, shell-like syntax. 
 
         To explicitly mark task targets, wrap filenames within ``cmd``
-        with ``@{}``. Similarly, wrap dependencies with ``#{}``. The
-        literal ``@{}`` and ``#{}`` characters will be stripped out
+        with ``[t:]``. Similarly, wrap dependencies with ``[d:]``. The
+        literal ``[t:]`` and ``[d:]`` characters will be stripped out
         prior to execution by the shell.
 
         Below are some examples of using ``do``:
@@ -99,10 +99,35 @@ class Workflow(object):
             from anadama2 import Workflow
 
             ctx = Workflow()
-            ctx.do("wget -qO- checkip.dyndns.com > @{my_ip.txt}")
-            ctx.do(r"sed 's|.*Address: \(.*[0-9]\)<.*|\1|' #{my_ip.txt} > @{ip.txt}")
-            ctx.do("whois $(cat #{ip.txt}) > @{whois.txt}")
+            ctx.do("wget -qO- checkip.dyndns.com > [t:my_ip.txt]")
+            ctx.do(r"sed 's|.*Address: \(.*[0-9]\)<.*|\1|' [d:my_ip.txt] > [t:ip.txt]")
+            ctx.do("whois $(cat [d:ip.txt]) > [t:whois.txt]")
             ctx.go()
+
+
+        Variables from the workflow configuration can also be used
+        inside ``cmd``. These are wrapped with ``[v:]``:
+
+        .. code:: python
+
+            from anadama2 import Workflow
+
+            ctx = Workflow()
+            ctx.do("wget -qO- checkip.dyndns.com > [v:output]/[t:my_ip.txt]")
+            ctx.go()
+
+
+        Modifiers inside the square brackets can be mixed and matched:
+
+        .. code:: python
+
+            from anadama2 import Workflow
+            from anadama2.cli import Configuration
+
+            ctx = Workflow(vars=Configuration().add("input", type="dir"))
+            ctx.do("tar c [vd:input] | gzip -c > [t:output.tgz]")
+            ctx.go()
+
 
 
         By default, changes made to ``cmd`` are tracked; any changes
@@ -117,8 +142,10 @@ class Workflow(object):
         disable this behavior.
 
         :param cmd: The shell command to add to the workflow. Wrap a
-          target filename in ``@{}`` and wrap a dependency filename in
-          `#{}``.
+          target filename in ``[t:]`` and wrap a dependency filename
+          in ``[d:]``. Variables from workflow configuration can be
+          substituted into the command by wrapping the variable name
+          in ``[v:]``. 
         :type cmd: str
 
         :keyword track_cmd: Set to False to not track changes to ``cmd``.
@@ -131,9 +158,19 @@ class Workflow(object):
         :returns: The :class:`anadama2.Task` just created
 
         """
-        targs = _parse_wrapper(cmd, metachar="@")
-        ds = _parse_wrapper(cmd, metachar="#")
-        sh_cmd = re.sub(r'[@#]{([^{}]+)}', r'\1', cmd)
+        targs, ds = [], []
+
+        def _repl(match):
+            modifiers, name = match.groups()
+            if 'v' in modifiers:
+                name = self.vars.get(name) or _miss_exc(name)
+            if 'd' in modifiers:
+                ds.append(name)
+            elif 't' in modifiers:
+                targs.append(name)
+            return str(name)
+
+        sh_cmd = re.sub(r'\[([vdt]+):([^][]+)\]', _repl, cmd)
         if track_cmd:
             ns = os.path.abspath(tracked.Container.key(None))
             d = tracked.TrackedVariable(ns, str(len(self.tasks)+1), sh_cmd)
@@ -521,14 +558,9 @@ def _build_name(name, task_no):
         return name
 
 
-def _parse_wrapper(s, metachar):
-    """search through string ``s`` and find terms wrapped in curly braces
-    and a metacharacter ``metachar``. Intended for use with
-    :meth:`anadama2.workflow.Workflow.do`.
-    """
-
-    start = len(metachar)+1
-    return [ term[start:-1] for term in re.findall(metachar+r'{[^{}]+}', s) ]
+def _miss_exc(name):
+    msg = "Unable to find configuration variable `{}'".format(name)
+    raise Exception(msg)
 
 
 def discover_binaries(s):

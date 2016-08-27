@@ -7,7 +7,7 @@ from operator import eq, itemgetter
 from collections import defaultdict
 
 from .util import _adler32, find_on_path, sh, HasNoEqual
-from .util import istask
+from .util import istask, Directory
 
 logger = logging.getLogger(__name__)
 _singleton_idx = defaultdict(dict)
@@ -48,6 +48,8 @@ def auto(x):
         # no explicit key is given, so I have to make one up
         key = "Function ({}) <{}>".format(x.__name__, id(x))
         return TrackedFunction(key, x)
+    elif isinstance(x, Directory):
+        return TrackedDirectory(x.name)
     else:
         raise ValueError(
             "Not sure how to make `{}' into a dependency".format(x))
