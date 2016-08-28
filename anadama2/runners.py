@@ -239,7 +239,7 @@ class ParallelLocalRunner(BaseRunner):
             failed_parents = parents.intersection(self.ctx.failed_tasks)
             if failed_parents:
                 self.ctx._handle_task_result(
-                    parent_failed_result(idx, failed_parents[0]))
+                    parent_failed_result(idx, failed_parents.pop()))
                 self.n_to_do -= 1
                 continue
             elif parents.difference(self.ctx.completed_tasks):

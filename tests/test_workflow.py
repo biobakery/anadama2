@@ -301,6 +301,20 @@ class TestWorkflow(unittest.TestCase):
         self.assertLess(later-earlier, timedelta(seconds=5))
 
 
+    def test_issue1(self):
+        a,b,c,d,e,f = [os.path.join(self.workdir, letter+".txt")
+                       for letter in ("a", "b", "c", "d", "e", "f")]
+        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
+        self.ctx.add_task("touch {targets[0]}; exit 1", depends=[a], targets=[b], name="b")
+        self.ctx.add_task("touch {targets[0]}", depends=[b], targets=[c], name="c")
+        self.ctx.add_task("touch {targets[0]}", targets=[d], name="d")
+        self.ctx.add_task("touch {targets[0]}", depends=[d], targets=[e], name="e")
+        self.ctx.add_task("touch {targets[0]}", depends=[e], targets=[f], name="f")
+        with capture(stderr=StringIO()):
+            with self.assertRaises(anadama2.workflow.RunFailed):
+                self.ctx.go(jobs=2)
+        
+
     def test_go_quit_early(self):
         outf = os.path.join(self.workdir, "blah.txt")
         out2 = os.path.join(self.workdir, "shouldntexist.txt")
