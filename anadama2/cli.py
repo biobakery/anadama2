@@ -180,6 +180,28 @@ class Configuration(object):
         self._directives[name] = d
         return self
 
+    def change(self, name, **kwargs):
+        """Change an option. Use keyword options to change the attribute of
+        the option. 
+
+        Here's an example:
+
+        .. code:: python
+
+            from anadama2 import Workflow
+            from anadama2.cli import Configuration
+
+            ctx = Workflow(vars=Configuration().change("output", default="."))
+            ...
+
+
+        :returns: self (the current Configuration object)
+
+        """
+        if 'default' in kwargs:
+            self._directives[name].default = kwargs['default']
+        return self
+
 
     def remove(self, name):
         """ Remove an option from the Configuration object.
