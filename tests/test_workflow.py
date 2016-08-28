@@ -279,7 +279,7 @@ class TestWorkflow(unittest.TestCase):
             self.ctx.add_task("sleep 0.5")
         earlier = datetime.now()
         with capture(stderr=StringIO()):
-            self.ctx.go(n_parallel=10)
+            self.ctx.go(jobs=10)
         later = datetime.now()
         self.assertLess(later-earlier, timedelta(seconds=5))
 

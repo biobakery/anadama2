@@ -82,7 +82,7 @@ class TestSlurm(unittest.TestCase):
 
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama2.workflow.RunFailed):
-                self.ctx.go(n_grid_parallel=2)
+                self.ctx.go(grid_jobs=2)
         child_fail = set()
         for n in shall_fail:
             task_no = task_nos[n]
@@ -133,7 +133,7 @@ class TestSlurm(unittest.TestCase):
         self.assertFalse(any(map(os.path.exists, allfiles)))
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama2.workflow.RunFailed):
-                self.ctx.go(n_grid_parallel=2)
+                self.ctx.go(grid_jobs=2)
         child_fail = set()
         for n in shall_fail:
             task_no = task_nos[n]

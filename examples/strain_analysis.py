@@ -86,7 +86,7 @@ def step_1():
             )
 
     try:
-        ctx.go(reporter=reporter, n_parallel=3, n_grid_parallel=50)
+        ctx.go(reporter=reporter, jobs=3, grid_jobs=50)
     except:
         pass
 
@@ -149,7 +149,7 @@ def step_2():
             mem=51200, time=500, cores=threads
             )
 
-    ctx.go(reporter=reporter, n_parallel=10, n_grid_parallel=50)
+    ctx.go(reporter=reporter, jobs=10, grid_jobs=50)
 
 if __name__ == '__main__':
     if '1' == sys.argv[1]:

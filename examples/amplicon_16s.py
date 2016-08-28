@@ -38,4 +38,4 @@ for input_bam in input_bams:
                  targets=fname.mangle(trimfq, tag="taxonomy", ext="txt"))
 
 
-ctx.go(n_parallel=4)
+ctx.go(jobs=4)

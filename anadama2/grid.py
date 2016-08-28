@@ -8,6 +8,6 @@ class DummyPowerup(object):
     def add_task(self, task, **opts):
         pass
 
-    def runner(self, ctx, n_parallel=1, n_grid_parallel=1):
-        return runners.default(ctx, n_parallel)
+    def runner(self, ctx, jobs=1, grid_jobs=1):
+        return runners.default(ctx, jobs)
 

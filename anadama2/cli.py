@@ -35,9 +35,9 @@ default_options = {
                          executed but children of successful or skipped tasks *are*
                          executed: basically, keep going until you run out of tasks
                          to execute."""),
-    "n_parallel": optparse.make_option("-n", '--n-parallel', default=1, type=int,
+    "jobs": optparse.make_option("-j", '--jobs', default=1, type=int,
                          help="The number of tasks to execute in parallel locally."),
-    "n_grid_parallel": optparse.make_option("-p", '--n-grid-parallel', default=1, type=int,
+    "grid_jobs": optparse.make_option("-J", '--grid-jobs', default=1, type=int,
                          help="The number of tasks to submit to the grid in parallel."),
     "until_task": optparse.make_option("-u", '--until-task', default=None,
                          help="""Stop after running the named task. Can refer to

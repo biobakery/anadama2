@@ -315,7 +315,7 @@ class Workflow(object):
 
 
     def go(self, skip_nothing=False, quit_early=False, runner=None,
-           reporter=None, n_parallel=1, n_grid_parallel=1,
+           reporter=None, jobs=1, grid_jobs=1,
            until_task=None, exclude_task=None, target=None,
            exclude_target=None, dry_run=False):
         """Kick off execution of all previously configured tasks. 
@@ -346,17 +346,17 @@ class Workflow(object):
         :type reporter: instance of any
           :class:`anadama2.reporters.BaseReporter` subclass or None.
 
-        :keyword n_parallel: The number of tasks to execute in
+        :keyword jobs: The number of tasks to execute in
           parallel. This option is ignored when a custom runner is
           used with the ``runner`` keyword.
-        :type n_parallel: int
+        :type jobs: int
 
-        :keyword n_grid_parallel: The number of tasks to submit to the
+        :keyword grid_jobs: The number of tasks to submit to the
           grid in parallel. This option is ignored when a custom
           runner is used with the ``runner`` keyword. This option is
-          also a synonym for ``n_parallel`` if the context has no grid
+          also a synonym for ``jobs`` if the context has no grid
           powerup.
-        :type n_grid_parallel: int
+        :type grid_jobs: int
 
         :keyword until_task: Stop after running the named task. Can
           refer to the end task by task number or task name.
@@ -382,15 +382,15 @@ class Workflow(object):
         :type dry_run: bool
 
         """
-        skip_nothing    = skip_nothing    or self.vars.get("skip_nothing")
-        quit_early      = quit_early      or self.vars.get("quit_early")
-        n_parallel      = n_parallel      or self.vars.get("n_parallel")
-        n_grid_parallel = n_grid_parallel or self.vars.get("n_grid_parallel")
-        until_task      = until_task      or self.vars.get("until_task")
-        exclude_task    = exclude_task    or self.vars.get("exclude_task")
-        target          = target          or self.vars.get("target")
-        exclude_target  = exclude_target  or self.vars.get("exclude_target")
-        dry_run         = dry_run         or self.vars.get("dry_run")
+        skip_nothing   = skip_nothing   or self.vars.get("skip_nothing")
+        quit_early     = quit_early     or self.vars.get("quit_early")
+        jobs           = jobs           or self.vars.get("jobs")
+        grid_jobs      = grid_jobs      or self.vars.get("grid_jobs")
+        until_task     = until_task     or self.vars.get("until_task")
+        exclude_task   = exclude_task   or self.vars.get("exclude_task")
+        target         = target         or self.vars.get("target")
+        exclude_target = exclude_target or self.vars.get("exclude_target")
+        dry_run        = dry_run        or self.vars.get("dry_run")
 
         self.completed_tasks = set()
         self.failed_tasks = set()
@@ -398,7 +398,7 @@ class Workflow(object):
         self._reporter = reporter or reporters.default(self.vars.get("output"))
         self._reporter.started(self)
 
-        _runner = runner or self.grid_powerup.runner(self, n_parallel, n_grid_parallel)
+        _runner = runner or self.grid_powerup.runner(self, jobs, grid_jobs)
         if dry_run:
             _runner = runners.DryRunner(self)
         _runner.quit_early = quit_early
