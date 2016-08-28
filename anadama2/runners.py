@@ -186,12 +186,12 @@ class ParallelLocalWorker(multiprocessing.Process):
 
 class ParallelLocalRunner(BaseRunner):
 
-    def __init__(self, run_context, n_parallel):
+    def __init__(self, run_context, jobs):
         super(ParallelLocalRunner, self).__init__(run_context)
         self.work_q = multiprocessing.Queue()
         self.result_q = multiprocessing.Queue()
         self.workers = [ ParallelLocalWorker(self.work_q, self.result_q)
-                         for _ in range(n_parallel) ]
+                         for _ in range(jobs) ]
         self.started = False
 
 
@@ -479,11 +479,11 @@ class GridRunner(BaseRunner):
         
 
 
-def default(run_context, n_parallel):
-    if n_parallel < 2:
+def default(run_context, jobs):
+    if jobs < 2:
         return SerialLocalRunner(run_context)
     else:
-        return ParallelLocalRunner(run_context, n_parallel)
+        return ParallelLocalRunner(run_context, jobs)
 
 
 _current_grid_runner = None

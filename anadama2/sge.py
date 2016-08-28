@@ -102,11 +102,11 @@ class SGEPowerup(grid.DummyPowerup):
         self.sge_task_data[task.task_no] = params
 
     
-    def runner(self, ctx, n_parallel=1, n_grid_parallel=1):
+    def runner(self, ctx, jobs=1, grid_jobs=1):
         runner = runners.GridRunner(ctx)
         runner.add_worker(runners.ParallelLocalWorker,
-                          name="local", rate=n_parallel, default=True)
-        runner.add_worker(SGEWorker, name="sge", rate=n_grid_parallel)
+                          name="local", rate=jobs, default=True)
+        runner.add_worker(SGEWorker, name="sge", rate=grid_jobs)
         runner.routes.update([
             ( task_idx, ("sge", extra) )
             for task_idx, extra in self.sge_task_data.iteritems()

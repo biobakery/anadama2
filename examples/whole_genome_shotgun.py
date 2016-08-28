@@ -35,5 +35,5 @@ for srs_id in srs_ids:
         targets=output_bz
     )
 
-ctx.go(n_parallel=3)
+ctx.go(jobs=3)
 
