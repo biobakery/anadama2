@@ -195,6 +195,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertIn(self.ctx.vars.output, kws['depends'],
                       "output variable not tracked as dependency")
         
+
     def test_do_mixmatch_transpose(self):
         def closure(*args, **kwargs):
             return args, kwargs
@@ -282,6 +283,7 @@ class TestWorkflow(unittest.TestCase):
         later = datetime.now()
         self.assertLess(later-earlier, timedelta(seconds=5))
 
+
     def test_go_quit_early(self):
         outf = os.path.join(self.workdir, "blah.txt")
         out2 = os.path.join(self.workdir, "shouldntexist.txt")
@@ -296,6 +298,80 @@ class TestWorkflow(unittest.TestCase):
         self.assertFalse(
             os.path.exists(out2),
             "quit_early failed to stop before the second task was run")
+
+
+    def test_go_until_task(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                   for letter in ("a", "b", "c", "d")]
+        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
+        self.ctx.add_task("touch {targets[0]} {targets[1]}", targets=[b, c], name="bc")
+        self.ctx.add_task("touch "+d, depends=[a,b], name="d")
+        with capture(stderr=StringIO()):
+            self.ctx.go(until_task="bc")
+        self.assertTrue(os.path.exists(a), "should quit at bc")
+        self.assertTrue(os.path.exists(b), "should quit at bc")
+        self.assertTrue(os.path.exists(c), "should quit at bc")
+        self.assertFalse(os.path.exists(d), "should quit at bc")
+        
+
+    def test_go_exclude_task(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                   for letter in ("a", "b", "c", "d")]
+        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
+        self.ctx.add_task("touch {targets[0]} {targets[1]}", targets=[b, c], name="bc")
+        self.ctx.add_task("touch "+d, depends=[a,b], name="d")
+        with capture(stderr=StringIO()):
+            self.ctx.go(exclude_task="bc")
+        self.assertTrue(os.path.exists(a), "should quit at a")
+        self.assertFalse(os.path.exists(b), "should quit at a")
+        self.assertFalse(os.path.exists(c), "should quit at a")
+        self.assertFalse(os.path.exists(d), "should quit at a")
+
+
+    def test_go_target(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                   for letter in ("a", "b", "c", "d")]
+        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
+        self.ctx.add_task("touch {targets[0]} {targets[1]}", depends=[a],
+                          targets=[b, c], name="bc")
+        self.ctx.add_task("touch "+d, depends=[a,b], name="d")
+        with capture(stderr=StringIO()):
+            self.ctx.go(target=c)
+        self.assertTrue(os.path.exists(a), "should quit at bc")
+        self.assertTrue(os.path.exists(b), "should quit at bc")
+        self.assertTrue(os.path.exists(c), "should quit at bc")
+        self.assertFalse(os.path.exists(d), "should quit at bc")
+
+
+    def test_go_exclude_target(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                   for letter in ("a", "b", "c", "d")]
+        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
+        self.ctx.add_task("touch {targets[0]} {targets[1]}", depends=[a],
+                          targets=[b, c], name="bc")
+        self.ctx.add_task("touch "+d, depends=[a,b], name="d")
+        with capture(stderr=StringIO()):
+            self.ctx.go(exclude_target=c)
+        self.assertTrue(os.path.exists(a), "should quit at a")
+        self.assertFalse(os.path.exists(b), "should quit at a")
+        self.assertFalse(os.path.exists(c), "should quit at a")
+        self.assertFalse(os.path.exists(d), "should quit at a")
+
+
+    def test_go_exclude_target_pattern(self):
+        a,b,c,d = [os.path.join(self.workdir, letter+".txt")
+                   for letter in ("a", "b", "c", "d")]
+        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
+        self.ctx.add_task("touch {targets[0]} {targets[1]}", depends=[a],
+                          targets=[b, c], name="bc")
+        self.ctx.add_task("touch "+d, depends=[a,b], name="d")
+        with capture(stderr=StringIO()):
+            self.ctx.go(exclude_target="*.txt")
+        self.assertFalse(os.path.exists(a), "shouldn't execute any tasks")
+        self.assertFalse(os.path.exists(b), "shouldn't execute any tasks")
+        self.assertFalse(os.path.exists(c), "shouldn't execute any tasks")
+        self.assertFalse(os.path.exists(d), "shouldn't execute any tasks")
+
 
     def test_go_skip(self):
         outf = os.path.join(self.workdir, "blah.txt")

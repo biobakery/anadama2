@@ -57,12 +57,12 @@ class TestCli(unittest.TestCase):
         self.assertEqual(c.until_task, "blarg")
         self.assertTrue(c._user_asked)
 
-    def test_Configureation_directory(self):
+    def test_Configuration_directory(self):
         c = anadama2.cli.Configuration().add(
-            "input", type="dir"
-        ).ask_user(argv=["--input", self.workdir])
-        self.assertIs(type(c.input), anadama2.util.Directory)
-        self.assertEqual(c.input.name, self.workdir)
+            "foo", type="dir"
+        ).ask_user(argv=["--foo", self.workdir])
+        self.assertIs(type(c.foo), anadama2.util.Directory)
+        self.assertEqual(c.foo.name, self.workdir)
         
     
         
