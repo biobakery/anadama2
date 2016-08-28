@@ -205,10 +205,13 @@ class Workflow(object):
 
 
     def add_task(self, actions=None, depends=None, targets=None,
-                 name=None, interpret_deps_and_targs=True):
+                 name=None, interpret_deps_and_targs=True, **kwargs):
         """Create and add a :class:`anadama2.Task` to the workflow.  This
         function can be used as a decorator to set a function as the
-        sole action.
+        sole action. 
+
+        Extra keyword arguments can be used as formatting values
+        similar to ``{depends[0]}``. See :func:`anadama2.helpers.parse_sh`
         
         :param actions: The actions to be performed to complete the
           task. Strings or lists of strings are interpreted as shell
@@ -262,7 +265,7 @@ class Workflow(object):
                 self._add_task(the_task)
             return finish_add_task
         else:
-            acts = _build_actions(actions, deps, targs,
+            acts = _build_actions(actions, kwargs,
                                   use_parse_sh=interpret_deps_and_targs)
             the_task = Task(name, acts, deps, targs, task_no)
             self._add_task(the_task)
@@ -582,13 +585,13 @@ class Workflow(object):
 
 
 
-def _build_actions(actions, deps, targs, use_parse_sh=True):
+def _build_actions(actions, kwds, use_parse_sh=True):
     actions = filter(None, sugar_list(actions))
     if use_parse_sh:
-        mod = parse_sh
+        return [ a if callable(a) else parse_sh(a, **kwds)
+                 for a in actions ]
     else:
-        mod = lambda cmd, *args, **kwargs: sh(cmd)
-    return [ a if callable(a) else mod(a) for a in actions ]
+        return [ a if callable(a) else sh(a) for a in actions ]
         
 
 def _build_depends(depends):
