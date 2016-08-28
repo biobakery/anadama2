@@ -5,12 +5,13 @@ import json
 import zlib
 import errno
 import inspect
+import fnmatch
 import mimetypes
 import unicodedata
 from functools import wraps
 from itertools import izip_longest
-from multiprocessing import cpu_count
 from collections import namedtuple
+from multiprocessing import cpu_count
 
 from .. import Task
 
@@ -328,10 +329,23 @@ class Directory(object):
     def __init__(self, name):
         self.name = os.path.abspath(name)
 
-    def files(self):
-        return [ f for f in os.path.listdir(self.name)
-                 if f not in ('.', '..') ]
+    def files(self, pattern=None):
+        names = [ f for f in os.listdir(self.name)
+                  if f not in ('.', '..') ]
+        if pattern:
+            names = fnmatch.filter(names, pattern)
+        return names
 
+    def exists(self):
+        return os.path.isdir(self.name)
+
+    def create(self):
+        try:
+            os.mkdir(self.name)
+        except OSError as e:
+            if e.errno != 17: #already exists
+                raise
+            
     def __str__(self):
         return self.name+"/"
 

@@ -63,6 +63,22 @@ class TestUtil(unittest.TestCase):
         self.assertEqual(anadama2.util.kebab('drunken-~`><sailor'), "drunken-sailor")
 
 
+    def test_Directory(self):
+        touch = lambda f: open(f, 'w').close()
+        path = self.workdir+"/input"
+        d = anadama2.util.Directory(path)
+        self.assertFalse(d.exists())
+        d.create()
+        self.assertTrue(d.exists())
+        for c in "abcd":
+            touch(d.name+"/"+c+".txt")
+            touch(d.name+"/"+c+".tsv")
+        
+        self.assertEqual(len(d.files()), 8)
+        self.assertEqual(len(d.files("*.txt")), 4)
+        self.assertEqual(len(d.files("*.tsv")), 4)
+        self.assertEqual(d.name, path)
+        
         
 if __name__ == "__main__":
     unittest.main()
