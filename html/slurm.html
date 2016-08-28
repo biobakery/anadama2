@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>slurm &mdash; anadama 0.1.2 documentation</title>
+    <title>slurm &#8212; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="anadama 0.1.2 documentation" href="index.html" />
+    <link rel="top" title="anadama2 0.1.2 documentation" href="index.html" />
     <link rel="next" title="sge" href="sge.html" />
     <link rel="prev" title="workflow" href="workflow.html" />
    
@@ -44,9 +44,9 @@
             
   <div class="section" id="slurm">
 <h1>slurm<a class="headerlink" href="#slurm" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-anadama.slurm"></span><dl class="class">
-<dt id="anadama.slurm.PerformanceData">
-<em class="property">class </em><code class="descclassname">anadama.slurm.</code><code class="descname">PerformanceData</code><a class="reference internal" href="_modules/anadama/slurm.html#PerformanceData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.slurm.PerformanceData" title="Permalink to this definition">¶</a></dt>
+<span class="target" id="module-anadama2.slurm"></span><dl class="class">
+<dt id="anadama2.slurm.PerformanceData">
+<em class="property">class </em><code class="descclassname">anadama2.slurm.</code><code class="descname">PerformanceData</code><a class="reference internal" href="_modules/anadama2/slurm.html#PerformanceData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.slurm.PerformanceData" title="Permalink to this definition">¶</a></dt>
 <dd><p>Performance Data. Defines the resources or performance a task used,
 is limited to use, or is expected to use.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -65,12 +65,12 @@ is limited to use, or is expected to use.</p>
 </dd></dl>
 
 <dl class="class">
-<dt id="anadama.slurm.SlurmPowerup">
-<em class="property">class </em><code class="descclassname">anadama.slurm.</code><code class="descname">SlurmPowerup</code><span class="sig-paren">(</span><em>partition</em>, <em>tmpdir</em>, <em>extra_srun_flags=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/slurm.html#SlurmPowerup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.slurm.SlurmPowerup" title="Permalink to this definition">¶</a></dt>
+<dt id="anadama2.slurm.SlurmPowerup">
+<em class="property">class </em><code class="descclassname">anadama2.slurm.</code><code class="descname">SlurmPowerup</code><span class="sig-paren">(</span><em>partition</em>, <em>tmpdir</em>, <em>extra_srun_flags=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/slurm.html#SlurmPowerup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.slurm.SlurmPowerup" title="Permalink to this definition">¶</a></dt>
 <dd><p>This powerup enables the Workflow class to dispatch tasks to
 SLURM. Use it like so:</p>
-<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama</span> <span class="k">import</span> <span class="n">Workflow</span>
-<span class="kn">from</span> <span class="nn">anadama.slurm</span> <span class="k">import</span> <span class="n">SlurmPowerup</span>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama2</span> <span class="k">import</span> <span class="n">Workflow</span>
+<span class="kn">from</span> <span class="nn">anadama2.slurm</span> <span class="k">import</span> <span class="n">SlurmPowerup</span>
 
 <span class="n">powerup</span> <span class="o">=</span> <span class="n">Slurmpowerup</span><span class="p">(</span><span class="n">partition</span><span class="o">=</span><span class="s2">&quot;general&quot;</span><span class="p">)</span>
 <span class="n">ctx</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">grid_powerup</span><span class="o">=</span><span class="n">powerup</span><span class="p">)</span>
@@ -101,7 +101,7 @@ SLURM. Use it like so:</p>
 <li><strong>partition</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The name of the SLURM partition to submit tasks to</li>
 <li><strong>tmpdir</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; A directory to store temporary files in. All
 machines in the cluster must be able to read the contents of
-this directory; uses <code class="xref py py-mod docutils literal"><span class="pre">anadama.picklerunner</span></code> to create
+this directory; uses <code class="xref py py-mod docutils literal"><span class="pre">anadama2.picklerunner</span></code> to create
 self-contained scripts to run individual tasks and calls
 <code class="docutils literal"><span class="pre">srun</span></code> to run the script on the cluster.</li>
 </ul>
@@ -110,8 +110,8 @@ self-contained scripts to run individual tasks and calls
 </tbody>
 </table>
 <dl class="method">
-<dt id="anadama.slurm.SlurmPowerup.add_task">
-<code class="descname">add_task</code><span class="sig-paren">(</span><em>task</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/slurm.html#SlurmPowerup.add_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.slurm.SlurmPowerup.add_task" title="Permalink to this definition">¶</a></dt>
+<dt id="anadama2.slurm.SlurmPowerup.add_task">
+<code class="descname">add_task</code><span class="sig-paren">(</span><em>task</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/slurm.html#SlurmPowerup.add_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.slurm.SlurmPowerup.add_task" title="Permalink to this definition">¶</a></dt>
 <dd><p>Accepts the following extra arguments:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -135,8 +135,8 @@ the command</li>
 </dd></dl>
 
 <dl class="method">
-<dt id="anadama.slurm.SlurmPowerup.do">
-<code class="descname">do</code><span class="sig-paren">(</span><em>task</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/slurm.html#SlurmPowerup.do"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.slurm.SlurmPowerup.do" title="Permalink to this definition">¶</a></dt>
+<dt id="anadama2.slurm.SlurmPowerup.do">
+<code class="descname">do</code><span class="sig-paren">(</span><em>task</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/slurm.html#SlurmPowerup.do"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.slurm.SlurmPowerup.do" title="Permalink to this definition">¶</a></dt>
 <dd><p>Accepts the following extra arguments:</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -202,7 +202,7 @@ the command</li>
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |

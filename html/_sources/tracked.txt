@@ -4,8 +4,8 @@ tracked
 
 .. contents:: 
    :local:
-.. currentmodule:: anadama.tracked
+.. currentmodule:: anadama2.tracked
 
-.. automodule:: anadama.tracked
+.. automodule:: anadama2.tracked
    :members:
    :undoc-members:

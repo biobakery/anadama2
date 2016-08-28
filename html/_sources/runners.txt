@@ -4,8 +4,8 @@ runners
 
 .. contents:: 
    :local:
-.. currentmodule:: anadama.runners
+.. currentmodule:: anadama2.runners
 
-.. automodule:: anadama.runners
+.. automodule:: anadama2.runners
    :members:
    :undoc-members:

@@ -1,0 +1,246 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>anadama2.backends &#8212; anadama2 0.1.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="anadama2 0.1.2 documentation" href="../../index.html" />
+    <link rel="up" title="anadama2" href="../anadama2.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for anadama2.backends</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">import</span> <span class="nn">leveldb</span>
+
+<span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">mkdirp</span>
+
+<span class="n">ENV_VAR</span> <span class="o">=</span> <span class="s2">&quot;ANADAMA_BACKEND_DIR&quot;</span>
+
+<span class="n">_default_backend</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="default"><a class="viewcode-back" href="../../backends.html#anadama2.backends.default">[docs]</a><span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="n">output_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">_default_backend</span>
+    <span class="k">if</span> <span class="n">output_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">LevelDBBackend</span><span class="p">(</span>
+            <span class="n">_try_dir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_dir</span><span class="p">),</span> <span class="s2">&quot;.anadama&quot;</span><span class="p">,</span> <span class="s2">&quot;db&quot;</span><span class="p">))</span>
+            <span class="p">)</span>
+    <span class="k">if</span> <span class="n">_default_backend</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_default_backend</span> <span class="o">=</span> <span class="n">LevelDBBackend</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_default_backend</span></div>
+
+
+<div class="viewcode-block" id="discover_data_directory"><a class="viewcode-back" href="../../backends.html#anadama2.backends.discover_data_directory">[docs]</a><span class="k">def</span> <span class="nf">discover_data_directory</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">ENV_VAR</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_try_dir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">ENV_VAR</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="s2">&quot;HOME&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_try_dir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;HOME&#39;</span><span class="p">],</span> <span class="s2">&quot;.config&quot;</span><span class="p">,</span>
+                                     <span class="s2">&quot;anadama&quot;</span><span class="p">,</span> <span class="s2">&quot;db&quot;</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_fallback_datadir</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="auto"><a class="viewcode-back" href="../../backends.html#anadama2.backends.auto">[docs]</a><span class="k">def</span> <span class="nf">auto</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Return the right type of backend for the given data_dir&quot;&quot;&quot;</span>
+    <span class="c1"># just one type of backend for now</span>
+    <span class="k">return</span> <span class="n">LevelDBBackend</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_try_dir</span><span class="p">(</span><span class="n">maybe_datadir</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">maybe_datadir</span><span class="p">):</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">mkdirp</span><span class="p">(</span><span class="n">maybe_datadir</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Unable to create anadama &quot;</span>
+                   <span class="s2">&quot;database directory `</span><span class="si">{}</span><span class="s2">&#39;: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="nb">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">maybe_datadir</span><span class="p">)</span>
+            <span class="n">fallback</span> <span class="o">=</span> <span class="n">_fallback_datadir</span><span class="p">()</span>
+            <span class="nb">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s2">&quot;Using fallback directory: &quot;</span><span class="o">+</span><span class="n">fallback</span>
+            <span class="k">return</span> <span class="n">fallback</span>
+    <span class="k">return</span> <span class="n">maybe_datadir</span>
+
+    
+<span class="k">def</span> <span class="nf">_fallback_datadir</span><span class="p">():</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">mkdirp</span><span class="p">(</span><span class="s2">&quot;.anadama/db&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">&quot;.anadama/db&quot;</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">mkdirp</span><span class="p">(</span><span class="s2">&quot;/tmp/anadama/db&quot;</span><span class="p">)</span>        
+        <span class="k">return</span> <span class="s2">&quot;/tmp/anadama/db&quot;</span>
+
+    
+<div class="viewcode-block" id="BaseBackend"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend">[docs]</a><span class="k">class</span> <span class="nc">BaseBackend</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_directory</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">autocreate</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data_directory</span> <span class="o">=</span> <span class="n">data_directory</span> <span class="ow">or</span> <span class="n">discover_data_directory</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">autocreate</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">()</span>
+
+<div class="viewcode-block" id="BaseBackend.lookup"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend.lookup">[docs]</a>    <span class="k">def</span> <span class="nf">lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dep</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BaseBackend.lookup_many"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend.lookup_many">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_many</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deps</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BaseBackend.save"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dep_keys</span><span class="p">,</span> <span class="n">dep_vals</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BaseBackend.create"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BaseBackend.exists"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BaseBackend.keys"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BaseBackend.delete"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BaseBackend.delete_many"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend.delete_many">[docs]</a>    <span class="k">def</span> <span class="nf">delete_many</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BaseBackend.close"><a class="viewcode-back" href="../../backends.html#anadama2.backends.BaseBackend.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">()</span></div></div>
+
+
+
+<div class="viewcode-block" id="LevelDBBackend"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend">[docs]</a><span class="k">class</span> <span class="nc">LevelDBBackend</span><span class="p">(</span><span class="n">BaseBackend</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LevelDBBackend</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">leveldb</span><span class="o">.</span><span class="n">LevelDB</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_directory</span><span class="p">,</span>
+                                      <span class="n">create_if_missing</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="LevelDBBackend.exists"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_directory</span><span class="p">,</span> <span class="n">f</span><span class="p">))</span>
+                    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;CURRENT&quot;</span><span class="p">,</span> <span class="s2">&quot;LOCK&quot;</span><span class="p">,</span> <span class="s2">&quot;LOG&quot;</span><span class="p">)])</span></div>
+
+
+<div class="viewcode-block" id="LevelDBBackend.create"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.create">[docs]</a>    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">leveldb</span><span class="o">.</span><span class="n">LevelDB</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">data_directory</span><span class="p">,</span> <span class="n">create_if_missing</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                  <span class="n">error_if_exists</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="LevelDBBackend.lookup"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.lookup">[docs]</a>    <span class="k">def</span> <span class="nf">lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dep</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get</span><span class="p">(</span><span class="n">dep</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LevelDBBackend.lookup_many"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.lookup_many">[docs]</a>    <span class="k">def</span> <span class="nf">lookup_many</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deps</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span> <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">deps</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="LevelDBBackend.save"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dep_keys</span><span class="p">,</span> <span class="n">dep_vals</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dep_keys</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="n">leveldb</span><span class="o">.</span><span class="n">WriteBatch</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">dep_keys</span><span class="p">,</span> <span class="n">dep_vals</span><span class="p">):</span>
+            <span class="n">batch</span><span class="o">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Write</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LevelDBBackend.keys"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">RangeIter</span><span class="p">(</span><span class="n">include_value</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LevelDBBackend.delete"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LevelDBBackend.delete_many"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.delete_many">[docs]</a>    <span class="k">def</span> <span class="nf">delete_many</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
+        <span class="n">batch</span> <span class="o">=</span> <span class="n">leveldb</span><span class="o">.</span><span class="n">WriteBatch</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">batch</span><span class="o">.</span><span class="n">Delete</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Write</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="LevelDBBackend.close"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="kc">None</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  <li><a href="../anadama2.html">anadama2</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Randall Schwager and the Huttenhower Lab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

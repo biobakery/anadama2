@@ -4,11 +4,11 @@ workflow
 
 .. contents:: 
    :local:
-.. currentmodule:: anadama.workflow
+.. currentmodule:: anadama2.workflow
 
-.. autoattribute:: anadama.workflow.Workflow
+.. autoattribute:: anadama2.workflow.Workflow
 
-.. automodule:: anadama.workflow
+.. automodule:: anadama2.workflow
    :members:
    :undoc-members:
       
