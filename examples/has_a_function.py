@@ -10,10 +10,10 @@ ctx = Workflow()
 retrieve_data = ctx.do("wget "
                        "ftp://public-ftp.hmpdacc.org/"
                        "HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 "
-                       "-O @{input/hmp1.v35.hq.otu.counts.bz2}")
+                       "-O [t:input/hmp1.v35.hq.otu.counts.bz2]")
 
-unzip = ctx.do("bzip2 -d < #{input/hmp1.v35.hq.otu.counts.bz2} "
-               "> @{input/hmp1.v35.hq.otu.counts}")
+unzip = ctx.do("bzip2 -d < [d:input/hmp1.v35.hq.otu.counts.bz2] "
+               "> [t:input/hmp1.v35.hq.otu.counts]")
 
 def remove_end_tabs_fn(task):
     myfile = open(str(task.depends[0]), 'r')
