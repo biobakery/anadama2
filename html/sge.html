@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>sge &mdash; anadama 0.1.2 documentation</title>
+    <title>sge &#8212; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="anadama 0.1.2 documentation" href="index.html" />
+    <link rel="top" title="anadama2 0.1.2 documentation" href="index.html" />
     <link rel="next" title="util" href="util.html" />
     <link rel="prev" title="slurm" href="slurm.html" />
    
@@ -44,13 +44,13 @@
             
   <div class="section" id="sge">
 <h1>sge<a class="headerlink" href="#sge" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-anadama.sge"></span><dl class="class">
-<dt id="anadama.sge.SGEPowerup">
-<em class="property">class </em><code class="descclassname">anadama.sge.</code><code class="descname">SGEPowerup</code><span class="sig-paren">(</span><em>queue</em>, <em>tmpdir='/tmp'</em>, <em>extra_qsub_flags=[]</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/sge.html#SGEPowerup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.sge.SGEPowerup" title="Permalink to this definition">¶</a></dt>
+<span class="target" id="module-anadama2.sge"></span><dl class="class">
+<dt id="anadama2.sge.SGEPowerup">
+<em class="property">class </em><code class="descclassname">anadama2.sge.</code><code class="descname">SGEPowerup</code><span class="sig-paren">(</span><em>queue</em>, <em>tmpdir='/tmp'</em>, <em>extra_qsub_flags=[]</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/sge.html#SGEPowerup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.sge.SGEPowerup" title="Permalink to this definition">¶</a></dt>
 <dd><p>This class enables the Workflow class to dispatch tasks to
 Sun Grid Engine and its lookalikes. Use it like so:</p>
-<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama</span> <span class="k">import</span> <span class="n">Workflow</span>
-<span class="kn">from</span> <span class="nn">anadama.sge</span> <span class="k">import</span> <span class="n">SGEPowerup</span>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama2</span> <span class="k">import</span> <span class="n">Workflow</span>
+<span class="kn">from</span> <span class="nn">anadama2.sge</span> <span class="k">import</span> <span class="n">SGEPowerup</span>
 
 <span class="n">ctx</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">grid_powerup</span><span class="o">=</span><span class="n">SGEPowerup</span><span class="p">(</span><span class="n">queue</span><span class="o">=</span><span class="s2">&quot;general&quot;</span><span class="p">))</span>
 <span class="n">ctx</span><span class="o">.</span><span class="n">do</span><span class="p">(</span><span class="s2">&quot;wget &quot;</span>
@@ -80,7 +80,7 @@ Sun Grid Engine and its lookalikes. Use it like so:</p>
 <li><strong>queue</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The name of the SGE queue to submit tasks to</li>
 <li><strong>tmpdir</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; A directory to store temporary files in. All
 machines in the cluster must be able to read the contents of
-this directory; uses <code class="xref py py-mod docutils literal"><span class="pre">anadama.picklerunner</span></code> to create
+this directory; uses <code class="xref py py-mod docutils literal"><span class="pre">anadama2.picklerunner</span></code> to create
 self-contained scripts to run individual tasks and calls
 <code class="docutils literal"><span class="pre">qsub</span></code> to run the script on the cluster.</li>
 </ul>
@@ -131,7 +131,7 @@ self-contained scripts to run individual tasks and calls
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |

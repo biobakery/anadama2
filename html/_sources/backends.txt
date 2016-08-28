@@ -4,8 +4,8 @@ backends
 
 .. contents:: 
    :local:
-.. currentmodule:: anadama.backends
+.. currentmodule:: anadama2.backends
 
-.. automodule:: anadama.backends
+.. automodule:: anadama2.backends
    :members:
    :undoc-members:

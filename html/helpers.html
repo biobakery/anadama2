@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>helpers &mdash; anadama 0.1.2 documentation</title>
+    <title>helpers &#8212; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <link rel="top" title="anadama 0.1.2 documentation" href="index.html" />
+    <link rel="top" title="anadama2 0.1.2 documentation" href="index.html" />
     <link rel="next" title="reporters" href="reporters.html" />
     <link rel="prev" title="tracked" href="tracked.html" />
    
@@ -44,15 +44,15 @@
             
   <div class="section" id="helpers">
 <h1>helpers<a class="headerlink" href="#helpers" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-anadama.helpers"></span><p>Contains functions that help create tasks. All functions contained
+<span class="target" id="module-anadama2.helpers"></span><p>Contains functions that help create tasks. All functions contained
 herein are intended for use with
-<a class="reference internal" href="workflow.html#anadama.workflow.Workflow.add_task" title="anadama.workflow.Workflow.add_task"><code class="xref py py-meth docutils literal"><span class="pre">anadama.workflow.Workflow.add_task()</span></code></a>. This means that the functions
+<a class="reference internal" href="workflow.html#anadama2.workflow.Workflow.add_task" title="anadama2.workflow.Workflow.add_task"><code class="xref py py-meth docutils literal"><span class="pre">anadama2.workflow.Workflow.add_task()</span></code></a>. This means that the functions
 in here don&#8217;t immediately do what they say; they return functions
 that, when called, do that they say (they&#8217;re closures). Sorry if that
 breaks your brain.</p>
 <p>Using closures lets you add tasks like this:</p>
-<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama</span> <span class="k">import</span> <span class="n">Workflow</span>
-<span class="kn">from</span> <span class="nn">anadama.helpers</span> <span class="k">import</span> <span class="n">sh</span>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama2</span> <span class="k">import</span> <span class="n">Workflow</span>
+<span class="kn">from</span> <span class="nn">anadama2.helpers</span> <span class="k">import</span> <span class="n">sh</span>
 
 <span class="n">ctx</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">()</span>
 <span class="n">ctx</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">sh</span><span class="p">(</span><span class="s2">&quot;my fancy shell command&quot;</span><span class="p">),</span>
@@ -60,8 +60,8 @@ breaks your brain.</p>
 </pre></div>
 </div>
 <p>Instead of this:</p>
-<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama</span> <span class="k">import</span> <span class="n">Workflow</span>
-<span class="kn">from</span> <span class="nn">anadama.util</span> <span class="k">import</span> <span class="n">sh</span> <span class="c1"># &lt;--- note the different import</span>
+<div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama2</span> <span class="k">import</span> <span class="n">Workflow</span>
+<span class="kn">from</span> <span class="nn">anadama2.util</span> <span class="k">import</span> <span class="n">sh</span> <span class="c1"># &lt;--- note the different import</span>
 
 <span class="n">ctx</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">()</span>
 <span class="n">ctx</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="k">lambda</span> <span class="n">task</span><span class="p">:</span> <span class="n">sh</span><span class="p">(</span><span class="s2">&quot;my fancy shell command&quot;</span><span class="p">),</span>
@@ -69,9 +69,9 @@ breaks your brain.</p>
 </pre></div>
 </div>
 <dl class="function">
-<dt id="anadama.helpers.parse_sh">
-<code class="descclassname">anadama.helpers.</code><code class="descname">parse_sh</code><span class="sig-paren">(</span><em>s</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/helpers.html#parse_sh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.helpers.parse_sh" title="Permalink to this definition">¶</a></dt>
-<dd><p>Do the same thing as <a class="reference internal" href="#anadama.helpers.sh" title="anadama.helpers.sh"><code class="xref py py-func docutils literal"><span class="pre">anadama.helpers.sh()</span></code></a>, but do some extra
+<dt id="anadama2.helpers.parse_sh">
+<code class="descclassname">anadama2.helpers.</code><code class="descname">parse_sh</code><span class="sig-paren">(</span><em>s</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#parse_sh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.parse_sh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Do the same thing as <a class="reference internal" href="#anadama2.helpers.sh" title="anadama2.helpers.sh"><code class="xref py py-func docutils literal"><span class="pre">anadama2.helpers.sh()</span></code></a>, but do some extra
 interpreting and formatting of the shell command before handing it
 over to the shell. For those familiar with python&#8217;s
 <a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#str.format" title="(in Python v2.7)"><code class="xref py py-meth docutils literal"><span class="pre">str.format()</span></code></a> method, the list of dependencies and the list
@@ -82,6 +82,9 @@ common use cases:</p>
 <li><code class="docutils literal"><span class="pre">{targets[0]}</span></code> is formatted to the first target</li>
 <li><code class="docutils literal"><span class="pre">{depends[2]}</span></code> is formatted to the third dependency</li>
 </ul>
+<p>Extra keyword arguments are also added to the formatting keyword
+arguments. Thus, adding a keyword argument of <code class="docutils literal"><span class="pre">threads=1</span></code> makes
+<code class="docutils literal"><span class="pre">{threads}</span></code> be formatted to <code class="docutils literal"><span class="pre">1</span></code> in the shell command.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -96,8 +99,8 @@ and bad things will happen.</td>
 </dd></dl>
 
 <dl class="function">
-<dt id="anadama.helpers.rm">
-<code class="descclassname">anadama.helpers.</code><code class="descname">rm</code><span class="sig-paren">(</span><em>to_rm</em>, <em>ignore_missing=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/helpers.html#rm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.helpers.rm" title="Permalink to this definition">¶</a></dt>
+<dt id="anadama2.helpers.rm">
+<code class="descclassname">anadama2.helpers.</code><code class="descname">rm</code><span class="sig-paren">(</span><em>to_rm</em>, <em>ignore_missing=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#rm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.rm" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove files using <a class="reference external" href="https://docs.python.org/2/library/os.html#os.remove" title="(in Python v2.7)"><code class="xref py py-func docutils literal"><span class="pre">os.remove()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -115,8 +118,8 @@ don&#8217;t raise an exception</li>
 </dd></dl>
 
 <dl class="function">
-<dt id="anadama.helpers.rm_r">
-<code class="descclassname">anadama.helpers.</code><code class="descname">rm_r</code><span class="sig-paren">(</span><em>to_rm</em>, <em>ignore_missing=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/helpers.html#rm_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.helpers.rm_r" title="Permalink to this definition">¶</a></dt>
+<dt id="anadama2.helpers.rm_r">
+<code class="descclassname">anadama2.helpers.</code><code class="descname">rm_r</code><span class="sig-paren">(</span><em>to_rm</em>, <em>ignore_missing=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#rm_r"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.rm_r" title="Permalink to this definition">¶</a></dt>
 <dd><p>Recursively remove files and directories using
 <a class="reference external" href="https://docs.python.org/2/library/shutil.html#shutil.rmtree" title="(in Python v2.7)"><code class="xref py py-func docutils literal"><span class="pre">shutil.rmtree()</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -135,8 +138,8 @@ don&#8217;t raise an exception</li>
 </dd></dl>
 
 <dl class="function">
-<dt id="anadama.helpers.sh">
-<code class="descclassname">anadama.helpers.</code><code class="descname">sh</code><span class="sig-paren">(</span><em>s</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/helpers.html#sh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.helpers.sh" title="Permalink to this definition">¶</a></dt>
+<dt id="anadama2.helpers.sh">
+<code class="descclassname">anadama2.helpers.</code><code class="descname">sh</code><span class="sig-paren">(</span><em>s</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#sh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.sh" title="Permalink to this definition">¶</a></dt>
 <dd><p>Execute a shell command. All further keywords are passed to
 <a class="reference external" href="https://docs.python.org/2/library/subprocess.html#subprocess.Popen" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">subprocess.Popen</span></code></a></p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -152,8 +155,8 @@ be careful about doing things like <code class="docutils literal"><span class="p
 </dd></dl>
 
 <dl class="function">
-<dt id="anadama.helpers.system">
-<code class="descclassname">anadama.helpers.</code><code class="descname">system</code><span class="sig-paren">(</span><em>args_list</em>, <em>stdin=None</em>, <em>stdout=None</em>, <em>stdout_clobber=None</em>, <em>stderr=None</em>, <em>stderr_clobber=None</em>, <em>working_dir=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama/helpers.html#system"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama.helpers.system" title="Permalink to this definition">¶</a></dt>
+<dt id="anadama2.helpers.system">
+<code class="descclassname">anadama2.helpers.</code><code class="descname">system</code><span class="sig-paren">(</span><em>args_list</em>, <em>stdin=None</em>, <em>stdout=None</em>, <em>stdout_clobber=None</em>, <em>stderr=None</em>, <em>stderr_clobber=None</em>, <em>working_dir=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#system"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.system" title="Permalink to this definition">¶</a></dt>
 <dd><p>Execute a system call (no shell will be used). All further keywords
 are passed to <a class="reference external" href="https://docs.python.org/2/library/subprocess.html#subprocess.Popen" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">subprocess.Popen</span></code></a></p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -229,7 +232,7 @@ already exists, it will be truncated before it receives writes.</li>
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |

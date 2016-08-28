@@ -4,8 +4,8 @@ reporters
 
 .. contents:: 
    :local:
-.. currentmodule:: anadama.reporters
+.. currentmodule:: anadama2.reporters
 
-.. automodule:: anadama.reporters
+.. automodule:: anadama2.reporters
    :members:
    :undoc-members:
