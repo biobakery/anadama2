@@ -73,6 +73,10 @@ def parse_sh(s, **kwargs):
     
     - ``{depends[2]}`` is formatted to the third dependency
 
+    Extra keyword arguments are also added to the formatting keyword
+    arguments. Thus, adding a keyword argument of ``threads=1`` makes
+    ``{threads}`` be formatted to ``1`` in the shell command.
+
     :param s: The command to execute. Passed directly to a shell, so
       be careful about doing things like 
       ``sh('df -h > data; rm -rf /')``; both commands are executed 
@@ -82,11 +86,10 @@ def parse_sh(s, **kwargs):
     """
 
     def actually_sh(task):
-        kwargs['shell'] = True
-        fmtd = s.format(depends=task.depends, targets=task.targets)
+        fmtd = s.format(depends=task.depends, targets=task.targets, **kwargs)
         logger = logging.getLogger(__name__)
         logger.info("Executing with shell: "+fmtd)
-        ret = _sh(fmtd, **kwargs)
+        ret = _sh(fmtd, shell=True)
         logger.info("Execution complete. Stdout: %s\nStderr: %s",
                     ret[0] or '',
                     ret[1] or '')

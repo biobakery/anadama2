@@ -263,6 +263,23 @@ class TestWorkflow(unittest.TestCase):
                          "the action should be the same function I gave it")
 
 
+    def test_add_task_kwargs(self):
+        outf = os.path.join(self.workdir, "test.txt")
+        t1 = self.ctx.add_task("echo {msg} > {targets[0]}",
+                               targets=outf, msg="foobar")
+        self.assertEqual(len(t1.depends), 0)
+        self.assertEqual(len(t1.targets), 1)
+        self.assertIs(t1.targets[0],
+                      anadama2.tracked.TrackedFile(outf),
+                      "the target should be a filedependency test.txt")
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertTrue(os.path.exists(outf), "should create test.txt")
+        with open(outf) as f:
+            data = f.read().strip()
+        self.assertEquals(data, "foobar")
+
+
     def test_go(self):
         self.ctx.already_exists("/etc/hosts")
         outf = os.path.join(self.workdir, "wordcount.txt")
