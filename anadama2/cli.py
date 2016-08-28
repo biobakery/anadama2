@@ -282,9 +282,7 @@ class Configuration(object):
         
     def _deploy(self):
         for d in self._directories.values():
-            if os.path.isdir(d):
-                continue
-            os.mkdir(d)
+            Directory(d).create()
             print >> sys.stderr, "created directory: "+d
         sys.exit(0)
     
