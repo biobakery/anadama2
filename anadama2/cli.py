@@ -42,6 +42,19 @@ default_options = {
     "until_task": optparse.make_option("-u", '--until-task', default=None,
                          help="""Stop after running the named task. Can refer to
                          the end task by task number or task name."""),
+    "exclude_task": optparse.make_option("-U", "--exclude-task", default=[], action="append",
+                         help="""Don't execute these tasks. Use this flag multiple times 
+                         to not execute many tasks"""),
+    "target": optparse.make_option("-t", "--target", default=[], action="append",
+                         help="""Only execute tasks that make these targets.  
+                         Use this flag multiple times to build many targets. If the 
+                         provided value includes `?' or `*' or `[', treat it as
+                         a pattern and build all targets that match."""),
+    "exclude_target": optparse.make_option("-T", "--exclude_target", default=[], action="append",
+                         help="""Don't execute tasks that make these targets.  
+                         Use this flag multiple times to exclude many targets. If the 
+                         provided value includes `?' or `*' or `[', treat it as
+                         a pattern and exclude all targets that match.""")
 }
 
 _default_dir = ("output","input")

@@ -1,6 +1,7 @@
 import os
 import re
 import shlex
+import fnmatch
 import logging
 import itertools
 from operator import attrgetter, itemgetter
@@ -313,13 +314,14 @@ class Workflow(object):
                       name="Track pre-existing dependencies")
 
 
-    def go(self, run_them_all=False, quit_early=False, runner=None,
-           reporter=None, n_parallel=1, n_grid_parallel=1, until_task=None,
-           dry_run=False):
+    def go(self, skip_nothing=False, quit_early=False, runner=None,
+           reporter=None, n_parallel=1, n_grid_parallel=1,
+           until_task=None, exclude_task=None, target=None,
+           exclude_target=None, dry_run=False):
         """Kick off execution of all previously configured tasks. 
 
-        :keyword run_them_all: Skip no tasks; run it all.
-        :type run_them_all: bool
+        :keyword skip_nothing: Skip no tasks, even if you could.
+        :type skip_nothing: bool
         
         :keyword quit_early: If any tasks fail, stop all execution
           immediately. If set to ``False`` (the default), children of
@@ -360,7 +362,35 @@ class Workflow(object):
           refer to the end task by task number or task name.
         :type until_task: int or str
 
+        :keyword exclude_task: Don't execute this task or any of its
+          children. Can refer to the task by task number or task name.
+        :type exclude_task: int or str
+
+        :keyword target: Execute the necessary tasks to produce this
+          target. If ``target`` contains ``[``, ``*``, or ``?``, it is
+          treated as a pattern and used to match multiple targets.
+        :type target: str
+
+        :keyword exclude_target: Don't execute any tasks that will
+          produce this target. If ``target`` contains ``[``, ``*``, or
+          ``?``, it is treated as a pattern and used to match multiple
+          targets.
+        :type exclude_target: str
+
+        :keyword dry_run: Don't execute any actions, just say that you
+          did.
+        :type dry_run: bool
+
         """
+        skip_nothing    = skip_nothing    or self.vars.get("skip_nothing")
+        quit_early      = quit_early      or self.vars.get("quit_early")
+        n_parallel      = n_parallel      or self.vars.get("n_parallel")
+        n_grid_parallel = n_grid_parallel or self.vars.get("n_grid_parallel")
+        until_task      = until_task      or self.vars.get("until_task")
+        exclude_task    = exclude_task    or self.vars.get("exclude_task")
+        target          = target          or self.vars.get("target")
+        exclude_target  = exclude_target  or self.vars.get("exclude_target")
+        dry_run         = dry_run         or self.vars.get("dry_run")
 
         self.completed_tasks = set()
         self.failed_tasks = set()
@@ -368,20 +398,32 @@ class Workflow(object):
         self._reporter = reporter or reporters.default(self.vars.get("output"))
         self._reporter.started(self)
 
-        _runner = runner or self.grid_powerup.runner(
-            self, n_parallel or self.vars.get("n_parallel"),
-                  n_grid_parallel or self.vars.get("n_grid_parallel"))
-        if dry_run or self.vars.get("dry_run"):
+        _runner = runner or self.grid_powerup.runner(self, n_parallel, n_grid_parallel)
+        if dry_run:
             _runner = runners.DryRunner(self)
-        _runner.quit_early = quit_early or self.vars.get("quit_early")
+        _runner.quit_early = quit_early
         logger.debug("Sorting task_nos by network topology")
         task_idxs = nx.algorithms.dag.topological_sort(self.dag, reverse=True)
         logger.debug("Sorting complete")
-        until_task = until_task or self.vars.get("until_task")
-        if until_task is not None:
-            parents = allparents(self.dag, self.tasks[until_task].task_no)
-            task_idxs = filter(parents.__contains__, task_idxs)
-        if not run_them_all or not self.vars.get("run_them_all"):
+        keep, drop = set(), set()
+        if until_task:
+            for task_name_or_no in sugar_list(until_task):
+                keep = keep.union(
+                    allparents(self.dag, self.tasks[task_name_or_no].task_no))
+        if exclude_task:
+            for task_name_or_no in sugar_list(exclude_task):
+                drop = drop.union(
+                    allchildren(self.dag, self.tasks[task_name_or_no].task_no))
+        if target:
+            for name_or_pattern in sugar_list(target):
+                keep = self._targetmatch(keep, name_or_pattern, allparents)
+        if exclude_target:
+            for name_or_pattern in sugar_list(exclude_target):
+                drop = self._targetmatch(drop, name_or_pattern, allchildren)
+        if not keep:
+            keep = set(task_idxs)
+        task_idxs = filter((keep-drop).__contains__, task_idxs)
+        if not skip_nothing:
             task_idxs = self._filter_skipped_tasks(task_idxs)
         task_idxs = deque(task_idxs)
 
@@ -525,6 +567,19 @@ class Workflow(object):
         raise KeyError(msg.format(str(closest), type(closest)))
 
 
+    def _targetmatch(self, s, name_or_pattern, hier):
+        alltargets = iter( (targ.name, task.task_no) for task in self.tasks
+                           for targ in task.targets )
+        if re.search(r'[?*\[]', name_or_pattern):
+            regex = re.compile(fnmatch.translate(name_or_pattern))
+            matches = [ no for name, no in alltargets if regex.match(name) ]
+            return set( sibling for match in matches
+                        for sibling in hier(self.dag, match) )
+        else:
+            match = next( iter(no for name, no in alltargets
+                               if name_or_pattern == name) )
+            return set(hier(self.dag, match))
+
 
 
 def _build_actions(actions, deps, targs, use_parse_sh=True):
@@ -549,8 +604,8 @@ def _build_targets(targets):
             raise ValueError("Can't make a task a target")
         ret.append(tracked.auto(targ))
     return ret
-    
 
+    
 def _build_name(name, task_no):
     if not name:
         return "Step "+str(task_no)
@@ -592,7 +647,8 @@ def discover_binaries(s):
 
 
 def allchildren(dag, task_no):
-    return itertools.imap(second, dfs_edges(dag, task_no))
+    kids = itertools.imap(second, dfs_edges(dag, task_no))
+    return itertools.chain([task_no], kids)
 
 
 def allparents(dag, task_no):
