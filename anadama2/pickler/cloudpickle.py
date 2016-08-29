@@ -89,7 +89,7 @@ if six.PY3:
 
 def error_msg(msg, loglevel=logging.WARN, exc_info = 0):
     """Print an error message to pilog if running on cloud; otherwise send to stderr"""
-    print(msg, file=sys.stderr)    
+    six.print_(msg, file=sys.stderr)    
     if exc_info:
         ei = sys.exc_info()
         traceback.print_exception(ei[0], ei[1], ei[2], None, sys.stderr)    
@@ -398,7 +398,7 @@ class CloudPickler(pickle.Pickler):
             outvars.append('globals: ' + str(f_globals))
             outvars.append('defaults: ' + str(defaults))
             outvars.append('closure: ' + str(closure))        
-            print('function ', func, 'is extracted to: ', ', '.join(outvars))
+            six.print_('function ', func, 'is extracted to: ', ', '.join(outvars))
             
         base_globals = self.globals_ref.get(id(func.__globals__), {})
         self.globals_ref[id(func.__globals__)] = base_globals

@@ -40,7 +40,7 @@ class SphinxBuild(distutils.cmd.Command):
         # check for sphinx install
         import subprocess
         try:
-            stdout=subprocess.check_output(["sphinx-build","--help"])
+            subprocess.check_output(["sphinx-build","--help"])
         except (EnvironmentError, subprocess.CalledProcessError):
             sys.exit("ERROR: Please install Sphinx ('pip install Sphinx')")
 
