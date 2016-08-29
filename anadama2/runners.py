@@ -1,11 +1,12 @@
 import time
-import Queue
 import logging
 import itertools
 import traceback
 import multiprocessing
-import cPickle as pickle
+import pickle as pickle
 from collections import namedtuple
+
+from six.renames import queue
 
 from .pickler import cloudpickle
 from .util import istask
@@ -63,14 +64,14 @@ class DryRunner(BaseRunner):
     def run_tasks(self, task_idx_deque):
         for idx in task_idx_deque:
             task = self.ctx.tasks[idx]
-            print "{} - {}".format(task.task_no, task.name)
-            print "  Dependencies ({})".format(len(task.depends))
+            print("{} - {}".format(task.task_no, task.name))
+            print("  Dependencies ({})".format(len(task.depends)))
             for dep in task.depends:
-                print self._depformat(dep)
-            print "  Targets ({})".format(len(task.targets))
+                print(self._depformat(dep))
+            print("  Targets ({})".format(len(task.targets)))
             for dep in task.targets:
-                print self._depformat(dep)
-            print "------------------"
+                print(self._depformat(dep))
+            print("------------------")
 
 
     def _depformat(self, d):
@@ -93,7 +94,7 @@ class SerialLocalRunner(BaseRunner):
             failed_parents = parents.intersection(self.ctx.failed_tasks)
             if failed_parents:
                 self.ctx._handle_task_result(
-                    parent_failed_result(idx, iter(failed_parents).next()))
+                    parent_failed_result(idx, next(iter(failed_parents))))
                 continue
 
             self.ctx._handle_task_started(idx)
@@ -352,7 +353,7 @@ class GridRunner(BaseRunner):
 
 
     def terminate(self):
-        for name, (work_q, _) in self._worker_qs.iteritems():
+        for name, (work_q, _) in self._worker_qs.items():
             if hasattr(work_q, "_rlock"):
                 self._terminate_mpq(work_q, name)
             elif hasattr(work_q, "mutex"):
@@ -364,7 +365,7 @@ class GridRunner(BaseRunner):
 
 
     def cleanup(self):
-        for name, (_, n_procs) in self._worker_config.iteritems():
+        for name, (_, n_procs) in self._worker_config.items():
             for _ in range(n_procs):
                 self._worker_qs[name][0].put(({"stop": True}, None))
         for w in self.workers:
@@ -409,7 +410,7 @@ class GridRunner(BaseRunner):
 
     def _init_workers(self):
         threads, procs = list(), list()
-        for name, (worker_cls, n_procs) in self._worker_config.iteritems():
+        for name, (worker_cls, n_procs) in self._worker_config.items():
             work_q = worker_cls.appropriate_q_class()
             result_q = worker_cls.appropriate_q_class()
             self._worker_qs[name] = (work_q, result_q)
@@ -419,7 +420,7 @@ class GridRunner(BaseRunner):
                 l.append(worker_cls(work_q, result_q))
         self.workers = procs+threads # http://stackoverflow.com/a/13115499
         self._qcycle = itertools.cycle(val[1]
-                                       for val in self._worker_qs.itervalues())
+                                       for val in self._worker_qs.values())
 
 
     def _get_next_task(self):
@@ -428,7 +429,7 @@ class GridRunner(BaseRunner):
         failed_parents = parents.intersection(self.ctx.failed_tasks)
         if failed_parents:
             self.ctx._handle_task_result(
-                parent_failed_result(idx, iter(failed_parents).next())
+                parent_failed_result(idx, next(iter(failed_parents)))
                 )
             self.n_to_do -= 1
             return None
@@ -446,7 +447,7 @@ class GridRunner(BaseRunner):
             for _ in range(len(self.workers)):
                 try:
                     ret = next(self._qcycle).get(False)
-                except Queue.Empty:
+                except queue.Empty:
                     continue
                 return ret
             time.sleep(0.05)

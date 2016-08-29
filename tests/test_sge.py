@@ -2,9 +2,9 @@ import os
 import random
 import shutil
 import unittest
-from cStringIO import StringIO
 from collections import defaultdict
 
+from six import StringIO
 import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
@@ -12,7 +12,7 @@ import anadama2
 import anadama2.sge
 import anadama2.backends
 
-from util import capture
+from .util import capture
 
 def bern(p):
     return random.random() < p
@@ -118,7 +118,7 @@ class TestSGE(unittest.TestCase):
         nodes = nx.algorithms.dag.topological_sort(G)
         task_nos = [None for _ in range(len(nodes))]
         for n in nodes:
-            cmd = "touch /dev/null "+ " ".join(targets[n].values())
+            cmd = "touch /dev/null "+ " ".join(list(targets[n].values()))
             if n in shall_fail:
                 cmd += " ;exit 1"
             sge_add_task = lambda *a, **kw: self.ctx.grid_add_task(mem=50, time=5, cores=1, *a, **kw)

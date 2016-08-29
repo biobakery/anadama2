@@ -1,14 +1,15 @@
 import os
 import sys
 import time
-import Queue
 import tempfile
 import threading
+
+import six
+from six.renames import queue
 
 from . import grid
 from . import runners
 from . import picklerunner
-
 from .slurm import PerformanceData
 from .util import underscore
 from .util import find_on_path
@@ -107,10 +108,10 @@ class SGEPowerup(grid.DummyPowerup):
         runner.add_worker(runners.ParallelLocalWorker,
                           name="local", rate=jobs, default=True)
         runner.add_worker(SGEWorker, name="sge", rate=grid_jobs)
-        runner.routes.update([
+        runner.routes.update((
             ( task_idx, ("sge", extra) )
-            for task_idx, extra in self.sge_task_data.iteritems()
-        ])
+            for task_idx, extra in six.iteritems(self.sge_task_data)
+        ))
         return runner
 
 
@@ -165,7 +166,7 @@ class SGEWorker(threading.Thread):
 
     @staticmethod
     def appropriate_q_class(*args, **kwargs):
-        return Queue.Queue(*args, **kwargs)
+        return queue.Queue(*args, **kwargs)
 
     def run(self):
         return runners.worker_run_loop(self.work_q, self.result_q, 

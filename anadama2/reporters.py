@@ -2,6 +2,9 @@ import os
 import sys
 import logging
 
+import six
+
+
 def default(output_dir=None):
     log = "anadama.log"
     if output_dir:
@@ -232,13 +235,13 @@ class ConsoleReporter(BaseReporter):
         self._msg(self.stats.done, name, True)
 
     def finished(self):
-        print >> sys.stderr, "Run Finished"
+        six.print_("Run Finished", file=sys.stderr)
         for name, result in self.failed_results:
-            print >> sys.stderr, "Task {} failed".format(result.task_no)
-            print >> sys.stderr, "  Name: "+name
-            print >> sys.stderr, "  Original error: "
+            six.print_("Task {} failed".format(result.task_no), file=sys.stderr)
+            six.print_("  Name: "+name, file=sys.stderr)
+            six.print_("  Original error: ", file=sys.stderr)
             for line in result.error.split("\n"):
-                print >> sys.stderr, "  "+line
+                six.print_("  "+line, file=sys.stderr)
         self.reset()
 
     def reset(self):
@@ -268,11 +271,12 @@ class LoggerReporter(BaseReporter):
     def __init__(self, loglevel_str="", logfile=None,
                  fmt_str=None, *args, **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)
+        loglevel = getattr(logging, loglevel_str.upper(), logging.WARNING)
         logkwds = {"format": fmt_str or self.FORMAT,
-                  "level":  getattr(logging, loglevel_str.upper(), logging.WARNING) }
+                  "level":  loglevel }
         if logfile and hasattr(logfile, "write"):
             logkwds['stream'] = logfile
-        elif logfile and isinstance(logfile, basestring):
+        elif logfile and isinstance(logfile, six.string_types):
             logkwds['filename'] = logfile
         logging.basicConfig(**logkwds)
         self.any_failed = False

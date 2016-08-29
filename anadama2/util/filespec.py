@@ -1,8 +1,10 @@
 import re
 import os
 import glob
-from itertools import chain, imap, ifilter
+from itertools import chain
 from operator import itemgetter
+
+from six.renames import map, filter
 
 DEFAULT_DATA_DIR = "./"
 
@@ -12,11 +14,11 @@ def parse(pattern_str, data_dir=DEFAULT_DATA_DIR):
     if pattern_str.startswith("glob:"):
         pattern = os.path.join(data_dir,
                                pattern_str.split("glob:", 1)[1])
-        files = map(os.path.abspath, glob.glob(pattern))
+        files = list(map(os.path.abspath, glob.glob(pattern)))
     elif pattern_str.startswith("re:"):
         matcher = lambda s: re.search(pattern_str.split("re:", 1)[1], s)
-        allfiles = chain.from_iterable( imap(third, os.walk(data_dir)) )
-        files = ifilter(matcher, allfiles)
+        allfiles = chain.from_iterable( map(third, os.walk(data_dir)) )
+        files = filter(matcher, allfiles)
     elif ',' in pattern_str:
         files = pattern_str.split(',')
         nonexistent = [ f for f in files if not os.path.exists(f) ]

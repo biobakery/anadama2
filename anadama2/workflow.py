@@ -7,6 +7,8 @@ import itertools
 from operator import attrgetter, itemgetter
 from collections import deque, defaultdict
 
+import six
+from six.renames import filter, map
 import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
@@ -313,7 +315,7 @@ class Workflow(object):
 
         """
 
-        self.add_task(noop, targets=map(tracked.auto, depends),
+        self.add_task(noop, targets=list(map(tracked.auto, depends)),
                       name="Track pre-existing dependencies")
 
 
@@ -510,7 +512,7 @@ class Workflow(object):
                     continue
                 grp[dep].add(idx)
                     
-        return grp.iteritems()
+        return six.iteritems(grp)
         
 
     def _handle_task_started(self, task_no):
@@ -588,15 +590,15 @@ class Workflow(object):
 def _build_actions(actions, kwds, use_parse_sh=True):
     actions = filter(None, sugar_list(actions))
     if use_parse_sh:
-        return [ a if callable(a) else parse_sh(a, **kwds)
+        return [ a if six.callable(a) else parse_sh(a, **kwds)
                  for a in actions ]
     else:
-        return [ a if callable(a) else sh(a) for a in actions ]
+        return [ a if six.callable(a) else sh(a) for a in actions ]
         
 
 def _build_depends(depends):
     depends = filter(None, sugar_list(depends))
-    return map(tracked.auto, depends)
+    return list(map(tracked.auto, depends))
 
 
 def _build_targets(targets):
@@ -650,7 +652,7 @@ def discover_binaries(s):
 
 
 def allchildren(dag, task_no):
-    kids = itertools.imap(second, dfs_edges(dag, task_no))
+    kids = map(second, dfs_edges(dag, task_no))
     return itertools.chain([task_no], kids)
 
 

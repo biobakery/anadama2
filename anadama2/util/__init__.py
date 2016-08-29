@@ -9,9 +9,11 @@ import fnmatch
 import mimetypes
 import unicodedata
 from functools import wraps
-from itertools import izip_longest
 from collections import namedtuple
 from multiprocessing import cpu_count
+
+import six
+from six.renames import zip_longest
 
 from .. import Task
 
@@ -81,7 +83,7 @@ def dict_to_cmd_opts_iter(opts_dict,
     else:
         shortkv = lambda k, v: shortdash + k + shortsep + v
 
-    for key, val in opts_dict.iteritems():
+    for key, val in opts_dict.items():
         kv = longkv if len(key) > 1 else shortkv
         if val is False or None:
             continue
@@ -191,11 +193,11 @@ def deserialize_map_file(file_handle):
 def serialize_map_file(namedtuples, output_fname):
     namedtuples_iter = iter(namedtuples)
     with open(output_fname, 'w') as map_file:
-        first = namedtuples_iter.next()
-        print >> map_file, "#"+"\t".join(first._fields)
-        print >> map_file, "\t".join(first)
+        first = next(namedtuples_iter)
+        six.print_("#"+"\t".join(first._fields), file=map_file)
+        six.print_("\t".join(first), file=map_file)
         for record in namedtuples_iter:
-            print >> map_file, "\t".join(record)
+            six.print_("\t".join(record), file=map_file)
 
 
 def _defaultfunc(obj):
@@ -280,7 +282,7 @@ def find_on_path(bin_str):
 
 def partition(it, binsize, pad=None):
     iters = [iter(it)]*binsize
-    return izip_longest(fillvalue=pad, *iters)    
+    return zip_longest(fillvalue=pad, *iters)    
 
 
 def _adler32(fname):
@@ -375,7 +377,9 @@ def sugar_list(x):
 
     """
 
-    if istask(x) or not hasattr(x, "__iter__") or isinstance(x, basestring):
+    if istask(x) \
+       or not hasattr(x, "__iter__") \
+       or isinstance(x, six.string_types):
         return [x]
     else:
         return x
@@ -393,7 +397,7 @@ def keepkeys(d, keys):
     """
 
     ks = set(list(keys))
-    to_rm = [k for k in d.iterkeys() if k not in ks]
+    to_rm = [k for k in d.keys() if k not in ks]
     for k in to_rm:
         del d[k]
     return d
@@ -441,7 +445,7 @@ def dichotomize(it, tf_func):
 def kebab(s):
     """Kebab-case a string. Intra-string whitespace is converted to ``-``
     and unfriendly characters are dropped."""
-    if type(s) is unicode:
+    if type(s) is six.text_type:
         s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore")
     s = re.sub(r"[\s-]+", '-', s)
     return re.sub(r"""['".,\[\]{}!@#$%^&*()_=+|\\`~><\d]+""", '', s).rstrip('-')

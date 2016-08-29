@@ -55,7 +55,7 @@ def _new_file(*names, **opts):
 def new_file(*names, **opts):
     iterator = _new_file(*names, basedir=opts.get("basedir"))
     if len(names) == 1:
-        return iterator.next()
+        return next(iterator)
     else:
         return list(iterator)
 

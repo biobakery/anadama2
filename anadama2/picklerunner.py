@@ -3,7 +3,7 @@
 import os
 import re
 import sys
-import cPickle as pickle
+import pickle as pickle
 from base64 import b64decode
 from tempfile import NamedTemporaryFile
 

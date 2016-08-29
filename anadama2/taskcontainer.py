@@ -1,5 +1,7 @@
 import itertools
 
+import six
+
 class TaskContainer(list):
     """Contains tasks. Tasks can be accessed by task_no or by name"""
 
@@ -30,12 +32,12 @@ class TaskContainer(list):
 
 
     def __getitem__(self, key):
-        if isinstance(key, basestring):
+        if isinstance(key, six.string_types):
             return self.by_name[key]
         return super(TaskContainer, self).__getitem__(key)
 
 
     def __contains__(self, item):
-        if isinstance(item, basestring):
+        if isinstance(item, six.string_types):
             return item in self.by_name
         return super(TaskContainer, self).__contains__(item)

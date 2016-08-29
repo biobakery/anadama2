@@ -136,7 +136,7 @@ def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
 
     """
     kwargs.pop("shell", None)
-    args_list = map(str, args_list)
+    args_list = list(map(str, args_list))
     __sh = _sh
     if working_dir is not None:
         def __sh(*a, **kw):

@@ -3,6 +3,8 @@ import os
 import shutil
 import unittest
 
+import six
+
 import anadama2.util
 from anadama2.util import fname
 
@@ -24,7 +26,7 @@ class TestUtil(unittest.TestCase):
         open(f, 'w').close()
         first = anadama2.util._adler32(f)
         with open(f, 'w+') as _f:
-            print >> _f, "blah blah"
+            six.print_("blah blah", file=_f)
         second = anadama2.util._adler32(f)
         open(f, 'w').close()
         third = anadama2.util._adler32(f)
@@ -54,7 +56,7 @@ class TestUtil(unittest.TestCase):
 
     def test_kebab(self):
         self.assertEqual(anadama2.util.kebab("drunken     sailor"), "drunken-sailor")
-        self.assertEqual(anadama2.util.kebab(u"drunken-säilor"), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab("drunken-säilor"), "drunken-sailor")
         self.assertEqual(anadama2.util.kebab("drunken-209sailor"), "drunken-sailor")
         self.assertEqual(anadama2.util.kebab("drunken-,.!@#$%^&*()sailor"), "drunken-sailor")
         self.assertEqual(anadama2.util.kebab("drunken-_+|\\sailor"), "drunken-sailor")
