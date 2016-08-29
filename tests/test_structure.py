@@ -1,14 +1,6 @@
 import os
-import sys
-import time
 import shutil
-import random
 import unittest
-from datetime import datetime
-from datetime import timedelta
-from cStringIO import StringIO
-
-import networkx
 
 import anadama2
 import anadama2.tracked
@@ -18,7 +10,6 @@ from anadama2.util import noop
 import anadama2.backends
 import anadama2.taskcontainer
 
-from util import capture
 
 SLEEPTIME = os.environ.get("ANADAMA_SLEEP_TIME", "0.01")
 SLEEPTIME=float(SLEEPTIME)
@@ -55,7 +46,7 @@ class TestStructure(unittest.TestCase):
             shutil.rmtree(self.workdir)
         
     def test_linear(self):
-        a,b,c = map(str, range(3))
+        a,b,c = map(str, list(range(3)))
         self.ctx.add_task(noop, targets=a,            name="a")
         self.ctx.add_task(noop, targets=b, depends=a, name="b")
         self.ctx.add_task(noop, targets=c, depends=b, name="c")
@@ -74,7 +65,7 @@ class TestStructure(unittest.TestCase):
         self.assertEqual(self.ctx.tasks['c'], self.ctx.tasks[2])
 
     def test_expand(self):
-        a,b,c,d = map(str, range(4))
+        a,b,c,d = map(str, list(range(4)))
         self.ctx.add_task(noop, targets=a,            name="a")
         self.ctx.add_task(noop, targets=b, depends=a, name="b")
         self.ctx.add_task(noop, targets=c, depends=a, name="c")
@@ -97,7 +88,7 @@ class TestStructure(unittest.TestCase):
         self.assertEqual(self.ctx.tasks['d'], self.ctx.tasks[3])
 
     def test_reduce(self):
-        a,b,c,d = map(str, range(4))
+        a,b,c,d = map(str, list(range(4)))
         self.ctx.add_task(noop, targets=a,                  name="a")
         self.ctx.add_task(noop, targets=b,                  name="b")
         self.ctx.add_task(noop, targets=c,                  name="c")
@@ -121,7 +112,7 @@ class TestStructure(unittest.TestCase):
 
 
     def test_expandreduce(self):
-        a,b,c,d,e = map(str, range(5))
+        a,b,c,d,e = map(str, list(range(5)))
         self.ctx.add_task(noop, targets=a,                  name="a")
         self.ctx.add_task(noop, targets=b, depends=a,       name="b")
         self.ctx.add_task(noop, targets=c, depends=a,       name="c")

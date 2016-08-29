@@ -2,6 +2,7 @@ import os
 import sys
 import json
 
+import six
 import leveldb
 
 from .util import mkdirp
@@ -45,9 +46,9 @@ def _try_dir(maybe_datadir):
         except Exception as e:
             msg = ("Unable to create anadama "
                    "database directory `{}': "+str(e))
-            print >> sys.stderr, msg.format(maybe_datadir)
+            six.print_(msg.format(maybe_datadir), file=sys.stderr)
             fallback = _fallback_datadir()
-            print >> sys.stderr, "Using fallback directory: "+fallback
+            six.print_("Using fallback directory: "+fallback, file=sys.stderr)
             return fallback
     return maybe_datadir
 

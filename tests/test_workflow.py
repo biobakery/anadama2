@@ -6,8 +6,9 @@ import random
 import unittest
 from datetime import datetime
 from datetime import timedelta
-from cStringIO import StringIO
+from io import StringIO
 
+import six
 import networkx
 
 import anadama2
@@ -18,7 +19,7 @@ import anadama2.cli
 import anadama2.backends
 import anadama2.taskcontainer
 
-from util import capture
+from .util import capture
 
 SLEEPTIME = os.environ.get("ANADAMA_SLEEP_TIME", "0.01")
 SLEEPTIME=float(SLEEPTIME)
@@ -91,12 +92,12 @@ class TestWorkflow(unittest.TestCase):
         bash_script = os.path.join(self.workdir, "test.sh")
         echoprog = anadama2.util.sh(("which", "echo"))[0].strip()
         with open(bash_script, 'w') as f:
-            print >> f, "#!/bin/bash"
-            print >> f, "echo hi"
+            six.print_("#!/bin/bash", file=f)
+            six.print_("echo hi", file=f)
         os.chmod(bash_script, 0o755)
         plain_file = os.path.join(self.workdir, "blah.txt")
         with open(plain_file, 'w') as f:
-            print >> f, "nothing to see here"
+            six.print_("nothing to see here", file=f)
         ret = anadama2.workflow.discover_binaries("echo hi")
         self.assertGreater(len(ret), 0, "should find "+echoprog)
         self.assertTrue(isinstance(ret[0], anadama2.tracked.TrackedExecutable))
@@ -140,7 +141,7 @@ class TestWorkflow(unittest.TestCase):
 
         self.assertNotIn("[t:hosts]", kws["targets"], 
                          "targ markup not removed")
-        self.assertIn("hosts.txt", map(os.path.basename, kws["targets"]),
+        self.assertIn("hosts.txt", list(map(os.path.basename, kws["targets"])),
                       "targ should be in targets")
         self.assertIn("hosts.txt", kws['name'],
                       "targ shouldn't be removed from command string")
@@ -277,7 +278,10 @@ class TestWorkflow(unittest.TestCase):
         self.assertTrue(os.path.exists(outf), "should create test.txt")
         with open(outf) as f:
             data = f.read().strip()
-        self.assertEquals(data, "foobar")
+        if six.PY3:
+            self.assertEqual(data, "foobar")
+        else:
+            self.assertEquals(data, "foobar")
 
 
     def test_go(self):
@@ -454,7 +458,7 @@ class TestWorkflow(unittest.TestCase):
             self.ctx.go()
         self.assertEqual(mtime, os.stat(out).st_mtime)
         with open(os.path.join(self.workdir, "f.txt"), 'w') as f:
-            print >> f, "hi mom"
+            six.print_("hi mom", file=f)
         time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -482,7 +486,7 @@ class TestWorkflow(unittest.TestCase):
             self.ctx.go()
         self.assertEqual(mtime, os.stat(out).st_mtime)
         with open(os.path.join(self.workdir, "f.txt"), 'w') as f:
-            print >> f, "hi mom"
+            six.print_("hi mom", file=f)
         time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -517,7 +521,7 @@ class TestWorkflow(unittest.TestCase):
             self.ctx.go()
         self.assertEqual(new_mtime, os.stat(a).st_mtime)
         self.ctx.add_task("echo beta > {targets[0]}",
-                          depends=conf.items(), targets=a)
+                          depends=list(conf.items()), targets=a)
         time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -582,8 +586,8 @@ class TestWorkflow(unittest.TestCase):
         stderr_msg = "".join([chr(random.randint(32, 126)) for _ in range(10)])
         stdout_msg = "".join([chr(random.randint(32, 126)) for _ in range(10)])
         def printer(task):
-            print >> sys.stderr, stderr_msg
-            print >> sys.stdout, stdout_msg
+            six.print_(stderr_msg, file=sys.stderr)
+            six.print_(stdout_msg, file=sys.stdout)
 
         t1 = self.ctx.add_task(printer)
 
@@ -599,7 +603,7 @@ class TestWorkflow(unittest.TestCase):
         rc = anadama2.workflow
         self.assertEqual([5], rc.sugar_list(5))
         self.assertEqual(["blah"], rc.sugar_list("blah"))
-        it = iter(range(5))
+        it = iter(list(range(5)))
         self.assertIs(it, rc.sugar_list(it))
         t = anadama2.Task("dummy task", [], [], [], 0)
         self.assertEqual([t], rc.sugar_list(t))

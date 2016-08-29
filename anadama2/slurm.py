@@ -1,17 +1,18 @@
 import os
 import re
 import sys
-import Queue
 import logging
 import itertools
 import threading
 from math import exp
 from collections import namedtuple
 
+import six
+from six.renames import queue
+
 from . import grid
 from . import runners
 from . import picklerunner
-
 from .util import underscore
 from .util import find_on_path
 from .util import keepkeys
@@ -179,10 +180,10 @@ class SlurmPowerup(grid.DummyPowerup):
         runner.add_worker(runners.ParallelLocalWorker,
                           name="local", rate=jobs, default=True)
         runner.add_worker(SLURMWorker, name="slurm", rate=grid_jobs)
-        runner.routes.update([
+        runner.routes.update((
             ( task_idx, ("slurm", extra) )
-            for task_idx, extra in self.slurm_task_data.iteritems()
-        ])
+            for task_idx, extra in six.iteritems(self.slurm_task_data)
+        ))
         return runner
 
     
@@ -197,7 +198,7 @@ class SLURMWorker(threading.Thread):
 
     @staticmethod
     def appropriate_q_class(*args, **kwargs):
-        return Queue.Queue(*args, **kwargs)
+        return queue.Queue(*args, **kwargs)
 
     def run(self):
         return runners.worker_run_loop(self.work_q, self.result_q, 

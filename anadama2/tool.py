@@ -3,6 +3,8 @@ import json
 import optparse
 import itertools
 
+import six
+
 from . import backends
 from .util import Bag
 
@@ -13,7 +15,7 @@ def dump_dependencies(backend):
     for key in backend.keys():
         b = Bag()
         b.name = key
-        print key, "\t", json.dumps(backend.lookup(b))
+        six.print_(key, "\t", json.dumps(backend.lookup(b)))
 
 
 def forget(backend, key=None):
@@ -27,7 +29,8 @@ def forget(backend, key=None):
         try:
             backend.delete(key)
         except Exception as e:
-            print >> sys.stderr, "Error inserting key {}: {}".format(key, e)
+            six.print_("Error inserting key {}: {}".format(key, e),
+                       file=sys.stderr)
 
 
 def entry_point(argv=None):
@@ -47,7 +50,7 @@ def entry_point(argv=None):
     backend = backends.auto(be_dir)
     if not backend.exists():
         msg = "Error - backend doesn't exist or is unrecognized: "
-        print >> sys.stderr, msg+be_dir
+        six.print_(msg+be_dir, file=sys.stderr)
         sys.exit(1)
     if opts.dump_dependencies:
         return dump_dependencies(backend)

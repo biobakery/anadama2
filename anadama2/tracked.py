@@ -1,10 +1,13 @@
 import os
+import sys
 import logging
 import itertools
-import traceback
 from glob import glob
 from operator import eq, itemgetter
 from collections import defaultdict
+
+import six
+from six.renames import zip_longest
 
 from .util import _adler32, find_on_path, sh, HasNoEqual
 from .util import istask, Directory
@@ -38,15 +41,15 @@ def auto(x):
 
     """
 
-    if isinstance(x, basestring):
+    if isinstance(x, six.string_types):
         return _autostring(x)
     elif istask(x):
         return x
     elif isinstance(x, Base):
         return x
-    elif callable(x):
+    elif six.callable(x):
         # no explicit key is given, so I have to make one up
-        key = "Function ({}) <{}>".format(x.__name__, id(x))
+        key = "Function ({})".format(x.__name__)
         return TrackedFunction(key, x)
     elif isinstance(x, Directory):
         return TrackedDirectory(x.name)
@@ -83,7 +86,7 @@ def any_different(ds, backend):
                              dep.name, type(dep))
             return True
 
-        compares = itertools.izip_longest(
+        compares = zip_longest(
             dep.compare(), past_dep_compare, fillvalue=HasNoEqual())
         the_same = itertools.starmap(eq, compares)
         try:
@@ -115,7 +118,7 @@ class DependencyIndex(object):
 
     def __init__(self):
         self._taskidx = defaultdict(dict)
-        self._taskidx.update((k, dict()) for k in _singleton_idx.iterkeys())
+        self._taskidx.update((k, dict()) for k in six.iterkeys(_singleton_idx))
 
         
     def link(self, dep, task_or_none):
@@ -416,22 +419,18 @@ class Container(object):
         logger.debug("Creating %s with namespace %s",
                      self.__class__.__name__, self._ns)
         self.__dict__['_d'] = dict()
-        for k, v in kwds.iteritems():
+        for k, v in kwds.items():
             self._d[k] = TrackedVariable(self._ns, k, v)
 
 
     @staticmethod
     def key(namespace=None):
         if not namespace:
-            anamodpath = os.path.dirname(__file__)
-            for stackfile in reversed(map(first, traceback.extract_stack())):
-                if not stackfile.startswith(anamodpath):
-                    namespace = stackfile
-                    break
+            os.path.abspath(os.path.dirname(sys.argv[0]))
         return namespace
 
     def items(self):
-        return list(self._d.itervalues())
+        return list(self._d.values())
 
     def compare(self):
         for k in self._d:
@@ -457,7 +456,7 @@ class Container(object):
     __setitem__ = __setattr__
 
     def __hash__(self):
-        return hash(tuple(self._d.iteritems()))
+        return hash(tuple(self._d.items()))
 
 
 

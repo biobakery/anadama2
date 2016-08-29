@@ -5,8 +5,9 @@ from setuptools import setup, find_packages
 import distutils
 
 requires = [
-        'networkx==1.11',
-        'leveldb==0.193'
+    'networkx==1.11',
+    'leveldb==0.193',
+    'six'
 ]
 
 if os.name == 'posix' and sys.version_info[0] < 3:

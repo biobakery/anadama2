@@ -1,6 +1,8 @@
 import itertools
 import operator
 
+from six.renames import zip
+
 first = operator.itemgetter(0)
 
 def windows(iterable, length):
@@ -10,7 +12,7 @@ def windows(iterable, length):
     for i in range(len(args)-1, 0, -1):
         for iter_ in args[i:]:
             next(iter_, None)
-    return itertools.izip(*args)
+    return zip(*args)
 
 
 def kmer_set(iterable, kmer_lengths=(2,)):
@@ -39,15 +41,14 @@ def min_with_ties(iterable, key=None):
         key = lambda val : val
 
     try:
-        ret = [iterable.next()]
+        ret = [next(iterable)]
     except StopIteration:
         return ret
 
     for item in iterable:
-        i = cmp(key(item), key(ret[0]))
-        if i < 0:
+        if key(item) < key(ret[0]):
             ret = [item]
-        elif i == 0:
+        elif key(item) == key(ret[0]):
             ret.append(item)
 
     return ret
