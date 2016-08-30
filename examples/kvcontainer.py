@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import anadama2.tracked
 from anadama2 import Workflow
 

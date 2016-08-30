@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import shutil
 import unittest
@@ -111,5 +112,7 @@ class TestPicklerunner(unittest.TestCase):
         self.assertTrue(bool(result.error))
         self.assertIn("ShellException", result.error)
         
-
+        
+if __name__ == "__main__":
+    unittest.main()
 

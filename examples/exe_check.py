@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from anadama2 import Workflow
 
 workflow = Workflow()

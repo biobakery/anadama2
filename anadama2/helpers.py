@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Contains functions that help create tasks. All functions contained
 herein are intended for use with
 :meth:`anadama2.workflow.Workflow.add_task`. This means that the functions
@@ -150,21 +151,21 @@ def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
     def actually_system(task):
         files = []
         if stdin:
-            f = kwargs['stdin'] = open(stdin, 'r')
+            f = kwargs['stdin'] = open(stdin, 'rb')
             files.append(f)
         if stdout:
-            f = kwargs['stdout'] = open(stdout, 'a')
+            f = kwargs['stdout'] = open(stdout, 'ab')
             files.append(f)
         if stdout_clobber:
-            f = kwargs['stdout'] = open(stdout_clobber, 'w')
+            f = kwargs['stdout'] = open(stdout_clobber, 'wb')
             files.append(f)
         if stderr:
-            f = kwargs['stderr'] = open(stderr, 'a')
+            f = kwargs['stderr'] = open(stderr, 'ab')
             files.append(f)
         if stderr_clobber:
-            f = kwargs['stderr'] = open(stderr_clobber, 'w')
+            f = kwargs['stderr'] = open(stderr_clobber, 'wb')
             files.append(f)
-        with contextlib.nested(*files):
+        try:
             logger = logging.getLogger(__name__)
             logger.info(
                 "Forking subprocess %s with args %s", args_list, kwargs)
@@ -172,6 +173,9 @@ def system(args_list, stdin=None, stdout=None, stdout_clobber=None,
             logger.info("Execution complete. Stdout: %s\nStderr: %s",
                         ret[0] or '',
                         ret[1] or '')
+        finally:
+            for f in files:
+                f.close()
         return ret
     return actually_system
 

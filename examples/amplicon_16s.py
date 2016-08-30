@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 from anadama2 import Workflow
 from anadama2.helpers import system, rm

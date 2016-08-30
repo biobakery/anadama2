@@ -180,13 +180,13 @@ class ConsoleReporter(BaseReporter):
     """
 
 
-    msg_str = "({:.1})[{:3}/{:3} - {:6.2f}%] {:.57}"
+    msg_str = six.u("({:.1})[{:3}/{:3} - {:6.2f}%] {:.57}")
 
     class stats:
-        skip  = "s"
-        fail  = "!"
-        done  = "+"
-        start = " "
+        skip  = six.u("s")
+        fail  = six.u("!")
+        done  = six.u("+")
+        start = six.u(" ")
 
     def __init__(self, *args, **kwargs):
         self.failed_results = list()
@@ -197,14 +197,15 @@ class ConsoleReporter(BaseReporter):
     def _msg(self, status, msg, c_r=False):
         if self.n_open > 1 and not self.multithread_mode:
             self.multithread_mode = True
-            sys.stderr.write('\n')
+            sys.stderr.write(six.u('\n'))
         s = self.msg_str.format(status, self.n_complete, self.n_tasks,
-                                (float(self.n_complete)/self.n_tasks)*100, msg)
+                                (float(self.n_complete)/self.n_tasks)*100,
+                                six.u(msg))
         if self.multithread_mode is True:
-            s += "\n"
+            s += six.u("\n")
         elif c_r:
             self.n_open -= 1
-            s = "\r" + s + "\n"
+            s = six.u("\r") + s + six.u("\n")
         else:
             self.n_open += 1
         sys.stderr.write(s)
@@ -235,13 +236,13 @@ class ConsoleReporter(BaseReporter):
         self._msg(self.stats.done, name, True)
 
     def finished(self):
-        six.print_("Run Finished", file=sys.stderr)
+        sys.stderr.write(six.u("Run Finished\n"))
         for name, result in self.failed_results:
-            six.print_("Task {} failed".format(result.task_no), file=sys.stderr)
-            six.print_("  Name: "+name, file=sys.stderr)
-            six.print_("  Original error: ", file=sys.stderr)
+            sys.stderr.write(six.u("Task {} failed\n".format(result.task_no)))
+            sys.stderr.write(six.u("  Name: "+name+"\n"))
+            sys.stderr.write(six.u("  Original error: \n"))
             for line in result.error.split("\n"):
-                six.print_("  "+line, file=sys.stderr)
+                sys.stderr.write(six.u("  "+line+"\n"))
         self.reset()
 
     def reset(self):

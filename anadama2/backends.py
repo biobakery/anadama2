@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import json
@@ -44,11 +45,11 @@ def _try_dir(maybe_datadir):
         try:
             mkdirp(maybe_datadir)
         except Exception as e:
-            msg = ("Unable to create anadama "
-                   "database directory `{}': "+str(e))
-            six.print_(msg.format(maybe_datadir), file=sys.stderr)
+            msg = six.u("Unable to create anadama "
+                        "database directory `{}': \n"+str(e))
+            sys.stderr.write(msg.format(maybe_datadir))
             fallback = _fallback_datadir()
-            six.print_("Using fallback directory: "+fallback, file=sys.stderr)
+            sys.stderr.write(six.u("Using fallback directory: "+fallback+"\n"))
             return fallback
     return maybe_datadir
 
@@ -118,10 +119,10 @@ class LevelDBBackend(BaseBackend):
 
     def _get(self, key):
         try:
-            val = self.db.Get(key)
+            val = self.db.Get(key.encode("utf-8"))
         except KeyError:
             return None
-        return json.loads(val)
+        return json.loads(val.decode("utf-8"))
 
 
     def lookup(self, dep):
@@ -137,7 +138,7 @@ class LevelDBBackend(BaseBackend):
             return
         batch = leveldb.WriteBatch()
         for key, val in zip(dep_keys, dep_vals):
-            batch.Put(key, json.dumps(val))
+            batch.Put(key.encode("utf-8"), json.dumps(val).encode("utf-8"))
         self.db.Write(batch)
 
 
@@ -145,12 +146,12 @@ class LevelDBBackend(BaseBackend):
         return self.db.RangeIter(include_value=False)
 
     def delete(self, key):
-        return self.db.Delete(key)
+        return self.db.Delete(key.encode("utf-8"))
 
     def delete_many(self, keys):
         batch = leveldb.WriteBatch()
         for k in keys:
-            batch.Delete(k)
+            batch.Delete(k.encode("utf-8"))
         self.db.Write(batch)
 
     def close(self):

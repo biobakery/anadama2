@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function
 import re
 import os
 import sys
@@ -7,13 +9,14 @@ import errno
 import inspect
 import fnmatch
 import mimetypes
+import contextlib
 import unicodedata
 from functools import wraps
 from collections import namedtuple
 from multiprocessing import cpu_count
 
 import six
-from six.renames import zip_longest
+from six.moves import zip_longest
 
 from .. import Task
 
@@ -194,10 +197,10 @@ def serialize_map_file(namedtuples, output_fname):
     namedtuples_iter = iter(namedtuples)
     with open(output_fname, 'w') as map_file:
         first = next(namedtuples_iter)
-        six.print_("#"+"\t".join(first._fields), file=map_file)
-        six.print_("\t".join(first), file=map_file)
+        map_file.write(six.u("#"+"\t".join(first._fields)+"\n"))
+        map_file.write(six.u("\t".join(first)+"\n"))
         for record in namedtuples_iter:
-            six.print_("\t".join(record), file=map_file)
+            map_file.write(six.u("\t".join(record)+"\n"))
 
 
 def _defaultfunc(obj):
@@ -291,8 +294,7 @@ def _adler32(fname):
     :param fname: File path to the file to checksum
     :type fname: str
     """
-
-    with open(fname, 'r') as f:
+    with open(fname, 'rb') as f:
         checksum = 1
         while True:
             buf = f.read(1024*1024*8)
@@ -447,6 +449,8 @@ def kebab(s):
     and unfriendly characters are dropped."""
     if type(s) is six.text_type:
         s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore")
+        if six.PY3:
+            s = s.decode("ascii")
     s = re.sub(r"[\s-]+", '-', s)
     return re.sub(r"""['".,\[\]{}!@#$%^&*()_=+|\\`~><\d]+""", '', s).rstrip('-')
 
@@ -460,3 +464,19 @@ def get_name(t):
 
     """
     return t.name
+
+
+@contextlib.contextmanager
+def capture(stderr=None, stdout=None):
+    if stderr:
+        saved_stderr = sys.stderr
+        sys.stderr = stderr
+    if stdout:
+        saved_stdout = sys.stdout
+        sys.stdout = stdout
+    yield
+    if stderr:
+        sys.stderr = saved_stderr
+    if stdout:
+        sys.stdout = saved_stdout
+    

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import time
@@ -18,8 +19,8 @@ import anadama2.util
 import anadama2.cli
 import anadama2.backends
 import anadama2.taskcontainer
+from anadama2.util import capture
 
-from .util import capture
 
 SLEEPTIME = os.environ.get("ANADAMA_SLEEP_TIME", "0.01")
 SLEEPTIME=float(SLEEPTIME)
@@ -90,14 +91,14 @@ class TestWorkflow(unittest.TestCase):
 
     def test_discover_binaries(self):
         bash_script = os.path.join(self.workdir, "test.sh")
-        echoprog = anadama2.util.sh(("which", "echo"))[0].strip()
+        echoprog = anadama2.util.sh(("which", "echo"))[0].strip().decode("utf-8")
         with open(bash_script, 'w') as f:
-            six.print_("#!/bin/bash", file=f)
-            six.print_("echo hi", file=f)
+            f.write("#!/bin/bash\n")
+            f.write("echo hi\n")
         os.chmod(bash_script, 0o755)
         plain_file = os.path.join(self.workdir, "blah.txt")
         with open(plain_file, 'w') as f:
-            six.print_("nothing to see here", file=f)
+            f.write("nothing to see here\n")
         ret = anadama2.workflow.discover_binaries("echo hi")
         self.assertGreater(len(ret), 0, "should find "+echoprog)
         self.assertTrue(isinstance(ret[0], anadama2.tracked.TrackedExecutable))
@@ -458,7 +459,7 @@ class TestWorkflow(unittest.TestCase):
             self.ctx.go()
         self.assertEqual(mtime, os.stat(out).st_mtime)
         with open(os.path.join(self.workdir, "f.txt"), 'w') as f:
-            six.print_("hi mom", file=f)
+            f.write("hi mom\n")
         time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -486,7 +487,7 @@ class TestWorkflow(unittest.TestCase):
             self.ctx.go()
         self.assertEqual(mtime, os.stat(out).st_mtime)
         with open(os.path.join(self.workdir, "f.txt"), 'w') as f:
-            six.print_("hi mom", file=f)
+            f.write("hi mom\n")
         time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -583,11 +584,11 @@ class TestWorkflow(unittest.TestCase):
 
 
     def test_print_within_function_action(self):
-        stderr_msg = "".join([chr(random.randint(32, 126)) for _ in range(10)])
-        stdout_msg = "".join([chr(random.randint(32, 126)) for _ in range(10)])
+        stderr_msg = six.u("".join([chr(random.randint(32, 126)) for _ in range(10)]))
+        stdout_msg = six.u("".join([chr(random.randint(32, 126)) for _ in range(10)]))
         def printer(task):
-            six.print_(stderr_msg, file=sys.stderr)
-            six.print_(stdout_msg, file=sys.stdout)
+            sys.stderr.write(stderr_msg+"\n")
+            sys.stdout.write(stdout_msg+"\n")
 
         t1 = self.ctx.add_task(printer)
 

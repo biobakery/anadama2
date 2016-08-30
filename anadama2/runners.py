@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function
 import time
 import logging
 import itertools
@@ -6,9 +8,9 @@ import multiprocessing
 import pickle as pickle
 from collections import namedtuple
 
-from six.renames import queue
+from six.moves import queue
+import cloudpickle
 
-from .pickler import cloudpickle
 from .util import istask
 
 logger = logging.getLogger(__name__)
@@ -64,14 +66,14 @@ class DryRunner(BaseRunner):
     def run_tasks(self, task_idx_deque):
         for idx in task_idx_deque:
             task = self.ctx.tasks[idx]
-            print("{} - {}".format(task.task_no, task.name))
-            print("  Dependencies ({})".format(len(task.depends)))
+            six.print_("{} - {}".format(task.task_no, task.name))
+            six.print_("  Dependencies ({})".format(len(task.depends)))
             for dep in task.depends:
-                print(self._depformat(dep))
-            print("  Targets ({})".format(len(task.targets)))
+                six.print_(self._depformat(dep))
+            six.print_("  Targets ({})".format(len(task.targets)))
             for dep in task.targets:
-                print(self._depformat(dep))
-            print("------------------")
+                six.print_(self._depformat(dep))
+            six.print_("------------------")
 
 
     def _depformat(self, d):
@@ -496,7 +498,7 @@ def current_grid_runner(context):
 
     
 def exception_result(exc):
-    return TaskResult(getattr(exc, "task_no", None), exc.message, None, None)
+    return TaskResult(getattr(exc, "task_no", None), str(exc), None, None)
 
 
 def parent_failed_result(idx, parent_idx):

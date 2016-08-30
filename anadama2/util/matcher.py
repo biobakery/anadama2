@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 import itertools
 import operator
 
-from six.renames import zip
+from six.moves import zip
 
 first = operator.itemgetter(0)
 
