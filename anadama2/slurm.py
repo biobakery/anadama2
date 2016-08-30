@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import re
 import sys
@@ -8,7 +9,7 @@ from math import exp
 from collections import namedtuple
 
 import six
-from six.renames import queue
+from six.moves import queue
 
 from . import grid
 from . import runners

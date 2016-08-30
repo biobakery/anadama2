@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+from __future__ import print_function
 import sys
 import json
 import optparse
@@ -29,8 +31,7 @@ def forget(backend, key=None):
         try:
             backend.delete(key)
         except Exception as e:
-            six.print_("Error inserting key {}: {}".format(key, e),
-                       file=sys.stderr)
+            sys.stderr.write("Error inserting key {}: {}\n".format(key, e))
 
 
 def entry_point(argv=None):
@@ -50,7 +51,7 @@ def entry_point(argv=None):
     backend = backends.auto(be_dir)
     if not backend.exists():
         msg = "Error - backend doesn't exist or is unrecognized: "
-        six.print_(msg+be_dir, file=sys.stderr)
+        sys.stderr.write(msg+be_dir+"\n")
         sys.exit(1)
     if opts.dump_dependencies:
         return dump_dependencies(backend)

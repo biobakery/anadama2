@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import time
@@ -5,7 +6,7 @@ import tempfile
 import threading
 
 import six
-from six.renames import queue
+from six.moves import queue
 
 from . import grid
 from . import runners

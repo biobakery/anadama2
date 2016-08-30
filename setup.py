@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 
@@ -7,7 +8,8 @@ import distutils
 requires = [
     'networkx==1.11',
     'leveldb==0.193',
-    'six'
+    'six',
+    'cloudpickle==0.2.1'
 ]
 
 if os.name == 'posix' and sys.version_info[0] < 3:

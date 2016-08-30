@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Save a task to a script for running by other programs"""
 
 import os
@@ -7,16 +8,17 @@ import pickle as pickle
 from base64 import b64decode
 from tempfile import NamedTemporaryFile
 
-from .pickler import cloudpickle
+import six
+import cloudpickle
 
-PICKLE_KEY = "results_as_pickle"
+PICKLE_KEY = b"results_as_pickle"
 
 template = \
-"""#!{python_bin}
+r"""#!{python_bin}
 
 import os
 import sys
-import cPickle as pickle
+import pickle
 from base64 import b64encode
 
 from anadama2.runners import _run_task_locally
@@ -35,9 +37,14 @@ def remove_myself():
 def main(do_pickle=False):
     result = _run_task_locally(task)
     if do_pickle:
-        print "{pickle_key}: "+b64encode(pickle.dumps(result))
+        encoded = pickle.dumps(result)
+        result = {pickle_key}+b": "+b64encode(encoded)
+        fp = os.fdopen(sys.stdout.fileno(), 'wb')
+        fp.write(result+b"\n")
+        fp.flush()
+        fp.close()
     else:
-        print result
+        sys.stdout.write(str(result)+"\n")
 
 
 if __name__ == '__main__':
@@ -66,6 +73,7 @@ class PickleScript(object):
         else:
             return self._path
 
+
     def save(self, path=None, to_fp=None):
         if bool(path) == bool(to_fp): # logical not xor
             raise ValueError("Need either path or to_fp")
@@ -81,6 +89,8 @@ class PickleScript(object):
     def render(self, python_bin=None, to_fp=None, pickle_key=PICKLE_KEY):
         if not python_bin:
             python_bin = os.path.join(sys.prefix, "bin", "python")
+        if six.PY2:
+            pickle_key = "'{}'".format(pickle_key)
         rendered = template.format(
             python_bin = python_bin,
             pickle     = repr(cloudpickle.dumps(self.task)),
@@ -89,7 +99,8 @@ class PickleScript(object):
         if not to_fp:
             return rendered
         else:
-            to_fp.write(rendered)
+            to_fp.write(rendered.encode("utf-8"))
+
     
     def __repr__(self):
         return self.render()
@@ -107,7 +118,7 @@ def tmp(task, chmod=0o755, *args, **kwargs):
 
         
 def decode(script_output, pickle_key=PICKLE_KEY):
-    match = re.search(pickle_key+r': (\S+)$', script_output)
+    match = re.search(pickle_key+br': (\S+)$', script_output)
     if not match:
         msg = "Unable to find pickle key `{}' in script output"
         raise ValueError(msg.format(pickle_key))

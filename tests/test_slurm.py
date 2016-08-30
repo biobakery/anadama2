@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 
 import os
 import random
@@ -5,6 +6,7 @@ import shutil
 import unittest
 from collections import defaultdict
 
+import six
 from six import StringIO
 import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
@@ -13,8 +15,7 @@ import anadama2
 import anadama2.slurm
 import anadama2.backends
 from anadama2.util import find_on_path
-
-from .util import capture
+from anadama2.util import capture
 
 def bern(p):
     return random.random() < p

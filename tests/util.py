@@ -1,5 +1,4 @@
-import sys
-import contextlib
+# -*- coding: utf-8 -*-
 import multiprocessing
 
 def timed(func, time, *args, **kwargs):
@@ -11,17 +10,3 @@ def timed(func, time, *args, **kwargs):
         raise Exception("Timed out!")
 
 
-@contextlib.contextmanager
-def capture(stderr=None, stdout=None):
-    if stderr:
-        saved_stderr = sys.stderr
-        sys.stderr = stderr
-    if stdout:
-        saved_stdout = sys.stdout
-        sys.stdout = stdout
-    yield
-    if stderr:
-        sys.stderr = saved_stderr
-    if stdout:
-        sys.stdout = saved_stdout
-    

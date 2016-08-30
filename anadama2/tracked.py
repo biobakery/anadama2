@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import logging
@@ -7,7 +8,7 @@ from operator import eq, itemgetter
 from collections import defaultdict
 
 import six
-from six.renames import zip_longest
+from six.moves import zip_longest
 
 from .util import _adler32, find_on_path, sh, HasNoEqual
 from .util import istask, Directory
@@ -426,7 +427,7 @@ class Container(object):
     @staticmethod
     def key(namespace=None):
         if not namespace:
-            os.path.abspath(os.path.dirname(sys.argv[0]))
+            return os.path.abspath(os.path.dirname(sys.argv[0]))
         return namespace
 
     def items(self):

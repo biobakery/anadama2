@@ -26,7 +26,7 @@ class TestUtil(unittest.TestCase):
         open(f, 'w').close()
         first = anadama2.util._adler32(f)
         with open(f, 'w+') as _f:
-            six.print_("blah blah", file=_f)
+            _f.write(six.u("blah blah\n"))
         second = anadama2.util._adler32(f)
         open(f, 'w').close()
         third = anadama2.util._adler32(f)
@@ -56,7 +56,7 @@ class TestUtil(unittest.TestCase):
 
     def test_kebab(self):
         self.assertEqual(anadama2.util.kebab("drunken     sailor"), "drunken-sailor")
-        self.assertEqual(anadama2.util.kebab("drunken-säilor"), "drunken-sailor")
+        self.assertEqual(anadama2.util.kebab("drunken-s"+six.unichr(228)+"ilor"), "drunken-sailor")
         self.assertEqual(anadama2.util.kebab("drunken-209sailor"), "drunken-sailor")
         self.assertEqual(anadama2.util.kebab("drunken-,.!@#$%^&*()sailor"), "drunken-sailor")
         self.assertEqual(anadama2.util.kebab("drunken-_+|\\sailor"), "drunken-sailor")

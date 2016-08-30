@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 class AuthInfo(object):
     def __init__(self, username, projectname, commit_id, auth_key):
         self.username    = username

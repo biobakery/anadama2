@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import re
 import shlex
@@ -8,7 +9,7 @@ from operator import attrgetter, itemgetter
 from collections import deque, defaultdict
 
 import six
-from six.renames import filter, map
+from six.moves import filter, map
 import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
@@ -427,7 +428,7 @@ class Workflow(object):
                 drop = self._targetmatch(drop, name_or_pattern, allchildren)
         if not keep:
             keep = set(task_idxs)
-        task_idxs = filter((keep-drop).__contains__, task_idxs)
+        task_idxs = list(filter((keep-drop).__contains__, task_idxs))
         if not skip_nothing:
             task_idxs = self._filter_skipped_tasks(task_idxs)
         task_idxs = deque(task_idxs)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """utilities for working with filenames"""
 
 import os

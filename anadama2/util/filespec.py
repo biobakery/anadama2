@@ -1,10 +1,11 @@
+# -*- coding: utf-8 -*-
 import re
 import os
 import glob
 from itertools import chain
 from operator import itemgetter
 
-from six.renames import map, filter
+from six.moves import map, filter
 
 DEFAULT_DATA_DIR = "./"
 
