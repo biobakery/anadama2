@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from anadama2 import Workflow
-from anadama.util import fname
+from anadama2.util import fname
 from anadama2.cli import Configuration
 
 cfg = Configuration( version="0.0.1",
