@@ -50,7 +50,7 @@ default_options = {
                          Use this flag multiple times to build many targets. If the 
                          provided value includes `?' or `*' or `[', treat it as
                          a pattern and build all targets that match."""),
-    "exclude_target": optparse.make_option("-T", "--exclude_target", default=[], action="append",
+    "exclude_target": optparse.make_option("-T", "--exclude-target", default=[], action="append",
                          help="""Don't execute tasks that make these targets.  
                          Use this flag multiple times to exclude many targets. If the 
                          provided value includes `?' or `*' or `[', treat it as
