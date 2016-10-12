@@ -20,7 +20,7 @@ for input_bam in input_bams:
     ctx.add_task(
         [ system(["samtools", "bam2fq", input_bam], stdout=rawfq),
           system(["split_paired_fastq", r1, r2], stdin=rawfq),
-          system(["fastq-join", r1, r2,'-o' rawfq ]),
+          system(["fastq-join", r1, r2,'-o', rawfq ]),
           rm([r1, r2]) ],
         depends=input_bam,
         targets=rawfq,
@@ -31,7 +31,7 @@ for input_bam in input_bams:
     @ctx.add_task(name="Trim "+rawfq, depends=rawfq, targets=trimfq)
     def trim_task(task):
         cutoff = find_cutoff(rawfq)
-        sh("usearch8 -fastx_truncate "+rawfq+" -trunclen "+str(cutoff)
+        sh("usearch8 -fastx_truncate "+rawfq+" -trunclen "+str(cutoff)+
            " -fasta_out "+trimfq)
 
     ctx.add_task("pick_otus {depends[0]}, {targets[0]}",
