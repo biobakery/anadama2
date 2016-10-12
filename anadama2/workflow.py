@@ -573,18 +573,31 @@ class Workflow(object):
         raise KeyError(msg.format(str(closest), type(closest)))
 
 
+    @property
+    def _alltargets(self):
+        return iter( (targ.name, task.task_no) for task in self.tasks
+                     for targ in task.targets )
+
     def _targetmatch(self, s, name_or_pattern, hier):
-        alltargets = iter( (targ.name, task.task_no) for task in self.tasks
-                           for targ in task.targets )
         if re.search(r'[?*\[]', name_or_pattern):
             regex = re.compile(fnmatch.translate(name_or_pattern))
-            matches = [ no for name, no in alltargets if regex.match(name) ]
-            return set( sibling for match in matches
-                        for sibling in hier(self.dag, match) )
+            matches = [ no for name, no in self._alltargets
+                        if regex.match(name) ]
+            ret = set( sibling for match in matches
+                       for sibling in hier(self.dag, match) )
+            if not ret:
+                msg = "Pattern {} matched no targets."
+                raise ValueError(msg.format(name_or_pattern))
         else:
-            match = next( iter(no for name, no in alltargets
-                               if name_or_pattern == name) )
-            return set(hier(self.dag, match))
+            try:
+                match = next( iter(no for name, no in self._alltargets
+                                   if name_or_pattern == name) )
+            except StopIteration:
+                msg = "Unable to find target {}. Perhaps you meant `{}'?"
+                m = os.path.join(os.getcwd(), name_or_pattern)
+                raise ValueError(msg.format(name_or_pattern, m))
+            ret = set(hier(self.dag, match))
+        return s.union(ret)
 
 
 
