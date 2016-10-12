@@ -35,7 +35,6 @@ Instead of this:
 import os
 import shutil
 import logging
-import contextlib
 
 from .util import sh as _sh
 from .util import sugar_list
