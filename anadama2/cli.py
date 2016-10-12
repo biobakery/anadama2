@@ -27,8 +27,8 @@ default_options = {
                          help="Collect inputs from this directory. "),
     "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
                          help="Print tasks to be run but don't execute their actions."),
-    "run_them_all": optparse.make_option("-a", '--run-them-all', action="store_true",
-                         help="Skip no tasks; run it all."),
+    "skip_nothing": optparse.make_option("-n", '--skip-nothing', action="store_true",
+                         help="Skip no tasks, even if you could; run it all."),
     "quit_early": optparse.make_option("-e", '--quit-early', action="store_true",
                          help="""If any tasks fail, stop all execution immediately. If set to
                          ``False`` (the default), children of failed tasks are *not*

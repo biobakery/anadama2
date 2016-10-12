@@ -439,6 +439,19 @@ class TestWorkflow(unittest.TestCase):
             self.ctx.go()
         self.assertNotEqual(mtime, os.stat(a).st_mtime)
 
+    def test_go_skip_nothing(self):
+        a = os.path.join(self.workdir, "a.txt")
+        self.ctx.add_task("touch {targets[0]}", targets=[a])
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        mtime = os.stat(a).st_mtime
+        time.sleep(SLEEPTIME)
+        with capture(stderr=StringIO()):
+            self.ctx.go()
+        self.assertEqual(mtime, os.stat(a).st_mtime)
+        with capture(stderr=StringIO()):
+            self.ctx.go(skip_nothing=True)
+        self.assertNotEqual(mtime, os.stat(a).st_mtime)
 
     def test_go_skip_glob(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
