@@ -8,6 +8,7 @@ import multiprocessing
 import pickle as pickle
 from collections import namedtuple
 
+import six
 from six.moves import queue
 import cloudpickle
 
