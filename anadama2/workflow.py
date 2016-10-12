@@ -177,7 +177,8 @@ class Workflow(object):
         sh_cmd = re.sub(r'\[([vdt]+):([^][]+)\]', _repl, cmd)
         if track_cmd:
             ns = os.path.abspath(tracked.Container.key(None))
-            d = tracked.TrackedVariable(ns, str(len(self.tasks)+1), sh_cmd)
+            varname = "task_{}_command".format(len(self.tasks)+1)
+            d = tracked.TrackedVariable(ns, varname, sh_cmd)
             ds.append(d)
         if track_binaries:
             to_preexist = []
