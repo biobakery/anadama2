@@ -13,6 +13,7 @@ from six.moves import queue
 import cloudpickle
 
 from .util import istask
+from . import tracked
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,18 @@ class BaseRunner(object):
 
 
 class DryRunner(BaseRunner):
+
+    _typemap = {
+        tracked.TrackedString: "String",
+        tracked.TrackedVariable: "Variable",
+        tracked.TrackedFile: "File",
+        tracked.HugeTrackedFile: "Big File",
+        tracked.TrackedDirectory: "Directory",
+        tracked.TrackedFilePattern: "File Pattern",
+        tracked.TrackedExecutable: "Executable",
+        tracked.TrackedFunction: "Python Function",
+    }
+
     def run_tasks(self, task_idx_deque):
         for idx in task_idx_deque:
             task = self.ctx.tasks[idx]
@@ -79,9 +92,11 @@ class DryRunner(BaseRunner):
 
     def _depformat(self, d):
         if istask(d):
-            return "    Task {} - {}".format(d.task_no, d.name)
+            return "  - Task {} - {}".format(d.task_no, d.name)
         else:
-            return "    {} ({})".format(d.name, type(d))
+            t = type(d)
+            desc = self._typemap.get(t, str(t))
+            return "  - {} ({})".format(d.name, desc)
 
 
 
