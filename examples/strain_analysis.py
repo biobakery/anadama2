@@ -158,4 +158,4 @@ if __name__ == '__main__':
     elif '2' == sys.argv[1]:
         step_2()
     else:
-        print "%s <1|2> # for step 1 or step 2"%sys.argv[0]
+        print("{} <1|2> # for step 1 or step 2".format(sys.argv[0]))
