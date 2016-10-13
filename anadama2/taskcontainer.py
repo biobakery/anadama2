@@ -5,6 +5,9 @@ import itertools
 
 import six
 
+from .util import matcher
+
+
 class TaskContainer(list):
     """Contains tasks. Tasks can be accessed by task_no or by name"""
 
@@ -19,13 +22,15 @@ class TaskContainer(list):
         
     def _get_or_search(self, key):
         if '*' in key:
-            return self.search(fnmatch.translate(key))
+            hits = list(self.search(fnmatch.translate(key)))
+            if not hits:
+                raise KeyError
+            return hits
         return self.by_name[key]
 
 
     def search(self, q):
-        return iter(val for key, val in self.by_name.items()
-                    if re.search(q, val.name))
+        return iter(val for val in self if re.search(q, val.name))
 
 
     def append(self, task):
@@ -46,10 +51,18 @@ class TaskContainer(list):
 
 
     def __getitem__(self, key):
-        if isinstance(key, six.string_types):
-            return self._get_or_search(key)
-        return super(TaskContainer, self).__getitem__(key)
-
+        try:
+            if isinstance(key, six.string_types):
+                return self._get_or_search(key)
+            return super(TaskContainer, self).__getitem__(key)
+        except KeyError:
+            msg = "Unable to find task with `{}'. Perhaps you meant `{}'?"
+            m = matcher.closest(key, iter(t.name for t in self))[0][1]
+            raise KeyError(msg.format(key, m))
+        except IndexError:
+            msg = "No task with number {}. There are only {} tasks."
+            raise IndexError(msg.format(key, len(self)))
+ 
 
     def __contains__(self, item):
         if isinstance(item, six.string_types):
