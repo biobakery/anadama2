@@ -415,12 +415,12 @@ class Workflow(object):
         keep, drop = set(), set()
         if until_task:
             for task_name_or_no in sugar_list(until_task):
-                keep = keep.union(
-                    allparents(self.dag, self.tasks[task_name_or_no].task_no))
+                for t in sugar_list(self.tasks[task_name_or_no]):
+                    keep = keep.union(allparents(self.dag, t.task_no))
         if exclude_task:
             for task_name_or_no in sugar_list(exclude_task):
-                drop = drop.union(
-                    allchildren(self.dag, self.tasks[task_name_or_no].task_no))
+                for t in sugar_list(self.tasks[task_name_or_no]):
+                    drop = drop.union(allchildren(self.dag, t.task_no))
         if target:
             for name_or_pattern in sugar_list(target):
                 keep = self._targetmatch(keep, name_or_pattern, allparents)

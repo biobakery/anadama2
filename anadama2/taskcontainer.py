@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import re
+import fnmatch
 import itertools
 
 import six
@@ -13,6 +15,17 @@ class TaskContainer(list):
 
     def _update(self, task):
         self.by_name[task.name] = task
+
+        
+    def _get_or_search(self, key):
+        if '*' in key:
+            return self.search(fnmatch.translate(key))
+        return self.by_name[key]
+
+
+    def search(self, q):
+        return iter(val for key, val in self.by_name.items()
+                    if re.search(q, val.name))
 
 
     def append(self, task):
@@ -29,16 +42,24 @@ class TaskContainer(list):
 
     def __setitem__(self, key, task):
         self._update(task)
-        return super(TaskContainer, self).__settask__(key, task)
+        return super(TaskContainer, self).__setitem__(key, task)
 
 
     def __getitem__(self, key):
         if isinstance(key, six.string_types):
-            return self.by_name[key]
+            return self._get_or_search(key)
         return super(TaskContainer, self).__getitem__(key)
 
 
     def __contains__(self, item):
         if isinstance(item, six.string_types):
-            return item in self.by_name
+            if '*' in item:
+                try:
+                    next(self.search(fnmatch.translate(item)))
+                    return True
+                except StopIteration:
+                    return False
+            else:
+                return item in self.by_name
+            
         return super(TaskContainer, self).__contains__(item)
