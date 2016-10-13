@@ -11,7 +11,7 @@ import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
 import anadama2
-import anadama2.sge
+import anadama2.grid.sge
 import anadama2.backends
 from anadama2.util import capture
 
@@ -21,7 +21,7 @@ def bern(p):
 PARTITION = os.environ.get("ANASGE_QUEUE")
 TMPDIR = os.environ.get("ANASGE_TMPDIR")
 
-available = all(map(bool, (anadama2.sge.available, PARTITION, TMPDIR) ))
+available = all(map(bool, (anadama2.grid.sge.available, PARTITION, TMPDIR) ))
 
 
 class TestSGE(unittest.TestCase):
@@ -42,8 +42,8 @@ class TestSGE(unittest.TestCase):
             os.mkdir(self.workdir)
         cfg = anadama2.cli.Configuration()
         cfg._directives['output'].default = self.workdir
-        powerup = anadama2.sge.SGEPowerup(PARTITION, TMPDIR)
-        self.ctx = anadama2.workflow.Workflow(vars=cfg, grid_powerup=powerup)
+        powerup = anadama2.grid.sge.SGE(PARTITION, TMPDIR)
+        self.ctx = anadama2.workflow.Workflow(vars=cfg, grid=powerup)
 
     def tearDown(self):
         if self.ctx._backend:

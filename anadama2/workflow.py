@@ -15,7 +15,7 @@ from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
 from . import Task
 from . import tracked
-from . import grid
+from . import grid as _grid
 from . import reporters
 from . import backends
 from . import runners
@@ -43,10 +43,10 @@ class Workflow(object):
     :type storage_backend: instance of any
       :class:`anadama2.backends.BaseBackend` subclass or None.
 
-    :keyword grid_powerup: Use this object to configure the run
+    :keyword grid: Use this object to configure the run
       context to submit tasks to a compute grid.  
-    :type grid_powerup: objects implementing the interface of
-      :class:`anadama2.grid.DummyPowerup`
+    :type grid: objects implementing the interface of
+      :class:`anadama2.grid.Dummy
     
     :keyword strict: Enable strict mode. If strict, whenever a task is
       added that depends on something that is not the target of
@@ -60,7 +60,7 @@ class Workflow(object):
     """
 
 
-    def __init__(self, storage_backend=None, grid_powerup=None, strict=False,
+    def __init__(self, storage_backend=None, grid=None, strict=False,
                  vars=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
@@ -76,7 +76,7 @@ class Workflow(object):
         #: :meth:`anadama2.workflow.Workflow.go`.
         self.task_results = list()
         self._depidx = tracked.DependencyIndex()
-        self.grid_powerup = grid_powerup or grid.DummyPowerup()
+        self.grid = grid or _grid.Dummy()
         self.strict = strict
         self.vars = vars or Configuration(defaults=True)
         self.vars.ask_user()
@@ -194,17 +194,17 @@ class Workflow(object):
 
     def grid_do(self, cmd, track_cmd=True, track_binaries=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
-        in the ``grid_powerup`` option of
+        in the ``grid`` option of
         :class:`anadama2.workflow.Workflow`. By default, this
         method is a synonym for
         :meth:`anadama2.workflow.Workflow.do`. Please see the
         ``add_task`` documentation for your powerup of choice
-        e.g. :meth:`anadama2.slurm.SlurmPowerup.do` for information on
+        e.g. :meth:`anadama2.slurm.Slurm.do` for information on
         options to provide to this method.
         """
 
         t = self.do(cmd, track_cmd, track_binaries)
-        self.grid_powerup.do(t, **gridopts)
+        self.grid.do(t, **gridopts)
         return t
 
 
@@ -279,12 +279,12 @@ class Workflow(object):
     def grid_add_task(self, actions=None, depends=None, targets=None,
                       name=None, interpret_deps_and_targs=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
-        in the ``grid_powerup`` option of
+        in the ``grid`` option of
         :class:`anadama2.workflow.Workflow`. By default, this
         method is a synonym for
         :meth:`anadama2.workflow.Workflow.add_task`. Please see the
         ``add_task`` documentation for your powerup of choice
-        e.g. :meth:`anadama2.slurm.SlurmPowerup.add_task` for information on
+        e.g. :meth:`anadama2.grid.slurm.Slurm.add_task` for information on
         options to provide to this method.
 
         """
@@ -292,12 +292,12 @@ class Workflow(object):
             def finish_grid_add_task(fn):
                 t = self.add_task([fn], depends, targets, name)
                 self._add_task(t)
-                self.grid_powerup.add_task(t, **gridopts)
+                self.grid.add_task(t, **gridopts)
             return finish_grid_add_task
         else:
             t = self.add_task(actions, depends, targets, name,
                               interpret_deps_and_targs)
-            self.grid_powerup.add_task(t, **gridopts)
+            self.grid.add_task(t, **gridopts)
             return t
 
 
@@ -405,7 +405,7 @@ class Workflow(object):
         self._reporter = reporter or reporters.default(self.vars.get("output"))
         self._reporter.started(self)
 
-        _runner = runner or self.grid_powerup.runner(self, jobs, grid_jobs)
+        _runner = runner or self.grid.runner(self, jobs, grid_jobs)
         if dry_run:
             _runner = runners.DryRunner(self)
         _runner.quit_early = quit_early

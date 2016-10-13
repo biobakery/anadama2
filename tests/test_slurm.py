@@ -12,7 +12,7 @@ import networkx as nx
 from networkx.algorithms.traversal.depth_first_search import dfs_edges
 
 import anadama2
-import anadama2.slurm
+import anadama2.grid.slurm
 import anadama2.backends
 from anadama2.util import find_on_path
 from anadama2.util import capture
@@ -39,13 +39,13 @@ class TestSlurm(unittest.TestCase):
 
 
     def setUp(self):
-        powerup = anadama2.slurm.SlurmPowerup(PARTITION, TMPDIR)
+        powerup = anadama2.grid.slurm.Slurm(PARTITION, TMPDIR)
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
         cfg = anadama2.cli.Configuration()
         cfg._directives['output'].default = self.workdir
-        self.ctx = anadama2.workflow.Workflow(vars=cfg, grid_powerupt=powerup)
+        self.ctx = anadama2.workflow.Workflow(vars=cfg, grid=powerup)
 
 
     def tearDown(self):
