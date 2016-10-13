@@ -594,9 +594,11 @@ class Workflow(object):
                 match = next( iter(no for name, no in self._alltargets
                                    if name_or_pattern == name) )
             except StopIteration:
-                msg = "Unable to find target {}. Perhaps you meant `{}'?"
-                m = os.path.join(os.getcwd(), name_or_pattern)
-                raise ValueError(msg.format(name_or_pattern, m))
+                msg = "Unable to find target {}.".format(name_or_pattern)
+                if os.sep not in name_or_pattern:
+                    m = os.path.join(os.getcwd(), name_or_pattern)
+                    msg += " Perhaps you meant `{}'?".format(m)
+                raise ValueError(msg)
             ret = set(hier(self.dag, match))
         return s.union(ret)
 
