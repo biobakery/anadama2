@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from . import runners
+from .. import runners
 
-class DummyPowerup(object):
+class Dummy(object):
 
     def do(self, task, **opts):
         pass
