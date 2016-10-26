@@ -43,7 +43,7 @@ class TestPicklerunner(unittest.TestCase):
 
     def test_PickleScript(self):
         outf = os.path.join(self.workdir, "hosts")
-        t = self.ctx.add_task("ls -alh /etc/hosts > {targets[0]}",
+        t = self.ctx.add_task("ls -alh /etc/hosts > [targets[0]]",
                               targets=outf)
         s = picklerunner.PickleScript(t)
         data = s.render()
@@ -56,7 +56,7 @@ class TestPicklerunner(unittest.TestCase):
 
     def test_tmp(self):
         outf = os.path.join(self.workdir, "hosts")
-        t = self.ctx.add_task("ls -alh /etc/hosts > {targets[0]}",
+        t = self.ctx.add_task("ls -alh /etc/hosts > [targets[0]]",
                               targets=outf)
         s = picklerunner.tmp(t)
         self.assertTrue(os.path.exists(s.path))
@@ -69,7 +69,7 @@ class TestPicklerunner(unittest.TestCase):
 
     def test_decode(self):
         outf = os.path.join(self.workdir, "hosts")
-        t = self.ctx.add_task("ls -alh /etc/hosts > {targets[0]}",
+        t = self.ctx.add_task("ls -alh /etc/hosts > [targets[0]]",
                               targets=outf)
         s = picklerunner.tmp(t)
         self.assertTrue(os.path.exists(s.path))
@@ -96,7 +96,7 @@ class TestPicklerunner(unittest.TestCase):
 
     def test_decode_fail(self):
         outf = os.path.join(self.workdir, "hosts")
-        t = self.ctx.add_task("ls -alh /etc/hosts > {targets[0]}; exit 1",
+        t = self.ctx.add_task("ls -alh /etc/hosts > [targets[0]]; exit 1",
                               targets=outf)
         s = picklerunner.tmp(t)
         self.assertTrue(os.path.exists(s.path))

@@ -12,13 +12,13 @@ for srs_id in srs_ids:
     dl_task = ctx.add_task("wget "+base+srs_id+".tar.bz2",
                            targets=[srs_id+".tar.bz2"])
     cat_task = ctx.add_task(
-        [ "bunzip2 {depends[0]} | tar -xf-",
-          "cat "+srs_id+"/*.fastq > {targets[0]}",
+        [ "bunzip2 [depends[0]] | tar -xf-",
+          "cat "+srs_id+"/*.fastq > [targets[0]]",
           rm_r(srs_id) ],
         targets=srs_id+".fastq",
         depends=dl_task.targets
     )
-    mt_task = ctx.add_task( "metaphlan2.py --no_map {depends[0]} {targets[0]}",
+    mt_task = ctx.add_task( "metaphlan2.py --no_map [depends[0]] [targets[0]]",
                             depends=cat_task.targets,
                             targets=srs_id+".tax.txt" )
 
