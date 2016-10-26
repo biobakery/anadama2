@@ -3,6 +3,7 @@ import re
 import sys
 import logging
 import optparse
+import os
 
 from .tracked import TrackedVariable
 from .util import kebab, Directory
@@ -19,11 +20,11 @@ BANNER = """
 """
 
 default_options = {
-    "output": optparse.make_option("-o", '--output', default=script_wd(), type="str",
+    "output": optparse.make_option("-o", '--output', default=None, type="str",
                          help="""Store output in this directory. By default the 
                          dependency database and run log are also put in 
                          this directory"""),
-    "input": optparse.make_option("-i", '--input', default=script_wd(), type="str",
+    "input": optparse.make_option("-i", '--input', default=os.getcwd(), type="str",
                          help="Collect inputs from this directory. "),
     "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
                          help="Print tasks to be run but don't execute their actions."),
@@ -56,6 +57,11 @@ default_options = {
                          provided value includes `?' or `*' or `[', treat it as
                          a pattern and exclude all targets that match.""")
 }
+
+# a list of the required options (as optparse does not have a required keyword)
+# these options must be supplied by the user on the command line or
+# the workflow must set the option default to a value using the change function
+required_options = ["output"]
 
 _default_dir = ("output","input")
 
@@ -114,6 +120,7 @@ class Configuration(object):
         self._user_asked = False
         self._callbacks = {}
         self._tracked = set()
+        self._required_options = []
 
         if not description:
             optparse.OptionParser.format_description = lambda s, t: s.description
@@ -124,6 +131,7 @@ class Configuration(object):
         )
         if defaults:
             self._directives.update(default_options)
+            self._required_options=required_options
             for opt in default_options.values():
                 self._shorts.add(opt._short_opts[0][1])
             for name in _default_dir:
@@ -131,7 +139,7 @@ class Configuration(object):
 
 
     def add(self, name, desc=None, type="str", default=None, short=None,
-            callback=None, tracked=False):
+            callback=None, tracked=False, required=None):
         """Add an option to the Configuration object.
 
         :param name: Set the name of the option. This name is
@@ -166,6 +174,8 @@ class Configuration(object):
         :keyword callback: Set a function to execute when the user
           sets the flag for this option.
         :type callback: callable
+        
+        :keyword required: Add this to the list of required options.
 
         :returns: self (the current Configuration object)
 
@@ -267,6 +277,11 @@ class Configuration(object):
         for name in self._directives:
             name = re.sub(r'-', '_', name)
             val = getattr(opts, name)
+            # if this is a required option, check that it has been provided
+            # by the user on the command line or that the default was set
+            # in the workflow
+            if name in self._required_options and not val:
+                self.parser.error("the "+str(self._directives[name])+" option is required")
             if name in self._directories:
                 val = Directory(val)
             if name in self._tracked:
