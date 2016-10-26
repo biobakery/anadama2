@@ -115,7 +115,9 @@ class Configuration(object):
         self.namespace = namespace if namespace is not None else script_wd()
 
         self._directives = {}
-        self._shorts = set()
+        # Add the help short option so it is not selected by the function _find_short
+        # when trying to find the short option for a new user option
+        self._shorts = set('h')
         self._directories = {}
         self._user_asked = False
         self._callbacks = {}
