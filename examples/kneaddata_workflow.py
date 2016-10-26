@@ -18,7 +18,7 @@ in_files = workflow.vars.input.files(pattern=workflow.vars.input_extension)
 for in_file in in_files:
     out_file = fname.mangle(in_file, tag="kneaddata", ext=".fastq")
     workflow.add_task(
-        "kneaddata -i {depends[0]} -o {targets[0]} -db {kneaddata_db} -t {threads}",
+        "kneaddata -i [depends[0]] -o [targets[0]] -db [kneaddata_db] -t [threads]",
         depends=in_file,
         target=out_file,
         kneaddata_db=workflow.vars.kneaddata_db,

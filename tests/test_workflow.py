@@ -267,7 +267,7 @@ class TestWorkflow(unittest.TestCase):
 
     def test_add_task_kwargs(self):
         outf = os.path.join(self.workdir, "test.txt")
-        t1 = self.ctx.add_task("echo {msg} > {targets[0]}",
+        t1 = self.ctx.add_task("echo [msg] > [targets[0]]",
                                targets=outf, msg="foobar")
         self.assertEqual(len(t1.depends), 0)
         self.assertEqual(len(t1.targets), 1)
@@ -288,7 +288,7 @@ class TestWorkflow(unittest.TestCase):
     def test_go(self):
         self.ctx.already_exists("/etc/hosts")
         outf = os.path.join(self.workdir, "wordcount.txt")
-        self.ctx.add_task("wc -l {depends[0]} > {targets[0]}",
+        self.ctx.add_task("wc -l [depends[0]] > [targets[0]]",
                           depends=["/etc/hosts"], targets=[outf] )
         
         with capture(stderr=StringIO()):
@@ -309,12 +309,12 @@ class TestWorkflow(unittest.TestCase):
     def test_issue1(self):
         a,b,c,d,e,f = [os.path.join(self.workdir, letter+".txt")
                        for letter in ("a", "b", "c", "d", "e", "f")]
-        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
-        self.ctx.add_task("touch {targets[0]}; exit 1", depends=[a], targets=[b], name="b")
-        self.ctx.add_task("touch {targets[0]}", depends=[b], targets=[c], name="c")
-        self.ctx.add_task("touch {targets[0]}", targets=[d], name="d")
-        self.ctx.add_task("touch {targets[0]}", depends=[d], targets=[e], name="e")
-        self.ctx.add_task("touch {targets[0]}", depends=[e], targets=[f], name="f")
+        self.ctx.add_task("touch [targets[0]]", targets=[a], name="a")
+        self.ctx.add_task("touch [targets[0]]; exit 1", depends=[a], targets=[b], name="b")
+        self.ctx.add_task("touch [targets[0]]", depends=[b], targets=[c], name="c")
+        self.ctx.add_task("touch [targets[0]]", targets=[d], name="d")
+        self.ctx.add_task("touch [targets[0]]", depends=[d], targets=[e], name="e")
+        self.ctx.add_task("touch [targets[0]]", depends=[e], targets=[f], name="f")
         with capture(stderr=StringIO()):
             with self.assertRaises(anadama2.workflow.RunFailed):
                 self.ctx.go(jobs=2)
@@ -323,8 +323,8 @@ class TestWorkflow(unittest.TestCase):
     def test_go_quit_early(self):
         outf = os.path.join(self.workdir, "blah.txt")
         out2 = os.path.join(self.workdir, "shouldntexist.txt")
-        self.ctx.add_task("echo blah > {targets[0]}; exit 1", targets=[outf])
-        self.ctx.add_task("cat {depends[0]} > {targets[0]}",
+        self.ctx.add_task("echo blah > [targets[0]]; exit 1", targets=[outf])
+        self.ctx.add_task("cat [depends[0]] > [targets[0]]",
                           depends=[outf], targets=[outf])
 
         with capture(stderr=StringIO()):
@@ -339,8 +339,8 @@ class TestWorkflow(unittest.TestCase):
     def test_go_until_task(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
-        self.ctx.add_task("touch {targets[0]} {targets[1]}", targets=[b, c], name="bc")
+        self.ctx.add_task("touch [targets[0]]", targets=[a], name="a")
+        self.ctx.add_task("touch [targets[0]] [targets[1]]", targets=[b, c], name="bc")
         self.ctx.add_task("touch "+d, depends=[a,b], name="d")
         with capture(stderr=StringIO()):
             self.ctx.go(until_task="bc")
@@ -353,8 +353,8 @@ class TestWorkflow(unittest.TestCase):
     def test_go_exclude_task(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
-        self.ctx.add_task("touch {targets[0]} {targets[1]}", targets=[b, c], name="bc")
+        self.ctx.add_task("touch [targets[0]]", targets=[a], name="a")
+        self.ctx.add_task("touch [targets[0]] [targets[1]]", targets=[b, c], name="bc")
         self.ctx.add_task("touch "+d, depends=[a,b], name="d")
         with capture(stderr=StringIO()):
             self.ctx.go(exclude_task="bc")
@@ -367,8 +367,8 @@ class TestWorkflow(unittest.TestCase):
     def test_go_target(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
-        self.ctx.add_task("touch {targets[0]} {targets[1]}", depends=[a],
+        self.ctx.add_task("touch [targets[0]]", targets=[a], name="a")
+        self.ctx.add_task("touch [targets[0]] [targets[1]]", depends=[a],
                           targets=[b, c], name="bc")
         self.ctx.add_task("touch "+d, depends=[a,b], name="d")
         with capture(stderr=StringIO()):
@@ -382,8 +382,8 @@ class TestWorkflow(unittest.TestCase):
     def test_go_exclude_target(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
-        self.ctx.add_task("touch {targets[0]} {targets[1]}", depends=[a],
+        self.ctx.add_task("touch [targets[0]]", targets=[a], name="a")
+        self.ctx.add_task("touch [targets[0]] [targets[1]]", depends=[a],
                           targets=[b, c], name="bc")
         self.ctx.add_task("touch "+d, depends=[a,b], name="d")
         with capture(stderr=StringIO()):
@@ -397,8 +397,8 @@ class TestWorkflow(unittest.TestCase):
     def test_go_exclude_target_pattern(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
-        self.ctx.add_task("touch {targets[0]} {targets[1]}", depends=[a],
+        self.ctx.add_task("touch [targets[0]]", targets=[a], name="a")
+        self.ctx.add_task("touch [targets[0]] [targets[1]]", depends=[a],
                           targets=[b, c], name="bc")
         self.ctx.add_task("touch "+d, depends=[a,b], name="d")
         with capture(stderr=StringIO()):
@@ -411,7 +411,7 @@ class TestWorkflow(unittest.TestCase):
 
     def test_go_skip(self):
         outf = os.path.join(self.workdir, "blah.txt")
-        self.ctx.add_task("touch {targets[0]}", targets=[outf])
+        self.ctx.add_task("touch [targets[0]]", targets=[outf])
         with capture(stderr=StringIO()):
             self.ctx.go()
         ctime = os.stat(outf).st_ctime
@@ -424,8 +424,8 @@ class TestWorkflow(unittest.TestCase):
     def test_go_skip_notargets(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        self.ctx.add_task("touch {targets[0]}", targets=[a])
-        self.ctx.add_task("touch {targets[0]} {targets[1]}", targets=[b, c])
+        self.ctx.add_task("touch [targets[0]]", targets=[a])
+        self.ctx.add_task("touch [targets[0]] [targets[1]]", targets=[b, c])
         self.ctx.add_task("touch {}".format(d), depends=[a,b])
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -441,7 +441,7 @@ class TestWorkflow(unittest.TestCase):
 
     def test_go_skip_nothing(self):
         a = os.path.join(self.workdir, "a.txt")
-        self.ctx.add_task("touch {targets[0]}", targets=[a])
+        self.ctx.add_task("touch [targets[0]]", targets=[a])
         with capture(stderr=StringIO()):
             self.ctx.go()
         mtime = os.stat(a).st_mtime
@@ -463,7 +463,7 @@ class TestWorkflow(unittest.TestCase):
         self.ctx.already_exists(globdep)
         for letter in (a,b,c,d):
             anadama2.util.sh("echo {a} > {a}".format(a=letter), shell=True)
-        self.ctx.add_task("ls {depends[0]} > {targets[0]}",
+        self.ctx.add_task("ls [depends[0]] > [targets[0]]",
                           depends=globdep, targets=out)
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -491,7 +491,7 @@ class TestWorkflow(unittest.TestCase):
         self.ctx.already_exists(dirdep)
         for letter in (a,b,c,d):
             anadama2.util.sh("echo {a} > {a}".format(a=letter), shell=True)
-        self.ctx.add_task("ls {depends[0]} > {targets[0]}",
+        self.ctx.add_task("ls [depends[0]] > [targets[0]]",
                           depends=dirdep, targets=out)
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -515,7 +515,7 @@ class TestWorkflow(unittest.TestCase):
     def test_go_skip_config(self):
         a = os.path.join(self.workdir, "a.txt")
         conf = anadama2.tracked.Container(alpha="5", beta=2)
-        self.ctx.add_task("echo beta:{depends[0]} > {targets[0]}",
+        self.ctx.add_task("echo beta:[depends[0]] > [targets[0]]",
                           depends=conf.beta, targets=a)
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -534,7 +534,7 @@ class TestWorkflow(unittest.TestCase):
         with capture(stderr=StringIO()):
             self.ctx.go()
         self.assertEqual(new_mtime, os.stat(a).st_mtime)
-        self.ctx.add_task("echo beta > {targets[0]}",
+        self.ctx.add_task("echo beta > [targets[0]]",
                           depends=list(conf.items()), targets=a)
         time.sleep(SLEEPTIME)
         with capture(stderr=StringIO()):
@@ -545,8 +545,8 @@ class TestWorkflow(unittest.TestCase):
     def test_go_until_task(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
-        self.ctx.add_task("touch {targets[0]} {targets[1]}",
+        self.ctx.add_task("touch [targets[0]]", targets=[a], name="a")
+        self.ctx.add_task("touch [targets[0]] [targets[1]]",
                           targets=[b, c], name="bc", depends=a)
         self.ctx.add_task("touch {}".format(d), depends=[c], targets=d,
                           name="d")
@@ -650,8 +650,8 @@ class TestWorkflow(unittest.TestCase):
     def test_TaskContainer(self):
         a,b,c,d = [os.path.join(self.workdir, letter+".txt")
                    for letter in ("a", "b", "c", "d")]
-        t1 = self.ctx.add_task("touch {targets[0]}", targets=[a], name="a")
-        t2 = self.ctx.add_task("touch {targets[0]} {targets[1]}",
+        t1 = self.ctx.add_task("touch [targets[0]]", targets=[a], name="a")
+        t2 = self.ctx.add_task("touch [targets[0]] [targets[1]]",
                                targets=[b, c], name="bc")
         t3 = self.ctx.add_task("touch {}".format(d), depends=[a,b], name="d")
         self.assertTrue(isinstance(self.ctx.tasks, anadama2.taskcontainer.TaskContainer))
@@ -662,11 +662,11 @@ class TestWorkflow(unittest.TestCase):
         a = os.path.join(self.workdir, "a.txt")
         b = os.path.join(self.workdir, "b.txt")
         with self.assertRaises(KeyError):
-            self.ctx.add_task("cat {depends[0]} > {targets[0]}", 
+            self.ctx.add_task("cat [depends[0]] > [targets[0]]", 
                               depends=a, targets=b, name="shouldfail")
         self.assertEqual(len(self.ctx.tasks), 0, "should remove offending task")
         open(a, 'w').close()
-        self.ctx.add_task("cat {depends[0]} > {targets[0]}", 
+        self.ctx.add_task("cat [depends[0]] > [targets[0]]", 
                           depends=a, targets=b, name="shouldntfail")
         self.assertEqual(len(self.ctx.tasks), 2)
         self.assertIs(self.ctx.tasks[1].actions[0], anadama2.util.noop)
@@ -679,12 +679,12 @@ class TestWorkflow(unittest.TestCase):
         b = os.path.join(self.workdir, "b.txt")
         self.ctx.strict = True
         with self.assertRaises(KeyError):
-            self.ctx.add_task("cat {depends[0]} > {targets[0]}", 
+            self.ctx.add_task("cat [depends[0]] > [targets[0]]", 
                               depends=a, targets=b, name="shouldfail")
         self.assertEqual(len(self.ctx.tasks), 0, "should remove offending task")
         open(a, 'w').close()
         with self.assertRaises(KeyError):
-            self.ctx.add_task("cat {depends[0]} > {targets[0]}", 
+            self.ctx.add_task("cat [depends[0]] > [targets[0]]", 
                               depends=a, targets=b, name="shouldntfail")
         self.assertEqual(len(self.ctx.tasks), 0)
 

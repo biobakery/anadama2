@@ -215,7 +215,7 @@ class Workflow(object):
         sole action. 
 
         Extra keyword arguments can be used as formatting values
-        similar to ``{depends[0]}``. See :func:`anadama2.helpers.parse_sh`
+        similar to ``[depends[0]]``. See :func:`anadama2.helpers.parse_sh`
         
         :param actions: The actions to be performed to complete the
           task. Strings or lists of strings are interpreted as shell
@@ -251,7 +251,7 @@ class Workflow(object):
 
         :keyword interpret_deps_and_targs: Should I use
           :func:`anadama2.helpers.parse_sh` to change
-          ``{depends[0]}`` and ``{targets[0]}`` into the first item in
+          ``[depends[0]]`` and ``[targets[0]]`` into the first item in
           depends and the first item in targets? Default is True 
         :type interpret_deps_and_targs: bool
 

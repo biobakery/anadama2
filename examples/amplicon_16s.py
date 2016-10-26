@@ -34,7 +34,7 @@ for input_bam in input_bams:
         sh("usearch8 -fastx_truncate "+rawfq+" -trunclen "+str(cutoff)+
            " -fasta_out "+trimfq)
 
-    ctx.add_task("pick_otus {depends[0]}, {targets[0]}",
+    ctx.add_task("pick_otus [depends[0]], [targets[0]]",
                  depends=trimfq,
                  targets=fname.mangle(trimfq, tag="taxonomy", ext="txt"))
 
