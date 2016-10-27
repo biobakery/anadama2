@@ -226,6 +226,12 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(len(t1.depends), 0)
         self.assertEqual(len(t1.targets), 0)
         
+    def test_add_task_group(self):
+        self.ctx.add_task_group(anadama2.util.noop,
+            depends=["/etc/hosts","/etc/hosts"],
+            targets=["/tmp/test.txt","/tmp/test.txt"])
+        # check for the two tasks plus the track pre-existing dependencies task
+        self.assertEqual(len(self.ctx.tasks), 3)
 
     def test_add_task_deps(self):
         self.ctx.already_exists("/etc/hosts")
