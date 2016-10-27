@@ -61,6 +61,11 @@ class TestWorkflow(unittest.TestCase):
         self.assertIsInstance(self.ctx.dag,
                               networkx.classes.digraph.DiGraph)
         self.assertTrue(hasattr(self.ctx, "task_counter"))
+        
+    def test_get_input_files(self):
+        # check that the input files function reads 
+        # the directory and returns a list
+        self.assertTrue(isinstance(self.ctx.get_input_files(), list))
 
     def test_do_simple(self):
         t1 = self.ctx.do("echo true", track_cmd=False, track_binaries=False)
