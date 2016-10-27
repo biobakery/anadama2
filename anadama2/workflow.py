@@ -87,6 +87,32 @@ class Workflow(object):
         logger.debug("Instantiated run context")
 
 
+    def get_input_files(self, extension=None, name=None):
+        """Return the files in the input folder filtered with the extension
+        or name if provided. The input folder default can be set in the workflow
+        or it can be provided on the command line by the user.
+        
+        :keyword extension: Return input files with this extension
+        :type extension: str
+        :keyword name: Return input files with this name
+        :type name: str
+
+        :returns: A list of files
+        """
+        
+        # get the contents of the input folder (with the full paths)
+        input_folder_contents = map(lambda file: os.path.join(self.vars.input.name, file), self.vars.input.files())
+        # filter out contents to only include files
+        input_files = [item for item in input_folder_contents if os.path.isfile(item)]
+        # if extension is set, then filter files
+        if extension:
+            input_files = list(filter(lambda file: file.endswith(extension), input_files))
+        # if name is set, then filter files to only those with the exact name
+        if name:
+            input_files = list(filter(lambda file: os.path.basename(file) == name, input_files))
+            
+        return input_files
+
     def do(self, cmd, track_cmd=True, track_binaries=True):
         """Create and add a :class:`anadama2.Task` to the workflow using a
         convenient, shell-like syntax. 
