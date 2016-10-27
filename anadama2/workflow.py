@@ -207,6 +207,17 @@ class Workflow(object):
         self.grid.do(t, **gridopts)
         return t
 
+    def add_task_group(self, actions=None, depends=None, targets=None,
+                       name=None, interpret_deps_and_targs=True, **kwargs):
+        """Create and add a group of :class:`anadama2.Task` to the workflow. 
+        This function will create a task for each set of depends and targets
+        provided. The number of targets and dependencies should be the same.
+        
+        This function will call ``add_task`` for each task in the group. Please
+        see the ``add_task`` documentation for more information."""
+        
+        for deps, targs in zip(depends, targets):
+            self.add_task(actions, deps, targs, name, interpret_deps_and_targs, **kwargs) 
 
     def add_task(self, actions=None, depends=None, targets=None,
                  name=None, interpret_deps_and_targs=True, **kwargs):
@@ -524,7 +535,6 @@ class Workflow(object):
     def _handle_task_skipped(self, task_no):
         self.completed_tasks.add(task_no)
         self._reporter.task_skipped(task_no)
-
 
     def _add_task(self, task):
         """Actually add a task to the internal dependency data structure"""
