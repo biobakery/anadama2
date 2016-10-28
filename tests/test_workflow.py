@@ -66,6 +66,19 @@ class TestWorkflow(unittest.TestCase):
         # check that the input files function reads 
         # the directory and returns a list
         self.assertTrue(isinstance(self.ctx.get_input_files(), list))
+        
+    def test_name_output_files_single_file(self):
+        # check that the output files function 
+        # returns a single file as a string
+        output_file=self.ctx.name_output_files(name="one.txt",tag="new",extension="tsv")
+        self.assertEqual("one_new.tsv", os.path.basename(output_file))
+        
+    def test_name_output_files_multiple_files(self):
+        # check that the output files function 
+        # returns a list of two files
+        output_files=self.ctx.name_output_files(name=["one.txt","two.txt"],
+            subfolder="new", extension="tsv")
+        self.assertEqual("one.tsv", os.path.basename(output_files[0]))
 
     def test_do_simple(self):
         t1 = self.ctx.do("echo true", track_cmd=False, track_binaries=False)
