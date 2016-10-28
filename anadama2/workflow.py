@@ -80,13 +80,24 @@ class Workflow(object):
         self.grid = grid or _grid.Dummy()
         self.strict = strict
         self.vars = vars or Configuration(defaults=True)
-        self.vars.ask_user()
+
         if storage_backend:
             self._backend = storage_backend
         else:
             self._backend = backends.default(self.vars.get("output"))
         logger.debug("Instantiated run context")
 
+
+    def parse_args(self):
+        """Return the arguments parsed from the command line. Arguments are returned
+        in the same format as calling argparse.parse_args(). An object with
+        an attribute for each argument is returned. This custom object includes error
+        reporting to aid the user in debugging when trying to get an argument
+        that is not included in the list of command line arguments."""
+
+        # return the arguments
+        return self.vars.get_option_values()
+    
 
     def get_input_files(self, extension=None, name=None):
         """Return the files in the input folder filtered with the extension
@@ -102,7 +113,8 @@ class Workflow(object):
         """
         
         # get the contents of the input folder (with the full paths)
-        input_folder_contents = map(lambda file: os.path.join(self.vars.input.name, file), self.vars.input.files())
+        input = self.vars.get("input")
+        input_folder_contents = map(lambda file: os.path.join(input.name, file), input.files())
         # filter out contents to only include files
         input_files = [item for item in input_folder_contents if os.path.isfile(item)]
         # if extension is set, then filter files
@@ -138,7 +150,7 @@ class Workflow(object):
             convert_to_string=True
         
         # get the output folder name
-        output_folder = self.vars.output.name
+        output_folder = self.vars.get("output").name
         # add the subfolder if provided
         if subfolder:
             output_folder = os.path.join(output_folder, subfolder)
