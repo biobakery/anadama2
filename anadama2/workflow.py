@@ -25,6 +25,7 @@ from .helpers import sh, parse_sh
 from .util import matcher, noop, find_on_path
 from .util import istask, sugar_list, dichotomize
 from .util import keepkeys
+from .util import fname
 
 second = itemgetter(1)
 logger = logging.getLogger(__name__)
@@ -112,6 +113,44 @@ class Workflow(object):
             input_files = list(filter(lambda file: os.path.basename(file) == name, input_files))
             
         return input_files
+    
+    def name_output_files(self, name, tag=None, extension=None, subfolder=None):
+        """Return names of files in the output folder 
+        use the name(s), tag, extension, and subfolder provided. 
+        The output folder default can be set in the workflow or 
+        it can be provided on the command line by the user.
+        
+        :parameter name: The name(s) of the output file(s)
+        :type name: str or list
+        :keyword tag: Add tag to the basename
+        :type tag: str
+        :keyword extension: Add extension to file name
+        :type extension: str
+        :keyword subfolder: Add the subfolder to the path to the file
+        :type subfolder: str
+
+        :returns: A list of file names
+        """
+        # if the name is a string, convert to list
+        convert_to_string=False
+        if not isinstance(name, list):
+            name=[name]
+            convert_to_string=True
+        
+        # get the output folder name
+        output_folder = self.vars.output.name
+        # add the subfolder if provided
+        if subfolder:
+            output_folder = os.path.join(output_folder, subfolder)
+            
+        # Add tag and extension to file names
+        output_files = [ fname.mangle(file, tag=tag, dir=output_folder, ext=extension) for file in name]
+            
+        # If the input was a single string, then convert output to single string
+        if convert_to_string:
+            output_files=output_files[0]
+        
+        return output_files
 
     def do(self, cmd, track_cmd=True, track_binaries=True):
         """Create and add a :class:`anadama2.Task` to the workflow using a
