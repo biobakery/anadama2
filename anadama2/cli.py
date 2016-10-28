@@ -236,8 +236,37 @@ class Configuration(object):
         
         :param name: The name of the value to get
         """
+        
+        # get arguments from the command line (will not run again if already parsed)
+        if not self._user_asked:
+            self.ask_user()
 
         return getattr(self, name, default)
+    
+    def get_option_values(self):
+        """Get all of the stored option values. Replace any custom class
+        instances with their corresponding values."""
+        
+        class CommandLineOptions(object):
+            def __getattr__(self, name):
+                # if an attribute can not be found, this is the last function called
+                all_option_names=", ".join(vars(self).keys())
+                error_message="Unable to find option '{0}' in command line options.\n".format(name)
+                error_message+="The available options are: {0}".format(all_option_names)
+                raise AttributeError(error_message)
+        
+        args=CommandLineOptions()
+        for option in self._directives:
+            option = re.sub(r'-', '_', option)
+            if isinstance(option, Directory):
+                value=self.get(option).name
+            elif isinstance(option, TrackedVariable):
+                value=self.get(option).__str__()
+            else:
+                value=self.get(option)
+            setattr(args,option,value)
+                
+        return args
 
 
     __getitem__ = get
