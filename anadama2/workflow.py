@@ -57,12 +57,23 @@ class Workflow(object):
       ``.exists()`` automatically do what's necessary to track the
       object; if ``.exists()`` is False, raise a KeyError.
     :type strict: bool
-
+    
+    :keyword vars: Provide a custom Configuration class for command line options.
+    :type vars: instance of any 
+      :class:`anadama2.cli.Configuration` class or None.
+      
+    :keyword version: The version of the workflow. This version will be used for
+      the command line option ``--version``.
+    :type version: str
+    
+    :keyword description: A description of the workflow. This description 
+      will be used in the command line ``--help`` message.
+    :type description: str
     """
 
 
     def __init__(self, storage_backend=None, grid=None, strict=False,
-                 vars=None):
+                 vars=None, version=None, description=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         #: tasks is a :class:`anadama2.taskcontainer.TaskContainer`
@@ -79,14 +90,23 @@ class Workflow(object):
         self._depidx = tracked.DependencyIndex()
         self.grid = grid or _grid.Dummy()
         self.strict = strict
-        self.vars = vars or Configuration(defaults=True)
+        self.vars = vars or Configuration(description=description,
+            version=version, defaults=True)
 
+        self._backend=None
         if storage_backend:
             self._backend = storage_backend
-        else:
-            self._backend = backends.default(self.vars.get("output"))
+
         logger.debug("Instantiated run context")
 
+    def add_argument(self, name, **kwargs):
+        """This function adds an argument to the configuration object provided
+        to the workflow. Arguments can alternatively be added to the configuration
+        object before it is provided to the workflow. See the ``add`` function
+        documentation for your Configuration class, for more information. The 
+        default configuration class is :class:`anadama2.cli.Configuration`."""
+        
+        self.vars.add(name, **kwargs)
 
     def parse_args(self):
         """Return the arguments parsed from the command line. Arguments are returned
@@ -492,6 +512,10 @@ class Workflow(object):
         self.task_results = [None for _ in range(len(self.tasks))]
         self._reporter = reporter or reporters.default(self.vars.get("output"))
         self._reporter.started(self)
+        
+        # if the backend is not set, then set to default
+        if not self._backend:
+            self._backend = backends.default(self.vars.get("output"))
 
         _runner = runner or self.grid.runner(self, jobs, grid_jobs)
         if dry_run:
