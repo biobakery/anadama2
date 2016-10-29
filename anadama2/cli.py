@@ -108,7 +108,7 @@ class Configuration(object):
     def __init__(self, description=None, version=None, defaults=True,
                  namespace=None):
         self.description = description
-        self.version = version
+        self.version = version or "0.9"
         #: args is a list containing any positional arguments passed at
         #: the command line. Think sys.argv.
         self.args = []
@@ -129,7 +129,7 @@ class Configuration(object):
             self.description = BANNER
         self.parser = optparse.OptionParser(
             description=self.description,
-            version=self.version or "%prog v1.0.0"
+            version="%prog v" + self.version
         )
         if defaults:
             self._directives.update(default_options)
