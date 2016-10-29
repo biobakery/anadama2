@@ -254,6 +254,10 @@ class Configuration(object):
                 error_message="Unable to find option '{0}' in command line options.\n".format(name)
                 error_message+="The available options are: {0}".format(all_option_names)
                 raise AttributeError(error_message)
+            
+        # get arguments from the command line (will not run again if already parsed)
+        if not self._user_asked:
+            self.ask_user()
         
         args=CommandLineOptions()
         for option in self._directives:
