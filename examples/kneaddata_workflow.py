@@ -1,27 +1,32 @@
 # -*- coding: utf-8 -*-
 from anadama2 import Workflow
-from anadama2.util import fname
-from anadama2.cli import Configuration
 
-cfg = Configuration( version="0.0.1",
-                     description="A workflow to run KneadData and MetaPhlAn2"
-    ).add("kneaddata_db", desc="the kneaddata database",
-          default="/work/code/kneaddata/db/"
-    ).add("input_extension", desc="the input file extension",
-          default="*.fastq"
-    ).add("threads", desc="Number of threads for knead_data to use",
-          default=1)
+# create a workflow instance, providing the version number and description
+# the version number will appear when running this script with the "--version" option
+# the description will appear when running this script with the "--help" option
+workflow = Workflow(version="0.1", description="A workflow to run KneadData")
 
+# add the custom arguments to the workflow
+workflow.add_argument("kneaddata-db", desc="the kneaddata database", default="/work/code/kneaddata/db/")
+workflow.add_argument("input-extension", desc="the input file extension", default="fastq")
+workflow.add_argument("threads", desc="number of threads for knead_data to use", default=1)
 
-workflow = Workflow(vars=cfg)
-in_files = workflow.vars.input.files(pattern=workflow.vars.input_extension)
-for in_file in in_files:
-    out_file = fname.mangle(in_file, tag="kneaddata", ext=".fastq")
-    workflow.add_task(
-        "kneaddata -i [depends[0]] -o [targets[0]] -db [kneaddata_db] -t [threads]",
-        depends=in_file,
-        target=out_file,
-        kneaddata_db=workflow.vars.kneaddata_db,
-        threads=workflow.vars.threads)
-    
+# get the arguments from the command line
+args = workflow.parse_args()
+
+# get all input files with the input extension provided on the command line
+in_files = workflow.get_input_files(extension=args.input_extension)
+
+# get a list of output files, one for each input file, with the kneaddata tag
+out_files = workflow.name_output_files(name=in_files, tag="kneaddata")
+
+# create a task for each set of input and output files to run kneaddata
+workflow.add_task_group(
+    "kneaddata --input [depends[0]] --output [output_folder] --reference-db [kneaddata_db] --threads [threads]",
+    depends=in_files,
+    targets=out_files,
+    output_folder=args.output,
+    kneaddata_db=args.kneaddata_db,
+    threads=args.threads)
+
 workflow.go()
