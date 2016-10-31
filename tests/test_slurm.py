@@ -73,7 +73,7 @@ class TestSlurm(unittest.TestCase):
             if n in shall_fail:
                 cmd += " ;exit 1"
                 name = "should fail"
-            slurm_add_task = lambda *a, **kw: self.ctx.grid_add_task(mem=50, time=5, cores=1, *a, **kw)
+            slurm_add_task = lambda *a, **kw: self.ctx.add_task_gridable(mem=50, time=5, cores=1, *a, **kw)
             add_task = self.ctx.add_task if bern(0.5) else slurm_add_task
             t = add_task(
                 cmd, name=name,
@@ -125,7 +125,7 @@ class TestSlurm(unittest.TestCase):
             cmd = "touch /dev/null "+ " ".join(targets[n].values())
             if n in shall_fail:
                 cmd += " ;exit 1"
-            slurm_add_task = lambda *a, **kw: self.ctx.grid_add_task(mem=50, time=5, cores=1, *a, **kw)
+            slurm_add_task = lambda *a, **kw: self.ctx.add_task_gridable(mem=50, time=5, cores=1, *a, **kw)
             add_task = self.ctx.add_task if bern(0.5) else slurm_add_task
             t = add_task(cmd, name=cmd,
                          targets=list(targets[n].values()),
@@ -159,7 +159,7 @@ class TestSlurm(unittest.TestCase):
 
     @unittest.skipUnless(srun_exists, "requires srun")
     def test_slurm_do(self):
-        self.ctx.grid_do("echo true > @{true.txt}", time=5, mem=50, cores=1)
+        self.ctx.do_gridable("echo true > @{true.txt}", time=5, mem=50, cores=1)
         self.assertFalse(os.path.exists("true.txt"))
         with capture(stderr=StringIO()):
             self.ctx.go()

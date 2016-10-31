@@ -28,6 +28,12 @@ default_options = {
                          help="Collect inputs from this directory. "),
     "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
                          help="Print tasks to be run but don't execute their actions."),
+    "grid_run": optparse.make_option("-g", '--grid-run',
+                         help="""Run gridable tasks on the grid provided. If not set,
+                         then all tasks are run locally (including gridable tasks).
+                         Grid type followed by partition should be provided.
+                         For example 'slurm general_queue'""",
+                         nargs=2),
     "skip_nothing": optparse.make_option("-n", '--skip-nothing', action="store_true",
                          help="Skip no tasks, even if you could; run it all."),
     "quit_early": optparse.make_option("-e", '--quit-early', action="store_true",

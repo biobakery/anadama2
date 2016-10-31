@@ -26,6 +26,8 @@ from .util import matcher, noop, find_on_path
 from .util import istask, sugar_list, dichotomize
 from .util import keepkeys
 from .util import fname
+from grid.slurm import Slurm
+from grid.sge import SGE
 
 second = itemgetter(1)
 logger = logging.getLogger(__name__)
@@ -88,7 +90,12 @@ class Workflow(object):
         #: :meth:`anadama2.workflow.Workflow.go`.
         self.task_results = list()
         self._depidx = tracked.DependencyIndex()
-        self.grid = grid or _grid.Dummy()
+        if grid:
+            self.grid = grid
+            self.grid_set = True
+        else:
+            self.grid = _grid.Dummy()
+            self.grid_set = False
         self.strict = strict
         self.vars = vars or Configuration(description=description,
             version=version, defaults=True)
@@ -98,6 +105,39 @@ class Workflow(object):
             self._backend = storage_backend
 
         logger.debug("Instantiated run context")
+        
+    def _get_grid(self):
+        """Return the grid instance. First check if a grid instance has already 
+        been set or was provided initially. If not, set the grid based on the 
+        command line options. A dummy grid is set if the option to run is not
+        provided on the command line. In this case, all tasks will run locally."""
+        
+        # if the grid has already been set by the user, then return
+        if self.grid_set:
+            return self.grid
+        # try to get the grid selection set on the command line
+        try:
+            grid_selection, grid_partition = self.vars.get("grid_run")
+        except TypeError:
+            grid_selection = None
+            grid_partition = None
+        
+        # set the grid instance based on the user option
+        if grid_selection is None:
+            grid = _grid.Dummy()
+        elif grid_selection == "slurm":
+            grid = Slurm(partition=grid_partition)
+        elif grid_selection == "sge":
+            grid = SGE(queue=grid_partition)
+        else:
+            logger.warning("Grid selected can not be found. Tasks will run locally.")
+            grid = _grid.Dummy()
+            
+        self.grid=grid
+        self.grid_set=True
+        
+        return self.grid
+        
 
     def add_argument(self, name, **kwargs):
         """This function adds an argument to the configuration object provided
@@ -289,7 +329,7 @@ class Workflow(object):
                              interpret_deps_and_targs=False)
 
 
-    def grid_do(self, cmd, track_cmd=True, track_binaries=True, **gridopts):
+    def do_gridable(self, cmd, track_cmd=True, track_binaries=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
         in the ``grid`` option of
         :class:`anadama2.workflow.Workflow`. By default, this
@@ -301,7 +341,7 @@ class Workflow(object):
         """
 
         t = self.do(cmd, track_cmd, track_binaries)
-        self.grid.do(t, **gridopts)
+        self._get_grid().do(t, **gridopts)
         return t
 
     def add_task_group(self, actions=None, depends=None, targets=None,
@@ -315,6 +355,14 @@ class Workflow(object):
         
         for deps, targs in zip(depends, targets):
             self.add_task(actions, deps, targs, name, interpret_deps_and_targs, **kwargs) 
+            
+    def add_task_group_gridable(self, actions=None, depends=None, targets=None,
+                       name=None, interpret_deps_and_targs=True, **kwargs):
+        """Create gridable tasks as a group."""
+        
+        for deps, targs in zip(depends, targets):
+            task = self.add_task(actions, deps, targs, name, interpret_deps_and_targs, **kwargs)
+            self._get_grid().add_task(task, **kwargs)        
 
     def add_task(self, actions=None, depends=None, targets=None,
                  name=None, interpret_deps_and_targs=True, **kwargs):
@@ -384,7 +432,7 @@ class Workflow(object):
             return the_task
 
 
-    def grid_add_task(self, actions=None, depends=None, targets=None,
+    def add_task_gridable(self, actions=None, depends=None, targets=None,
                       name=None, interpret_deps_and_targs=True, **gridopts):
         """Add a task to be launched on a grid computing system as specified
         in the ``grid`` option of
@@ -405,7 +453,7 @@ class Workflow(object):
         else:
             t = self.add_task(actions, depends, targets, name,
                               interpret_deps_and_targs)
-            self.grid.add_task(t, **gridopts)
+            self._get_grid().add_task(t, **gridopts)
             return t
 
 
