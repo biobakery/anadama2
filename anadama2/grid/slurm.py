@@ -87,7 +87,7 @@ class Slurm(Dummy):
 
     """
 
-    def __init__(self, partition, tmpdir, extra_srun_flags=[]):
+    def __init__(self, partition, tmpdir=None, extra_srun_flags=[]):
         self.slurm_partition = partition
         self.slurm_tmpdir = tmpdir
         self.extra_srun_flags = extra_srun_flags

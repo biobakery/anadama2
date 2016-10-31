@@ -68,8 +68,7 @@ class SGE(Dummy):
 
     """
 
-    def __init__(self, queue, tmpdir="/tmp", extra_qsub_flags=[],
-                 *args, **kwargs):
+    def __init__(self, queue, tmpdir="/tmp", extra_qsub_flags=[]):
         self.sge_queue = queue
         self.sge_tmpdir = tmpdir
         self.extra_qsub_flags = extra_qsub_flags
