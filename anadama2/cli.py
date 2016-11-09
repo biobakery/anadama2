@@ -188,13 +188,23 @@ class Configuration(object):
         :returns: self (the current Configuration object)
 
         """
+        
+        # remove special characters from the name
+        name=kebab(name)
+        
         if callback:
             self._callbacks[name] = callback
             type="bool"
         type, action = self._reg_type(type, name, default)
         d = optparse.make_option(self._find_short(name, short),
-                                 "--"+kebab(name), help=desc,
+                                 "--"+name, help=desc,
                                  type=type, action=action, default=default)
+        
+        # replace dash with underscore for name (as this will be done by optparse)
+        name=re.sub(r'-', '_',name)
+        if required:
+            self._required_options.append(name)
+
         self._directives[name] = d
         return self
 
