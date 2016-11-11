@@ -478,7 +478,7 @@ class Workflow(object):
 
 
     def go(self, skip_nothing=False, quit_early=False, runner=None,
-           reporter=None, jobs=1, grid_jobs=1,
+           reporter=None, jobs=None, grid_jobs=None,
            until_task=None, exclude_task=None, target=None,
            exclude_target=None, dry_run=False):
         """Kick off execution of all previously configured tasks. 
