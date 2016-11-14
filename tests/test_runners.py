@@ -28,7 +28,8 @@ class TestRunners(unittest.TestCase):
             actions=[anadama2.helpers.sh("wc -l /etc/hosts > "+outf)],
             depends=[anadama2.tracked.auto("/etc/hosts")],
             targets=[anadama2.tracked.auto(outf)],
-            task_no=1
+            task_no=1,
+            visible=True
         )
         ret = anadama2.runners._run_task_locally(t)
         self.assertTrue(os.stat(outf).st_size > 0,

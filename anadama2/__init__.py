@@ -3,7 +3,7 @@ from collections import namedtuple
 
 
 class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
-                               "task_no"])):
+                               "task_no", "visible"])):
     """A unit of work. 
     
     :param name: The task name; must be unique to all tasks within a workflow.
@@ -22,7 +22,11 @@ class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
     :param task_no: The unique task number. Ordered by declaration,
       not execution.
     :type task_no: int
-    
+
+    :param visible: Whether the task should appear in the console or
+      not.
+    :type visible: bool
+
     """
     pass # the class definition is just for the docstring
 

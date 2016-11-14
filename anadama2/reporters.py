@@ -194,10 +194,11 @@ class ConsoleReporter(BaseReporter):
         self.multithread_mode = False
 
 
-    def _msg(self, status, msg, c_r=False):
+    def _msg(self, status, msg, c_r=False, visible=True):
         if self.n_open > 1 and not self.multithread_mode:
             self.multithread_mode = True
-            sys.stderr.write(six.u('\n'))
+            if visible is True:
+                sys.stderr.write(six.u('\n'))
         s = self.msg_str.format(status, self.n_complete, self.n_tasks,
                                 (float(self.n_complete)/self.n_tasks)*100,
                                 six.u(msg))
@@ -208,19 +209,22 @@ class ConsoleReporter(BaseReporter):
             s = six.u("\r") + s + six.u("\n")
         else:
             self.n_open += 1
-        sys.stderr.write(s)
-        
+        if visible is True:
+            sys.stderr.write(s)
+
 
     def started(self, ctx):
         self.run_context = ctx
         self.reset()
 
     def task_started(self, task_no):
-        self._msg(self.stats.start, self.run_context.tasks[task_no].name)
+        self._msg(self.stats.start, self.run_context.tasks[task_no].name,
+                  visible=self.run_context.tasks[task_no].visible)
     
     def task_skipped(self, task_no):
         self.n_complete += 1
-        self._msg(self.stats.skip, self.run_context.tasks[task_no].name, True)
+        self._msg(self.stats.skip, self.run_context.tasks[task_no].name, True,
+                  visible=self.run_context.tasks[task_no].visible)
 
     def task_failed(self, task_result):
         self.n_complete += 1
@@ -228,12 +232,14 @@ class ConsoleReporter(BaseReporter):
             return
         name = self.run_context.tasks[task_result.task_no].name
         self.failed_results.append((name, task_result))
-        self._msg(self.stats.fail, name, True)
+        self._msg(self.stats.fail, name, True,
+                  visible=self.run_context.tasks[task_result.task_no].visible)
 
     def task_completed(self, task_result):
         self.n_complete += 1
         name = self.run_context.tasks[task_result.task_no].name
-        self._msg(self.stats.done, name, True)
+        self._msg(self.stats.done, name, True,
+                  visible=self.run_context.tasks[task_result.task_no].visible)
 
     def finished(self):
         sys.stderr.write(six.u("Run Finished\n"))
