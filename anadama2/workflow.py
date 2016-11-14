@@ -75,7 +75,7 @@ class Workflow(object):
 
 
     def __init__(self, storage_backend=None, grid=None, strict=False,
-                 vars=None, version=None, description=None):
+                 vars=None, version=None, description=None, remove_options=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         #: tasks is a :class:`anadama2.taskcontainer.TaskContainer`
@@ -98,7 +98,7 @@ class Workflow(object):
             self.grid_set = False
         self.strict = strict
         self.vars = vars or Configuration(description=description,
-            version=version, defaults=True)
+            version=version, defaults=True, remove_options=remove_options)
 
         self._backend=None
         if storage_backend:
