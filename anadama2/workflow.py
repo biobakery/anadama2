@@ -26,8 +26,8 @@ from .util import matcher, noop, find_on_path
 from .util import istask, sugar_list, dichotomize
 from .util import keepkeys
 from .util import fname
-from grid.slurm import Slurm
-from grid.sge import SGE
+from .grid.slurm import Slurm
+from .grid.sge import SGE
 
 second = itemgetter(1)
 logger = logging.getLogger(__name__)

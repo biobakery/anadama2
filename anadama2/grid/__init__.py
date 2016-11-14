@@ -14,3 +14,6 @@ class Dummy(object):
 
 from .sge import SGE
 from .slurm import Slurm
+
+SGE #pyflakes
+Slurm #pyflakes
