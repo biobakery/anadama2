@@ -365,7 +365,8 @@ class Workflow(object):
             self._get_grid().add_task(task, **kwargs)        
 
     def add_task(self, actions=None, depends=None, targets=None,
-                 name=None, interpret_deps_and_targs=True, **kwargs):
+                 name=None, visible=True,
+                 interpret_deps_and_targs=True, **kwargs):
         """Create and add a :class:`anadama2.Task` to the workflow.  This
         function can be used as a decorator to set a function as the
         sole action. 
@@ -405,6 +406,10 @@ class Workflow(object):
           within a run context.
         :type name: str
 
+        :keyword visible: Whether to show this task on the console. Set
+          to ``False`` if it should only be in the debug log.
+        :type visible: bool
+
         :keyword interpret_deps_and_targs: Should I use
           :func:`anadama2.helpers.parse_sh` to change
           ``[depends[0]]`` and ``[targets[0]]`` into the first item in
@@ -421,13 +426,13 @@ class Workflow(object):
         name = _build_name(name, task_no)
         if not actions: # must be a decorator
             def finish_add_task(fn):
-                the_task = Task(name, [fn], deps, targs, task_no)
+                the_task = Task(name, [fn], deps, targs, task_no, bool(visible))
                 self._add_task(the_task)
             return finish_add_task
         else:
             acts = _build_actions(actions, kwargs,
                                   use_parse_sh=interpret_deps_and_targs)
-            the_task = Task(name, acts, deps, targs, task_no)
+            the_task = Task(name, acts, deps, targs, task_no, bool(visible))
             self._add_task(the_task)
             return the_task
 
@@ -474,7 +479,7 @@ class Workflow(object):
         """
 
         self.add_task(noop, targets=list(map(tracked.auto, depends)),
-                      name="Track pre-existing dependencies")
+                      name="Track pre-existing dependencies", visible=False)
 
 
     def go(self, skip_nothing=False, quit_early=False, runner=None,

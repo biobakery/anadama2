@@ -643,7 +643,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(["blah"], rc.sugar_list("blah"))
         it = iter(list(range(5)))
         self.assertIs(it, rc.sugar_list(it))
-        t = anadama2.Task("dummy task", [], [], [], 0)
+        t = anadama2.Task("dummy task", [], [], [], 0, True)
         self.assertEqual([t], rc.sugar_list(t))
         self.assertEqual((5,), rc.sugar_list((5,)))
 
