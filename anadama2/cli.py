@@ -112,7 +112,7 @@ class Configuration(object):
     """
     
     def __init__(self, description=None, version=None, defaults=True,
-                 namespace=None):
+                 namespace=None, remove_options=None):
         self.description = description
         self.version = version or "0.9"
         #: args is a list containing any positional arguments passed at
@@ -144,6 +144,11 @@ class Configuration(object):
                 self._shorts.add(opt._short_opts[0][1])
             for name in _default_dir:
                 self._directories[name] = self._directives[name].default
+
+        # remove default options, if provided
+        if remove_options:
+            for option in remove_options:
+                self.remove(option)
 
 
     def add(self, name, desc=None, type="str", default=None, short=None,
@@ -244,6 +249,10 @@ class Configuration(object):
         self._callbacks.pop(name, None)
         if name in self._tracked:
             self._tracked.remove(name)
+            
+        # remove the option from the required list if included
+        if name in self._required_options:
+            self._required_options.remove(name)
         return self
 
 
