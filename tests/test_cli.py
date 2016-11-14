@@ -52,14 +52,14 @@ class TestCli(unittest.TestCase):
         self.assertGreater(len(c._shorts), 1)
 
     def test_Configuration_ask_user(self):
-        c = anadama2.cli.Configuration(defaults=True)
+        c = anadama2.cli.Configuration(defaults=True,remove_options=["output"])
         c.ask_user(argv=["--until-task", "blarg"])
         self.assertTrue(hasattr(c, "until_task"))
         self.assertEqual(c.until_task, "blarg")
         self.assertTrue(c._user_asked)
 
     def test_Configuration_directory(self):
-        c = anadama2.cli.Configuration().add(
+        c = anadama2.cli.Configuration(remove_options=["output"]).add(
             "foo", type="dir"
         ).ask_user(argv=["--foo", self.workdir])
         self.assertIs(type(c.foo), anadama2.util.Directory)
