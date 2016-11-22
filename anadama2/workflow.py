@@ -457,7 +457,7 @@ class Workflow(object):
             return finish_grid_add_task
         else:
             t = self.add_task(actions, depends, targets, name,
-                              interpret_deps_and_targs)
+                              interpret_deps_and_targs, **gridopts)
             self._get_grid().add_task(t, **gridopts)
             return t
 
