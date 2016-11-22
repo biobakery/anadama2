@@ -21,7 +21,7 @@ from . import backends
 from . import runners
 from .cli import Configuration
 from .taskcontainer import TaskContainer
-from .helpers import sh, parse_sh
+from .helpers import format_command
 from .util import matcher, noop, find_on_path
 from .util import istask, sugar_list, dichotomize
 from .util import keepkeys
@@ -430,7 +430,7 @@ class Workflow(object):
                 self._add_task(the_task)
             return finish_add_task
         else:
-            acts = _build_actions(actions, kwargs,
+            acts = _build_actions(actions, deps, targs, kwargs,
                                   use_parse_sh=interpret_deps_and_targs)
             the_task = Task(name, acts, deps, targs, task_no, bool(visible))
             self._add_task(the_task)
@@ -768,13 +768,13 @@ class Workflow(object):
 
 
 
-def _build_actions(actions, kwds, use_parse_sh=True):
+def _build_actions(actions, deps, targs, kwds, use_parse_sh=True):
     actions = filter(None, sugar_list(actions))
     if use_parse_sh:
-        return [ a if six.callable(a) else parse_sh(a, **kwds)
+        return [ a if six.callable(a) else format_command(a, depends=deps, targets=targs, **kwds)
                  for a in actions ]
     else:
-        return [ a if six.callable(a) else sh(a) for a in actions ]
+        return [a for a in actions]
         
 
 def _build_depends(depends):

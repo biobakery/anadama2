@@ -14,6 +14,7 @@ import cloudpickle
 
 from .util import istask
 from . import tracked
+from .helpers import apply_sh
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +159,8 @@ def worker_run_loop(work_q, result_q, run_task):
     
 
 def _run_task_locally(task, extra=None):
-    for i, action_func in enumerate(task.actions):
+    # convert any command strings to sh actions before running
+    for i, action_func in enumerate(apply_sh(task.actions)):
         logger.debug("Executing task %i action %i", task.task_no, i)
         try:
             action_func(task)

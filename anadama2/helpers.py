@@ -36,8 +36,15 @@ import os
 import shutil
 import logging
 
+import six
+
 from .util import sh as _sh
 from .util import sugar_list
+
+def apply_sh(actions):
+    """Add the shell function to any actions that are strings"""
+    return [ a if six.callable(a) else sh(a) for a in actions ]
+
 
 def sh(s, **kwargs):
     """Execute a shell command. All further keywords are passed to
@@ -59,10 +66,9 @@ def sh(s, **kwargs):
                     ret[1] or '')
     return actually_sh
 
-def parse_sh(s, **kwargs):
-    """Do the same thing as :func:`anadama2.helpers.sh`, but do some extra
-    interpreting and formatting of the shell command before handing it
-    over to the shell. Here's a synopsis of
+def format_command(command, **kwargs):
+    """Format the shell command to allow for special variables 
+    Here's a synopsis of
     common use cases:
 
     - ``[targets[0]]`` is formatted to the first target
@@ -72,30 +78,30 @@ def parse_sh(s, **kwargs):
     Extra keyword arguments are also added to the formatting keyword
     arguments. Thus, adding a keyword argument of ``threads=1`` makes
     ``[threads]`` be formatted to ``1`` in the shell command.
-
-    :param s: The command to execute. Passed directly to a shell, so
-      be careful about doing things like 
-      ``sh('df -h > data; rm -rf /')``; both commands are executed 
-      and bad things will happen.
     :type s: str
-
     """
+       
+    # start with the longest keys for replacement first
+    keys=sorted(kwargs.keys(), key=len)
+        
+    # replace instances of "[key]" with value
+    # for values that are lists, replace "[key[0]]" with value
+    for key in keys:
+        replacement=kwargs[key]
+        if isinstance(replacement, list):
+            for i, item in enumerate(replacement):
+                command=command.replace("["+str(key)+"["+str(i)+"]]",str(item))
+        else:
+            command=command.replace("["+str(key)+"]",str(replacement))
+    return command 
 
-    def format_command(command, **kwargs):
-        
-        # start with the longest keys for replacement first
-        keys=sorted(kwargs.keys(), key=len)
-        
-        # replace instances of "[key]" with value
-        # for values that are lists, replace "[key[0]]" with value
-        for key in keys:
-            replacement=kwargs[key]
-            if isinstance(replacement, list):
-                for i, item in enumerate(replacement):
-                    command=command.replace("["+str(key)+"["+str(i)+"]]",str(item))
-            else:
-                command=command.replace("["+str(key)+"]",str(replacement))
-        return command 
+def parse_sh(s, **kwargs):
+    """Do the same thing as :func:`anadama2.helpers.sh`, but do some extra
+    interpreting and formatting of the shell command before handing it
+    over to the shell. For formatting information, see 
+    :func:`anadama2.helpers.format_command`.
+    :type s: str
+    """
 
     def actually_sh(task):
         fmtd = format_command(s, depends=task.depends, targets=task.targets, **kwargs)
