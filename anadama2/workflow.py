@@ -126,7 +126,13 @@ class Workflow(object):
         if grid_selection is None:
             grid = _grid.Dummy()
         elif grid_selection == "slurm":
-            grid = Slurm(partition=grid_partition)
+            # get the temp output folder for the slurm scripts and stdout/stderr files
+            tmpdir=self.vars.get("output")
+            if tmpdir is None:
+                # if no output folder is provided, then write to the current working directory
+                tmpdir = os.getcwd()
+            tmpdir = os.path.join(tmpdir, "slurm_files")
+            grid = Slurm(partition=grid_partition, tmpdir=tmpdir)
         elif grid_selection == "sge":
             grid = SGE(queue=grid_partition)
         else:
