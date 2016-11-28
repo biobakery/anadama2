@@ -172,6 +172,9 @@ def _run_task_locally(task, extra=None):
                 )
         logger.debug("Completed executing task %i action %i", task.task_no, i)
 
+    return _get_task_result(task)
+
+def _get_task_result(task):
     targ_keys, targ_compares = list(), list()
     for target in task.targets:
         targ_keys.append(target.name)
