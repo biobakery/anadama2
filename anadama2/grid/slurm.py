@@ -204,7 +204,7 @@ class SLURMQueue():
     
     def __init__(self):
         # this is the refresh rate for checking the queue, in seconds
-        self.refresh_rate = 300
+        self.refresh_rate = 360
         # this is the last time the queue was checked
         self.last_check = time.time()
         self.sacct = None
@@ -230,6 +230,7 @@ class SLURMQueue():
             
     def _run_slurm_sacct(self):
         """ Check the status of the slurm ids """
+        logging.info("Running slurm sacct")
         stdout=subprocess.check_output(["sacct","-o","JobID,State,AllocCPUs,Elapsed,MaxRSS"])
 
         # remove the header information from the status lines
@@ -280,6 +281,7 @@ class SLURMQueue():
         self.lock_submit.acquire()
 
         # submit the job and get the slurm id
+        logging.info("Submitting job to grid")
         stdout=subprocess.check_output(["sbatch",slurm_script])
         slurm_jobid=stdout.rstrip().split()[-1]
         
@@ -357,6 +359,16 @@ def _log_slurm_output(taskid, file, file_type):
         
     logging.info("Slurm %s from task id %s:\n%s",taskid, file_type, "\n".join(lines))
 
+def _get_return_code(file):
+    """ Read the return code from the file """
+
+    try:
+        line=open(file).readline().rstrip()
+    except EnvironmentError:
+        line=""
+
+    return line
+
 def _run_task_command_slurm(task, extra):
     (perf, partition, tmpdir, extra_srun_flags, slurm_queue) = extra
     # create a slurm script and stdout/stderr files for this task
@@ -376,32 +388,18 @@ def _run_task_command_slurm(task, extra):
         slurm_jobid)
     
     # poll to check for status
+    slurm_job_status=None
     for tries in itertools.count(1):
         # only check status at intervals
-        time.sleep(10)
+        time.sleep(30)
         
-        # check if a slurm error is written to the output file
-        try:
-            slurm_errors=subprocess.check_output(["grep","-F","slurmstepd: error:",error_file]).split("\n")
-        except (EnvironmentError, subprocess.CalledProcessError):
-            slurm_errors=[]
-            
-        cancelled=list(filter(lambda x: "CANCELLED" in x, slurm_errors))
-        if cancelled:
-            # check for time or memory
-            if "TIME LIMIT" in cancelled[0]:
-                logging.info("Slurm task %s cancelled due to time limit", slurm_jobid)
-            else:
-                logging.info("Slurm task %s cancelled due to memory limit", slurm_jobid)
-            break
-
         # check the queue stats
         slurm_job_status = slurm_queue.get_status(slurm_jobid)
         
         logging.info("Status for job id %s with slurm id %s is %s",task.task_no,
             slurm_jobid,slurm_job_status)
         
-        if slurm_job_status in ["COMPLETED","FAILED","TIMEOUT"]:
+        if slurm_job_status in ["COMPLETED","FAILED","TIMEOUT","CANCELLED"]:
             break
         
         # check if the return code file is written
@@ -413,12 +411,44 @@ def _run_task_command_slurm(task, extra):
     logging.info("Benchmark information for job id %s:\nElapsed: %s minutes\nCPUs: %s\nMEMORY: %s MB",
         task.task_no, elapsed,cpus,memory)
     
+    # check if a slurm error is written to the output file
+    try:
+        slurm_errors=subprocess.check_output(["grep","-F","slurmstepd: error:",error_file]).split("\n")
+    except (EnvironmentError, subprocess.CalledProcessError):
+        slurm_errors=[]
+            
+    if slurm_errors:
+        # check for time or memory
+        if list(filter(lambda x: "TIME LIMIT" in x and "CANCELLED" in x, slurm_errors)):
+            logging.info("Slurm task %s cancelled due to time limit", slurm_jobid)
+            slurm_job_status="TIMEOUT"
+        elif list(filter(lambda x: "memory limit, being killed" in x, slurm_errors)):
+            logging.info("Slurm task %s cancelled due to memory limit", slurm_jobid)
+            slurm_job_status="MEMKILL"
+    
     # write the stdout and stderr to the log
     _log_slurm_output(task.task_no, out_file, "standard output")
     _log_slurm_output(task.task_no, error_file, "standard error")
     _log_slurm_output(task.task_no, rc_file, "return code")
-            
-    return runners._get_task_result(task)
+    
+    # check the return code
+    extra_error=""
+    return_code=_get_return_code(rc_file)
+    if return_code and not return_code == "0":
+        extra_error="Return Code Error: " + return_code
+      
+    # check the queue status
+    if slurm_job_status in ["MEMKILL","TIMEOUT","FAILED","CANCELLED"]:
+        extra_error+="SLURM Status Error: " + slurm_job_status
+ 
+    # get the anadama task result
+    result=runners._get_task_result(task)
+
+    # add the extra error if found
+    if extra_error:
+        result = result._replace(error=str(result.error)+extra_error)
+ 
+    return result
 
 def _run_task_function_slurm(task, extra):
     (perf, partition, tmpdir, extra_srun_flags, slurm_queue) = extra
