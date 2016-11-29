@@ -127,7 +127,7 @@ class Workflow(object):
             grid = _grid.Dummy()
         elif grid_selection == "slurm":
             # get the temp output folder for the slurm scripts and stdout/stderr files
-            tmpdir=self.vars.get("output")
+            tmpdir=self.vars.get("output").name
             if tmpdir is None:
                 # if no output folder is provided, then write to the current working directory
                 tmpdir = os.getcwd()
