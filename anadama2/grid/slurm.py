@@ -357,7 +357,7 @@ def _log_slurm_output(taskid, file, file_type):
     except EnvironmentError:
         lines=[]
         
-    logging.info("Slurm %s from task id %s:\n%s",taskid, file_type, "\n".join(lines))
+    logging.info("Slurm %s from task id %s:\n%s",taskid, file_type, "".join(lines))
 
 def _get_return_code(file):
     """ Read the return code from the file """
@@ -368,6 +368,21 @@ def _get_return_code(file):
         line=""
 
     return line
+
+def _job_stopped(status):
+    # check if the job has a status which indicates it stopped running
+    if status.startswith("CANCELLED") or status in ["COMPLETED","FAILED","TIMEOUT"]:
+        # This will capture "CANCELLED by 0" and the short form "CANCELLED+"
+        return True
+    else:
+        return False
+
+def _job_failed(status):
+    # check if the job has a status that it failed
+    if status.startswith("CANCELLED") or status in ["MEMKILL","FAILED","TIMEOUT"]:
+        return True
+    else:
+        return False
 
 def _run_task_command_slurm(task, extra):
     (perf, partition, tmpdir, extra_srun_flags, slurm_queue) = extra
@@ -399,7 +414,7 @@ def _run_task_command_slurm(task, extra):
         logging.info("Status for job id %s with slurm id %s is %s",task.task_no,
             slurm_jobid,slurm_job_status)
         
-        if slurm_job_status in ["COMPLETED","FAILED","TIMEOUT","CANCELLED"]:
+        if _job_stopped(slurm_job_status):
             break
         
         # check if the return code file is written
@@ -421,9 +436,11 @@ def _run_task_command_slurm(task, extra):
         # check for time or memory
         if list(filter(lambda x: "TIME LIMIT" in x and "CANCELLED" in x, slurm_errors)):
             logging.info("Slurm task %s cancelled due to time limit", slurm_jobid)
+            # This has the slurm status of "TIMEOUT" from slurm sacct
             slurm_job_status="TIMEOUT"
-        elif list(filter(lambda x: "memory limit, being killed" in x, slurm_errors)):
+        elif list(filter(lambda x: "exceeded memory limit" in x and "being killed" in x, slurm_errors)):
             logging.info("Slurm task %s cancelled due to memory limit", slurm_jobid)
+            # This has the slurm status of "CANCELLED by 0" from slurm sacct (short form is "CANCELLED+")
             slurm_job_status="MEMKILL"
     
     # write the stdout and stderr to the log
@@ -438,7 +455,7 @@ def _run_task_command_slurm(task, extra):
         extra_error="Return Code Error: " + return_code
       
     # check the queue status
-    if slurm_job_status in ["MEMKILL","TIMEOUT","FAILED","CANCELLED"]:
+    if _job_failed(slurm_job_status):
         extra_error+="SLURM Status Error: " + slurm_job_status
  
     # get the anadama task result
