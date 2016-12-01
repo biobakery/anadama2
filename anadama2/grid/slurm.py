@@ -204,7 +204,7 @@ class SLURMQueue():
     
     def __init__(self):
         # this is the refresh rate for checking the queue, in seconds
-        self.refresh_rate = 3*60
+        self.refresh_rate = 10*60
         # this is the last time the queue was checked
         self.last_check = time.time()
         self.sacct = None
@@ -289,7 +289,7 @@ class SLURMQueue():
         slurm_jobid=stdout.rstrip().split()[-1]
         
         # pause for the scheduler
-        time.sleep(3)
+        time.sleep(5)
         
         self.lock_submit.release()
     
@@ -448,7 +448,7 @@ def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_
     slurm_job_status=None
     for tries in itertools.count(1):
         # only check status at intervals
-        time.sleep(30)
+        time.sleep(5*60)
         
         # check the queue stats
         slurm_job_status = slurm_queue.get_status(slurm_jobid)
