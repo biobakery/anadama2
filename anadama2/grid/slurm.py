@@ -204,7 +204,7 @@ class SLURMQueue():
     
     def __init__(self):
         # this is the refresh rate for checking the queue, in seconds
-        self.refresh_rate = 360
+        self.refresh_rate = 3*60
         # this is the last time the queue was checked
         self.last_check = time.time()
         self.sacct = None
@@ -270,7 +270,10 @@ class SLURMQueue():
         # get the memory max from the batch line which is the second line of output
         elapsed=info[0][3]
         cpus=info[0][2]
-        memory="{:.1f}".format(int(info[1][4].replace("K",""))/1024.0)
+        try:
+            memory="{:.1f}".format(int(info[1][4].replace("K",""))/1024.0)
+        except IndexError:
+            memory="NA"
 
         return elapsed, cpus, memory    
 
@@ -389,9 +392,45 @@ def _run_task_command_slurm(task, extra):
     # create a slurm script and stdout/stderr files for this task
     commands="\n".join(task.actions)
     logging.info("Running commands for task id %s:\n%s", task.task_no, commands)
+
+    resubmission = 0    
+    cores, time, memory = perf.cores, perf.time, perf.mem
+
+    slurm_jobid, out_file, error_file, rc_file = _submit_slurm_job(cores, time, memory, 
+        partition, tmpdir, commands, task, slurm_queue)
+
+    result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
+        out_file, error_file, rc_file)
+
+    # if a timeout or memory max, resubmit at most three times
+    while slurm_final_status in ["TIMEOUT","MEMKILL"] and resubmission < 3:
+        resubmission+=1
+        # increase the memory or the time
+        if slurm_final_status == "TIMEOUT":
+            time = time * 2
+            logging.info("Resubmission number %s of slurm job for task id %s with 2x more time: %s minutes", 
+                resubmission, task.task_no, time)
+        elif slurm_final_status == "MEMKILL":
+            memory = memory * 2
+            logging.info("Resubmission number %s of slurm job for task id %s with 2x more memory: %s MB",
+                resubmission, task.task_no, memory)
+        
+        slurm_jobid, out_file, error_file, rc_file = _submit_slurm_job(cores, time, memory,
+            partition, tmpdir, commands, task, slurm_queue)
+
+        result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
+            out_file, error_file, rc_file)
+
+    # get the benchmarking data
+    elapsed, cpus, memory = slurm_queue.get_benchmark(slurm_jobid)
+    logging.info("Benchmark information for job id %s:\nElapsed: %s minutes\nCPUs: %s\nMEMORY: %s MB",
+        task.task_no, elapsed,cpus,memory)
     
+    return result
+
+def _submit_slurm_job(cores, time, memory, partition, tmpdir, commands, task, slurm_queue):
     slurm_script, out_file, error_file, rc_file = _create_slurm_script(partition,
-        perf.cores, perf.time, perf.mem, commands, task.task_no, tmpdir)
+        cores, time, memory, commands, task.task_no, tmpdir)
 
     logging.info("Created slurm files for task id %s: %s, %s, %s, %s",
         task.task_no, slurm_script, out_file, error_file, rc_file)
@@ -401,7 +440,10 @@ def _run_task_command_slurm(task, extra):
     
     logging.info("Submitted job for task id %s: slurm id %s", task.task_no,
         slurm_jobid)
-    
+   
+    return slurm_jobid, out_file, error_file, rc_file
+
+def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_file): 
     # poll to check for status
     slurm_job_status=None
     for tries in itertools.count(1):
@@ -421,11 +463,6 @@ def _run_task_command_slurm(task, extra):
         if os.path.getsize(rc_file) > 0:
             break
         
-    # get the benchmarking data
-    elapsed, cpus, memory = slurm_queue.get_benchmark(slurm_jobid)
-    logging.info("Benchmark information for job id %s:\nElapsed: %s minutes\nCPUs: %s\nMEMORY: %s MB",
-        task.task_no, elapsed,cpus,memory)
-    
     # check if a slurm error is written to the output file
     try:
         slurm_errors=subprocess.check_output(["grep","-F","slurmstepd: error:",error_file]).split("\n")
@@ -465,7 +502,7 @@ def _run_task_command_slurm(task, extra):
     if extra_error:
         result = result._replace(error=str(result.error)+extra_error)
  
-    return result
+    return result, slurm_job_status
 
 def _run_task_function_slurm(task, extra):
     (perf, partition, tmpdir, extra_srun_flags, slurm_queue) = extra
