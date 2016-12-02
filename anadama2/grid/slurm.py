@@ -9,7 +9,6 @@ import string
 import tempfile
 import subprocess
 import datetime
-import multiprocessing
 import time
 
 from math import exp
@@ -204,23 +203,23 @@ class SLURMQueue():
     
     def __init__(self):
         # this is the refresh rate for checking the queue, in seconds
-        self.refresh_rate = 10*60
+        self.refresh_rate = 5*60
         # this is the last time the queue was checked
         self.last_check = time.time()
         self.sacct = None
         # create a lock for jobs in queue
-        self.lock_status = multiprocessing.Lock()
-        self.lock_submit = multiprocessing.Lock()
+        self.lock_status = threading.Lock()
+        self.lock_submit = threading.Lock()
         
-    def get_slurm_status(self, force=None):
+    def get_slurm_status(self, refresh=None):
         """ Get the queue accounting stats """
         
         # lock to prevent race conditions with status update
         self.lock_status.acquire()
         
-        # check the last time the queue was captured
+        # check the last time the queue was captured and refresh if set
         current_time = time.time()
-        if current_time - self.last_check > self.refresh_rate or force or self.sacct is None:
+        if ( current_time - self.last_check > self.refresh_rate ) or refresh or self.sacct is None:
             self.last_check = current_time
             self.sacct = self._run_slurm_sacct()
             
@@ -239,20 +238,17 @@ class SLURMQueue():
 
         return list(info)
     
-    def _get_all_stats_for_jobid(self,jobid,wait=None):
+    def _get_all_stats_for_jobid(self,jobid):
         """ Get all the stats for a specific job id """
         
         # use the existing stats, to get the information for the jobid
-        job_stats=filter(lambda x: x[0].startswith(jobid),self.get_slurm_status())
-        
-        # if the job stats are not found for the job, wait for the stats to refresh
-        if wait or not job_stats:
-            wait_time=self.refresh_rate - (time.time() - self.last_check) + 10
-            time.sleep(wait_time)
-            # refresh the stats
-            job_stats=filter(lambda x: x[0].startswith(jobid),self.get_slurm_status())
-        
-        return list(job_stats)
+        job_stats=list(filter(lambda x: x[0].startswith(jobid),self.get_slurm_status()))
+       
+        # if the job stats are not found for the job, return an NA state
+        if not job_stats:
+            job_stats=[[jobid,"NA","NA","NA","NA"]] 
+
+        return job_stats
     
     def get_status(self, jobid):
         """ Check the status of the job """
@@ -264,16 +260,39 @@ class SLURMQueue():
     def get_benchmark(self,jobid):
         """ Check the benchmarking stats of the slurm id """
 
-        # wait for the next refresh of the stats so running jobs
-        # are shown as completed with memory stats
-        info=self._get_all_stats_for_jobid(jobid,wait=True)
-        # get the memory max from the batch line which is the second line of output
-        elapsed=info[0][3]
-        cpus=info[0][2]
+        # if the job is not shown to have finished running then
+        # wait for the next queue refresh
+        status=self.get_status(jobid)
+        if not (_job_stopped(status) or _job_failed(status)):
+            wait_time = abs(self.refresh_rate - (time.time() - self.last_check)) + 10
+            time.sleep(wait_time)
+
+        info=self._get_all_stats_for_jobid(jobid)
+
         try:
-            memory="{:.1f}".format(int(info[1][4].replace("K",""))/1024.0)
+            cpus=info[0][2]
+        except IndexError:
+            cpus="NA"
+    
+        try:
+            elapsed=info[0][3]
+        except IndexError:
+            elapsed="NA"
+
+        # get the memory max from the batch line which is the second line of output
+        try:
+            memory=info[1][4]
         except IndexError:
             memory="NA"
+        
+        if "K" in memory:    
+            # if memory is in KB, convert to MB
+            memory="{:.1f}".format(int(memory.replace("K",""))/1024.0)
+        elif "M" in memory:
+            memory=memory.replace("M","")
+        elif "G" in memory:
+            # if memory is in GB, convert to MB
+            memory="{:.1f}".format(int(memory.replace("G",""))*1024.0)
 
         return elapsed, cpus, memory    
 
@@ -448,7 +467,7 @@ def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_
     slurm_job_status=None
     for tries in itertools.count(1):
         # only check status at intervals
-        time.sleep(5*60)
+        time.sleep(60)
         
         # check the queue stats
         slurm_job_status = slurm_queue.get_status(slurm_jobid)
@@ -457,10 +476,12 @@ def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_
             slurm_jobid,slurm_job_status)
         
         if _job_stopped(slurm_job_status):
+            logging.info("Slurm status for job id %s shows it has stopped",task.task_no)
             break
         
         # check if the return code file is written
         if os.path.getsize(rc_file) > 0:
+            logging.info("Return code file for job id %s shows it has stopped",task.task_no)
             break
         
     # check if a slurm error is written to the output file
