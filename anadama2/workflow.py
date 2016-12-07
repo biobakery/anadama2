@@ -800,7 +800,7 @@ def _build_targets(targets):
     
 def _build_name(name, task_no):
     if not name:
-        return "Step "+str(task_no)
+        return "Task "+str(task_no)
     else:
         return name
 
