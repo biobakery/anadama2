@@ -11,7 +11,7 @@ def default(output_dir=None):
         log = os.path.join(str(output_dir), log)
     return ReporterGroup([
         LoggerReporter("debug", log),
-        ConsoleReporter()
+        VerboseConsoleReporter()
     ])
 
 class BaseReporter(object):
@@ -256,7 +256,129 @@ class ConsoleReporter(BaseReporter):
         self.n_complete = 0
         self.failed = False
 
+class VerboseConsoleReporter(BaseReporter):
+    """Prints out verbose run progress to stdout.
+    An example readout is as follows:
 
+    ::
+
+    [ 0/18 -   0.00%] **Started  ** Task  2: kneaddata
+    [ 0/18 -   0.00%] **Started  ** Task  0: kneaddata
+    [ 1/18 -   5.56%] **Completed** Task  0: kneaddata
+    [ 1/18 -   5.56%] **Started  ** Task  4: metaphlan2.py
+    [ 2/18 -  11.11%] **Completed** Task  2: kneaddata
+
+    The readout is composed of four pieces of information:
+
+      1. The status of all tasks. For example, [1/4 - 25%] indicates that 
+          one task of the four total tasks have finished running. The
+          workflow is 25% complete.
+      2. The step the task has completed. Examples are "Started" and "Completed".
+      3. The task number. 
+      5. The task description. This is the task name if set. If the task name is
+          the default then it is the first task action. This is the first command
+          and it is limited to the executable name. If it is a function, it will be the 
+          name of the function.
+    """
+
+    class stats:
+        skip  = six.u("Skipped")
+        fail  = six.u("Failed")
+        done  = six.u("Completed")
+        start = six.u("Started")
+        max_message_length = max(len(x) for x in [skip,fail,done,start])
+
+    def __init__(self, *args, **kwargs):
+        self.failed_results = list()
+
+    def _msg(self, status, task_name, command, id, visible=True):
+        # print the function name or the command string
+        if six.callable(command):
+            command=command.__name__
+        else:
+            command=six.u(command).split(" ")[0]
+            
+        # if the task name is not set, then use the command name
+        if task_name == "Task "+str(id):
+            description=command
+        else:
+            description=six.u(task_name)
+        
+        # create a message string for the current status
+        s = self.msg_str.format(self.n_complete, self.n_tasks,
+                                (float(self.n_complete)/self.n_tasks)*100, 
+                                status, id, description)
+        # if command string is reduced, add ellipses
+        if len(command) > self.max_command_length:
+            s += " ..."
+            
+        s += six.u("\n")
+        
+        # only write if the task is visible
+        if visible is True:
+            sys.stdout.write(s)
+            
+    def _increment_complete(self, task_no):
+        # update the number of completed visible tasks
+        if self.run_context.tasks[task_no].visible:
+            self.n_complete+=1
+
+    def started(self, ctx):
+        self.run_context = ctx
+        self.reset()
+
+    def task_started(self, task_no):
+        self._msg(self.stats.start, self.run_context.tasks[task_no].name,
+                  self.run_context.tasks[task_no].actions[0], task_no,
+                  visible=self.run_context.tasks[task_no].visible)
+    
+    def task_skipped(self, task_no):
+        self._increment_complete(task_no)
+        self._msg(self.stats.skip, self.run_context.tasks[task_no].name, 
+                  self.run_context.tasks[task_no].actions[0], task_no,
+                  visible=self.run_context.tasks[task_no].visible)
+
+    def task_failed(self, task_result):
+        self._increment_complete(task_result.task_no)
+        if task_result.task_no is None:
+            return
+        name = self.run_context.tasks[task_result.task_no].name
+        self.failed_results.append((name, task_result))
+        self._msg(self.stats.fail, name, self.run_context.tasks[task_result.task_no].actions[0],
+                  task_result.task_no, visible=self.run_context.tasks[task_result.task_no].visible)
+
+    def task_completed(self, task_result):
+        self._increment_complete(task_result.task_no)
+        name = self.run_context.tasks[task_result.task_no].name
+        self._msg(self.stats.done, name, self.run_context.tasks[task_result.task_no].actions[0],
+                  task_result.task_no, visible=self.run_context.tasks[task_result.task_no].visible)
+
+    def finished(self):
+        sys.stdout.write(six.u("Run Finished\n"))
+        for name, result in self.failed_results:
+            sys.stdout.write(six.u("Task {} failed\n".format(result.task_no)))
+            sys.stdout.write(six.u("  Name: "+name+"\n"))
+            sys.stdout.write(six.u("  Original error: \n"))
+            for line in result.error.split("\n"):
+                sys.stdout.write(six.u("  "+line+"\n"))
+        self.reset()
+
+    def reset(self):
+        # count the number of visible tasks
+        self.n_tasks = 0
+        for task in self.run_context.tasks:
+            if task.visible:
+                self.n_tasks+=1
+                
+        # limit the full string length to 79 characters
+        max_task_length=len(str(self.n_tasks))
+        self.max_command_length = 79-(max_task_length*3+20+self.stats.max_message_length)
+        self.msg_str = six.u("[{:"+str(max_task_length)+"}/{:"+str(max_task_length)+
+                             "} - {:6.2f}%] **{:"+str(self.stats.max_message_length)+
+                             "}** Task {:"+str(max_task_length)+
+                             "}: {:."+str(self.max_command_length)+"}")
+        self.n_complete = 0
+        self.failed = False
 
 class LoggerReporter(BaseReporter):
     """A reporter that uses :mod:`logging`.
