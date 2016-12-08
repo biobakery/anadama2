@@ -3,7 +3,7 @@ import sys
 import logging
 
 import six
-
+import time
 
 def default(output_dir=None):
     log = "anadama.log"
@@ -279,19 +279,20 @@ class VerboseConsoleReporter(BaseReporter):
 
     ::
 
-    [ 0/18 -   0.00%] **Started  ** Task  2: kneaddata
-    [ 0/18 -   0.00%] **Started  ** Task  0: kneaddata
-    [ 1/18 -   5.56%] **Completed** Task  0: kneaddata
-    [ 1/18 -   5.56%] **Started  ** Task  4: metaphlan2.py
-    [ 2/18 -  11.11%] **Completed** Task  2: kneaddata
+    DATE/TIME [ 0/18 -   0.00%] **Started  ** Task  2: kneaddata
+    DATE/TIME [ 0/18 -   0.00%] **Started  ** Task  0: kneaddata
+    DATE/TIME [ 1/18 -   5.56%] **Completed** Task  0: kneaddata
+    DATE/TIME [ 1/18 -   5.56%] **Started  ** Task  4: metaphlan2.py
+    DATE/TIME [ 2/18 -  11.11%] **Completed** Task  2: kneaddata
 
-    The readout is composed of four pieces of information:
-
-      1. The status of all tasks. For example, [1/4 - 25%] indicates that 
+    The readout is composed of five pieces of information:
+    
+      1. The date/time for the status message.
+      2. The status of all tasks. For example, [1/4 - 25%] indicates that 
           one task of the four total tasks have finished running. The
           workflow is 25% complete.
-      2. The step the task has completed. Examples are "Started" and "Completed".
-      3. The task number. 
+      3. The step the task has completed. Examples are "Started" and "Completed".
+      4. The task number. 
       5. The task description. This is the task name if set. If the task name is
           the default then it is the first task action. This is the first command
           and it is limited to the executable name. If it is a function, it will be the 
@@ -321,9 +322,12 @@ class VerboseConsoleReporter(BaseReporter):
             description=command
         else:
             description=six.u(task_name)
+            
+        # create a date/time string
+        s = time.strftime("(%b %d %H:%M:%S) ", time.localtime())
         
         # create a message string for the current status
-        s = self.msg_str.format(self.n_complete, self.n_tasks,
+        s += self.msg_str.format(self.n_complete, self.n_tasks,
                                 (float(self.n_complete)/self.n_tasks)*100, 
                                 status, id, description)
         # if command string is reduced, add ellipses
@@ -398,7 +402,7 @@ class VerboseConsoleReporter(BaseReporter):
                 
         # limit the full string length to 79 characters
         max_task_length=len(str(self.n_tasks))
-        self.max_command_length = 79-(max_task_length*3+20+self.stats.max_message_length)
+        self.max_command_length = 79-(20+max_task_length*3+20+self.stats.max_message_length)
         self.msg_str = six.u("[{:"+str(max_task_length)+"}/{:"+str(max_task_length)+
                              "} - {:6.2f}%] **{:"+str(self.stats.max_message_length)+
                              "}** Task {:"+str(max_task_length)+
