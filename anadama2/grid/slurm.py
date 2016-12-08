@@ -442,10 +442,12 @@ def _run_task_command_slurm(task, extra):
             out_file, error_file, rc_file, reporter)
 
     # get the benchmarking data
+    reporter.task_grid_status(task.task_no,slurm_jobid,"Get benchmarking data")
     elapsed, cpus, memory = slurm_queue.get_benchmark(slurm_jobid)
     logging.info("Benchmark information for job id %s:\nElapsed: %s minutes\nCPUs: %s\nMEMORY: %s MB",
         task.task_no, elapsed,cpus,memory)
     
+    reporter.task_grid_status(task.task_no,slurm_jobid,"Final status of "+slurm_final_status)
     return result
 
 def _submit_slurm_job(cores, time, memory, partition, tmpdir, commands, task, slurm_queue, reporter):
