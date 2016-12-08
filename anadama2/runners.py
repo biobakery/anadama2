@@ -211,7 +211,10 @@ class ParallelLocalWorker(multiprocessing.Process):
     @staticmethod
     def appropriate_q_class(*args, **kwargs):
         return multiprocessing.Queue(*args, **kwargs)
-
+    
+    @staticmethod
+    def appropriate_lock():
+        return multiprocessing.Lock()
 
     def run(self):
         return worker_run_loop(self.work_q, self.result_q, _run_task_locally, self.reporter, self.lock)
@@ -447,11 +450,12 @@ class GridRunner(BaseRunner):
         for name, (worker_cls, n_procs) in self._worker_config.items():
             work_q = worker_cls.appropriate_q_class()
             result_q = worker_cls.appropriate_q_class()
+            lock = worker_cls.appropriate_lock()
             self._worker_qs[name] = (work_q, result_q)
             isproc = issubclass(worker_cls, multiprocessing.Process) 
             l = procs if isproc else threads
             for _ in range(n_procs):
-                l.append(worker_cls(work_q, result_q))
+                l.append(worker_cls(work_q, result_q, lock, self.ctx._reporter))
         self.workers = procs+threads # http://stackoverflow.com/a/13115499
         self._qcycle = itertools.cycle(val[1]
                                        for val in self._worker_qs.values())
