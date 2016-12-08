@@ -316,15 +316,21 @@ class SLURMQueue():
 
 class SLURMWorker(threading.Thread):
 
-    def __init__(self, work_q, result_q):
+    def __init__(self, work_q, result_q, lock, reporter):
         super(SLURMWorker, self).__init__()
         self.logger = runners.logger
         self.work_q = work_q
         self.result_q = result_q
+        self.lock = lock
+        self.reporter = reporter
 
     @staticmethod
     def appropriate_q_class(*args, **kwargs):
         return queue.Queue(*args, **kwargs)
+
+    @staticmethod
+    def appropriate_lock():
+        return threading.Lock()
 
     def run(self):
         return runners.worker_run_loop(self.work_q, self.result_q, 
@@ -426,7 +432,7 @@ def _run_task_command_slurm(task, extra):
 
     # if a timeout or memory max, resubmit at most three times
     while slurm_final_status in ["TIMEOUT","MEMKILL"] and resubmission < 3:
-        reporter.task_grid_status(task.task_no,slurm_jobid,"Resubmit due to "+slurm_final_status)
+        reporter.task_grid_status(task.task_no,slurm_jobid,"Resubmitting due to "+slurm_final_status)
         resubmission+=1
         # increase the memory or the time
         if slurm_final_status == "TIMEOUT":
@@ -445,7 +451,7 @@ def _run_task_command_slurm(task, extra):
             out_file, error_file, rc_file, reporter)
 
     # get the benchmarking data
-    reporter.task_grid_status(task.task_no,slurm_jobid,"Get benchmarking data")
+    reporter.task_grid_status(task.task_no,slurm_jobid,"Getting benchmarking data")
     elapsed, cpus, memory = slurm_queue.get_benchmark(slurm_jobid)
     logging.info("Benchmark information for job id %s:\nElapsed: %s minutes\nCPUs: %s\nMEMORY: %s MB",
         task.task_no, elapsed,cpus,memory)
