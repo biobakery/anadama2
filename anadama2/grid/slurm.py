@@ -268,6 +268,11 @@ class SLURMQueue():
             time.sleep(wait_time)
 
         info=self._get_all_stats_for_jobid(jobid)
+        
+        try:
+            status=info[0][1]
+        except IndexError:
+            status="Unknown"
 
         try:
             cpus=info[0][2]
@@ -294,7 +299,7 @@ class SLURMQueue():
             # if memory is in GB, convert to MB
             memory="{:.1f}".format(int(memory.replace("G",""))*1024.0)
 
-        return elapsed, cpus, memory    
+        return elapsed, cpus, memory, status    
 
     def submit_job(self,slurm_script):
         """ Submit the slurm jobs and return the slurm job id """
@@ -452,7 +457,7 @@ def _run_task_command_slurm(task, extra):
 
     # get the benchmarking data
     reporter.task_grid_status(task.task_no,slurm_jobid,"Getting benchmarking data")
-    elapsed, cpus, memory = slurm_queue.get_benchmark(slurm_jobid)
+    elapsed, cpus, memory, slurm_final_status = slurm_queue.get_benchmark(slurm_jobid)
     logging.info("Benchmark information for job id %s:\nElapsed: %s minutes\nCPUs: %s\nMEMORY: %s MB",
         task.task_no, elapsed,cpus,memory)
     
