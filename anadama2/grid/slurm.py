@@ -194,7 +194,7 @@ class Slurm(Dummy):
                           name="local", rate=jobs, default=True)
         runner.add_worker(SLURMWorker, name="slurm", rate=grid_jobs)
         runner.routes.update((
-            ( task_idx, ("slurm", list(extra)+[self.slurm_queue]) )
+            ( task_idx, ("slurm", list(extra)+[self.slurm_queue, ctx._reporter]) )
             for task_idx, extra in six.iteritems(self.slurm_task_data)
         ))
         return runner
@@ -246,7 +246,7 @@ class SLURMQueue():
        
         # if the job stats are not found for the job, return an NA state
         if not job_stats:
-            job_stats=[[jobid,"NA","NA","NA","NA"]] 
+            job_stats=[[jobid,"Waiting","NA","NA","NA"]] 
 
         return job_stats
     
@@ -407,7 +407,7 @@ def _job_failed(status):
         return False
 
 def _run_task_command_slurm(task, extra):
-    (perf, partition, tmpdir, extra_srun_flags, slurm_queue) = extra
+    (perf, partition, tmpdir, extra_srun_flags, slurm_queue, reporter) = extra
     # create a slurm script and stdout/stderr files for this task
     commands="\n".join(task.actions)
     logging.info("Running commands for task id %s:\n%s", task.task_no, commands)
@@ -416,13 +416,14 @@ def _run_task_command_slurm(task, extra):
     cores, time, memory = perf.cores, perf.time, perf.mem
 
     slurm_jobid, out_file, error_file, rc_file = _submit_slurm_job(cores, time, memory, 
-        partition, tmpdir, commands, task, slurm_queue)
+        partition, tmpdir, commands, task, slurm_queue, reporter)
 
     result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
-        out_file, error_file, rc_file)
+        out_file, error_file, rc_file, reporter)
 
     # if a timeout or memory max, resubmit at most three times
     while slurm_final_status in ["TIMEOUT","MEMKILL"] and resubmission < 3:
+        reporter.task_grid_status(task.task_no,slurm_jobid,"Resubmit due to "+slurm_final_status)
         resubmission+=1
         # increase the memory or the time
         if slurm_final_status == "TIMEOUT":
@@ -435,10 +436,10 @@ def _run_task_command_slurm(task, extra):
                 resubmission, task.task_no, memory)
         
         slurm_jobid, out_file, error_file, rc_file = _submit_slurm_job(cores, time, memory,
-            partition, tmpdir, commands, task, slurm_queue)
+            partition, tmpdir, commands, task, slurm_queue, reporter)
 
         result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
-            out_file, error_file, rc_file)
+            out_file, error_file, rc_file, reporter)
 
     # get the benchmarking data
     elapsed, cpus, memory = slurm_queue.get_benchmark(slurm_jobid)
@@ -447,7 +448,7 @@ def _run_task_command_slurm(task, extra):
     
     return result
 
-def _submit_slurm_job(cores, time, memory, partition, tmpdir, commands, task, slurm_queue):
+def _submit_slurm_job(cores, time, memory, partition, tmpdir, commands, task, slurm_queue, reporter):
     slurm_script, out_file, error_file, rc_file = _create_slurm_script(partition,
         cores, time, memory, commands, task.task_no, tmpdir)
 
@@ -459,10 +460,12 @@ def _submit_slurm_job(cores, time, memory, partition, tmpdir, commands, task, sl
     
     logging.info("Submitted job for task id %s: slurm id %s", task.task_no,
         slurm_jobid)
+    
+    reporter.task_grid_status(task.task_no,slurm_jobid,"Submitted")
    
     return slurm_jobid, out_file, error_file, rc_file
 
-def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_file): 
+def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_file, reporter): 
     # poll to check for status
     slurm_job_status=None
     for tries in itertools.count(1):
@@ -471,6 +474,7 @@ def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_
         
         # check the queue stats
         slurm_job_status = slurm_queue.get_status(slurm_jobid)
+        reporter.task_grid_status(task.task_no,slurm_jobid,slurm_job_status)
         
         logging.info("Status for job id %s with slurm id %s is %s",task.task_no,
             slurm_jobid,slurm_job_status)
@@ -526,7 +530,7 @@ def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_
     return result, slurm_job_status
 
 def _run_task_function_slurm(task, extra):
-    (perf, partition, tmpdir, extra_srun_flags, slurm_queue) = extra
+    (perf, partition, tmpdir, extra_srun_flags, slurm_queue, reporter) = extra
     script_path = picklerunner.tmp(task, dir=tmpdir).path
     job_name = "task{}:{}".format(task.task_no, underscore(task.name))
     mem, time = perf.mem, perf.time
