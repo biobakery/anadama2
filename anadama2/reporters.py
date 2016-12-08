@@ -92,6 +92,21 @@ class BaseReporter(object):
         """
         raise NotImplementedError()
 
+    def task_grid_status(self, task_no, grid_id, status_message):
+        """Executed when anadama has grid information for a task.
+
+        :param task_no: The task number of the task that is
+          being started. To get the actual :class:`anadama2.Task` object
+          that's being executed, do ``self.run_context.tasks[task_no]``.
+        :param grid_id: The id of the grid job.
+        :param status_message: The grid status message.
+
+        :type task_no: int
+
+        """
+
+        raise NotImplementedError()
+
 
 class ReporterGroup(BaseReporter):
     """Sometimes you want to use multiple reporters. For that, there is
@@ -141,7 +156,9 @@ class ReporterGroup(BaseReporter):
         for r in self.reps:
             r.finished()
 
-    
+    def task_grid_status(self, task_no, grid_id, status_message):
+        for r in self.reps:
+            r.task_grid_status(task_no, grid_id, status_message)
 
 class ConsoleReporter(BaseReporter):
     """Prints out run progress to stderr.
@@ -286,12 +303,13 @@ class VerboseConsoleReporter(BaseReporter):
         fail  = six.u("Failed")
         done  = six.u("Completed")
         start = six.u("Started")
-        max_message_length = max(len(x) for x in [skip,fail,done,start])
+        grid_run = six.u("GridJob")
+        max_message_length = max(len(x) for x in [skip,fail,done,start,grid_run])
 
     def __init__(self, *args, **kwargs):
         self.failed_results = list()
 
-    def _msg(self, status, task_name, command, id, visible=True):
+    def _msg(self, status, task_name, command, id, visible=True, grid_update=None):
         # print the function name or the command string
         if six.callable(command):
             command=command.__name__
@@ -311,6 +329,9 @@ class VerboseConsoleReporter(BaseReporter):
         # if command string is reduced, add ellipses
         if len(command) > self.max_command_length:
             s += " ..."
+            
+        if grid_update:
+            s += self.grid_update_msg.format(grid_update[0], grid_update[1])
             
         s += six.u("\n")
         
@@ -353,6 +374,11 @@ class VerboseConsoleReporter(BaseReporter):
         self._msg(self.stats.done, name, self.run_context.tasks[task_result.task_no].actions[0],
                   task_result.task_no, visible=self.run_context.tasks[task_result.task_no].visible)
 
+    def task_grid_status(self, task_no, grid_id, status_message):
+        self._msg(self.stats.grid_run, self.run_context.tasks[task_no].name,
+                  self.run_context.tasks[task_no].actions[0], task_no, visible=True,
+                  grid_update=[grid_id, status_message])
+
     def finished(self):
         sys.stdout.write(six.u("Run Finished\n"))
         for name, result in self.failed_results:
@@ -377,6 +403,7 @@ class VerboseConsoleReporter(BaseReporter):
                              "} - {:6.2f}%] **{:"+str(self.stats.max_message_length)+
                              "}** Task {:"+str(max_task_length)+
                              "}: {:."+str(self.max_command_length)+"}")
+        self.grid_update_msg = six.u(" <Grid JobId {:9}: {:.25}>")
         self.n_complete = 0
         self.failed = False
 
@@ -441,6 +468,10 @@ class LoggerReporter(BaseReporter):
                               n, self.run_context.tasks[n].name, task_result.error)
         self.any_failed = True
 
+    def task_grid_status(self, task_no, grid_id, status_message):
+        self.logger.info("task %s with grid job id %s has status: %s",
+            task_no, grid_id, status_message)
+
     def task_completed(self, task_result):
         n = task_result.task_no
         self.logger.info("task %i, `%s' completed successfully.",
@@ -459,3 +490,4 @@ class LoggerReporter(BaseReporter):
 class WebhookReporter(BaseReporter):
     """TODO"""
     pass
+
