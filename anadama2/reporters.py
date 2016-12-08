@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import multiprocessing
 
 import six
 import time
@@ -45,7 +46,21 @@ class BaseReporter(object):
         raise NotImplementedError()
 
     def task_started(self, task_no):
-        """Executed when anadama is just about to execute a task.
+        """Executed when anadama is just about to execute a task. These tasks
+        are in the queue and waiting for available resources.
+
+        :param task_no: The task number of the task that is
+          being started. To get the actual :class:`anadama2.Task` object
+          that's being executed, do ``self.run_context.tasks[task_no]``.
+
+        :type task_no: int
+
+        """
+
+        raise NotImplementedError()
+
+    def task_running(self, task_no):
+        """Executed when anadama is ready to run a task.
 
         :param task_no: The task number of the task that is
           being started. To get the actual :class:`anadama2.Task` object
@@ -141,6 +156,9 @@ class ReporterGroup(BaseReporter):
         for r in self.reps:
             r.task_started(task_no)
 
+    def task_running(self, task_no):
+        for r in self.reps:
+            r.task_running(task_no)
 
     def task_failed(self, task_result):
         for r in self.reps:
@@ -304,11 +322,15 @@ class VerboseConsoleReporter(BaseReporter):
         fail  = six.u("Failed")
         done  = six.u("Completed")
         start = six.u("Started")
+        ready = six.u("Ready")
         grid_run = six.u("GridJob")
-        max_message_length = max(len(x) for x in [skip,fail,done,start,grid_run])
+        max_message_length = max(len(x) for x in [skip,fail,done,start,ready,grid_run])
 
     def __init__(self, *args, **kwargs):
         self.failed_results = list()
+        # Use a multiprocessing value so the total tasks completed is shared
+        # for the local multiprocessing tasks (is process and thread-safe)
+        self.n_complete = multiprocessing.Value('i',0)
 
     def _msg(self, status, task_name, command, id, visible=True, grid_update=None):
         # print the function name or the command string
@@ -327,8 +349,8 @@ class VerboseConsoleReporter(BaseReporter):
         s = time.strftime("(%b %d %H:%M:%S) ", time.localtime())
         
         # create a message string for the current status
-        s += self.msg_str.format(self.n_complete, self.n_tasks,
-                                (float(self.n_complete)/self.n_tasks)*100, 
+        s += self.msg_str.format(self.n_complete.value, self.n_tasks,
+                                (float(self.n_complete.value)/self.n_tasks)*100, 
                                 status, id, description)
         # if command string is reduced, add ellipses
         if len(command) > self.max_command_length:
@@ -346,13 +368,19 @@ class VerboseConsoleReporter(BaseReporter):
     def _increment_complete(self, task_no):
         # update the number of completed visible tasks
         if self.run_context.tasks[task_no].visible:
-            self.n_complete+=1
+            self.n_complete.value+=1
 
     def started(self, ctx):
         self.run_context = ctx
         self.reset()
 
     def task_started(self, task_no):
+        # This indicates the task is ready and waiting in the queue
+        self._msg(self.stats.ready, self.run_context.tasks[task_no].name,
+                  self.run_context.tasks[task_no].actions[0], task_no,
+                  visible=self.run_context.tasks[task_no].visible)
+        
+    def task_running(self, task_no):
         self._msg(self.stats.start, self.run_context.tasks[task_no].name,
                   self.run_context.tasks[task_no].actions[0], task_no,
                   visible=self.run_context.tasks[task_no].visible)
@@ -408,7 +436,7 @@ class VerboseConsoleReporter(BaseReporter):
                              "}** Task {:"+str(max_task_length)+
                              "}: {:."+str(self.max_command_length)+"}")
         self.grid_update_msg = six.u(" <Grid JobId {:9}: {:.25}>")
-        self.n_complete = 0
+        self.n_complete.value = 0
         self.failed = False
 
 class LoggerReporter(BaseReporter):
@@ -458,7 +486,12 @@ class LoggerReporter(BaseReporter):
                          self.run_context.tasks[task_no].name)
 
     def task_started(self, task_no):
-        msg = "task %i, `%s' started." + self._daginfo(task_no)
+        msg = "task %i, `%s' ready and waiting for resources." + self._daginfo(task_no)
+        self.logger.info(msg, task_no,
+                         self.run_context.tasks[task_no].name)
+        
+    def task_running(self, task_no):
+        msg = "task %i, `%s' starting to run." + self._daginfo(task_no)
         self.logger.info(msg, task_no,
                          self.run_context.tasks[task_no].name)
 

@@ -117,6 +117,7 @@ class SerialLocalRunner(BaseRunner):
                 continue
 
             self.ctx._handle_task_started(idx)
+            self.ctx._reporter.task_running(idx)
             result = _run_task_locally(self.ctx.tasks[idx])
             self.ctx._handle_task_result(result)
 
@@ -125,7 +126,7 @@ class SerialLocalRunner(BaseRunner):
                 break
 
 
-def worker_run_loop(work_q, result_q, run_task):
+def worker_run_loop(work_q, result_q, run_task, reporter=None, lock=None):
     logger.debug("Starting worker")
     while True:
         try:
@@ -151,6 +152,12 @@ def worker_run_loop(work_q, result_q, run_task):
             logger.debug("Failed to deserialize task")
             continue
         logger.debug("Running task %s with %s", task.task_no, run_task)
+        if reporter:
+            if lock is not None:
+                lock.acquire()
+            reporter.task_running(task.task_no)
+            if lock is not None:
+                lock.release()
         result = run_task(task, extra)
         logger.debug("Finished running task; "
                           "putting results on result_q")
@@ -192,11 +199,13 @@ def _get_task_result(task):
     
 class ParallelLocalWorker(multiprocessing.Process):
             
-    def __init__(self, work_q, result_q):
+    def __init__(self, work_q, result_q, lock, reporter):
         super(ParallelLocalWorker, self).__init__()
         self.logger = logger
         self.work_q = work_q
         self.result_q = result_q
+        self.lock = lock
+        self.reporter = reporter
 
 
     @staticmethod
@@ -205,7 +214,7 @@ class ParallelLocalWorker(multiprocessing.Process):
 
 
     def run(self):
-        return worker_run_loop(self.work_q, self.result_q, _run_task_locally)
+        return worker_run_loop(self.work_q, self.result_q, _run_task_locally, self.reporter, self.lock)
 
 
 class ParallelLocalRunner(BaseRunner):
@@ -214,7 +223,9 @@ class ParallelLocalRunner(BaseRunner):
         super(ParallelLocalRunner, self).__init__(run_context)
         self.work_q = multiprocessing.Queue()
         self.result_q = multiprocessing.Queue()
-        self.workers = [ ParallelLocalWorker(self.work_q, self.result_q)
+        self.lock = multiprocessing.Lock()
+        self.reporter = run_context._reporter
+        self.workers = [ ParallelLocalWorker(self.work_q, self.result_q, self.lock, self.reporter)
                          for _ in range(jobs) ]
         self.started = False
 

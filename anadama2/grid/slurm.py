@@ -408,6 +408,9 @@ def _job_failed(status):
 
 def _run_task_command_slurm(task, extra):
     (perf, partition, tmpdir, extra_srun_flags, slurm_queue, reporter) = extra
+    # report the task has started
+    reporter.task_running(task.task_no)
+    
     # create a slurm script and stdout/stderr files for this task
     commands="\n".join(task.actions)
     logging.info("Running commands for task id %s:\n%s", task.task_no, commands)
@@ -533,6 +536,8 @@ def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_
 
 def _run_task_function_slurm(task, extra):
     (perf, partition, tmpdir, extra_srun_flags, slurm_queue, reporter) = extra
+    # report the task has started
+    reporter.task_running(task.task_no)
     script_path = picklerunner.tmp(task, dir=tmpdir).path
     job_name = "task{}:{}".format(task.task_no, underscore(task.name))
     mem, time = perf.mem, perf.time
