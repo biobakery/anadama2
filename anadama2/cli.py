@@ -4,20 +4,25 @@ import sys
 import logging
 import optparse
 import os
+import subprocess
 
 from .tracked import TrackedVariable
 from .util import kebab, Directory
 from .util.fname import script_wd
 
-BANNER = """
-                          _____          __  __
-     /\             /\   |  __ \   /\   |  \/  |   /\    \\
-====/  \===_=__====/  \==| |  | |=/  \==| \  / |==/  \====\\
-===/ /\ \=| '_ \==/ /\ \=| |  | |/ /\ \=| |\/| |=/ /\ \===//
-  / ____ \| | | |/ ____ \| |__| / ____ \| |  | |/ ____ \ //
- /_/    \_\_| |_/_/    \_\_____/_/    \_\_|  |_/_/    \_\
-
-"""
+def identify_grid():
+    """ Check if a grid is found on the machine and determine which type """
+    
+    found_grid="None"
+    # check for the grid job submission command for slurm and sge
+    for command, grid in zip(["sbatch","slurm"],["qsub","sge"]):
+        try:
+            output=subprocess.check_output(["which",command],stderr=subprocess.STDOUT)
+            found_grid=grid
+        except subprocess.CalledProcessError:
+            pass
+        
+    return found_grid
 
 default_options = {
     "output": optparse.make_option("-o", '--output', default=None, type="str",
@@ -28,12 +33,13 @@ default_options = {
                          help="Collect inputs from this directory. "),
     "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
                          help="Print tasks to be run but don't execute their actions."),
-    "grid_run": optparse.make_option("-g", '--grid-run',
-                         help="""Run gridable tasks on the grid provided. If not set,
-                         then all tasks are run locally (including gridable tasks).
-                         Grid type followed by partition should be provided.
-                         For example 'slurm general_queue'""",
-                         nargs=2),
+    "grid": optparse.make_option("-g", '--grid',
+                         help="""Run gridable tasks on the grid provided. The default
+                         is the grid install identified.""",
+                         type="str", default=identify_grid()),
+    "grid_partition": optparse.make_option("-p", '--grid-partition',
+                         help="Run gridable tasks on the grid partition provided.",
+                         type="str", default="serial_requeue"),
     "skip_nothing": optparse.make_option("-n", '--skip-nothing', action="store_true",
                          help="Skip no tasks, even if you could; run it all."),
     "quit_early": optparse.make_option("-e", '--quit-early', action="store_true",
@@ -42,9 +48,9 @@ default_options = {
                          executed but children of successful or skipped tasks *are*
                          executed: basically, keep going until you run out of tasks
                          to execute."""),
-    "jobs": optparse.make_option("-j", '--jobs', default=1, type=int,
+    "jobs": optparse.make_option("-j", '--local-jobs', default=1, type=int, dest="jobs",
                          help="The number of tasks to execute in parallel locally."),
-    "grid_jobs": optparse.make_option("-J", '--grid-jobs', default=1, type=int,
+    "grid_jobs": optparse.make_option("-J", '--grid-jobs', default=0, type=int,
                          help="The number of tasks to submit to the grid in parallel."),
     "until_task": optparse.make_option("-u", '--until-task', default=None,
                          help="""Stop after running the named task. Can refer to
@@ -132,7 +138,7 @@ class Configuration(object):
 
         if not description:
             optparse.OptionParser.format_description = lambda s, t: s.description
-            self.description = BANNER
+            self.description = "AnADAMA2 Workflow"
         self.parser = optparse.OptionParser(
             description=self.description,
             version="%prog v" + self.version
