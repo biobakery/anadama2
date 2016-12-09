@@ -88,11 +88,13 @@ def format_command(command, **kwargs):
     # for values that are lists, replace "[key[0]]" with value
     for key in keys:
         replacement=kwargs[key]
-        if isinstance(replacement, list):
+        if isinstance(replacement, list) or isinstance(replacement, tuple):
             for i, item in enumerate(replacement):
                 command=command.replace("["+str(key)+"["+str(i)+"]]",str(item))
         else:
             command=command.replace("["+str(key)+"]",str(replacement))
+            # also allow for the item to be referenced as the first object
+            command=command.replace("["+str(key)+"[0]]",str(replacement))
     return command 
 
 def parse_sh(s, **kwargs):
