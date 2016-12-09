@@ -136,7 +136,7 @@ class Workflow(object):
         elif grid_selection == "sge":
             grid = SGE(queue=grid_partition)
         else:
-            logger.warning("Grid selected can not be found. Tasks will run locally.")
+            print("Grid selected ( "+grid_selection+" ) can not be found. Tasks will run locally.")
             grid = _grid.Dummy()
             
         self.grid=grid

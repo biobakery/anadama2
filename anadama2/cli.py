@@ -15,7 +15,7 @@ def identify_grid():
     
     found_grid="None"
     # check for the grid job submission command for slurm and sge
-    for command, grid in zip(["sbatch","slurm"],["qsub","sge"]):
+    for command, grid in [["sbatch","slurm"],["qsub","sge"]]:
         try:
             output=subprocess.check_output(["which",command],stderr=subprocess.STDOUT)
             found_grid=grid
