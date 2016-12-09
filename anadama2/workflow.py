@@ -115,15 +115,15 @@ class Workflow(object):
         # if the grid has already been set by the user, then return
         if self.grid_set:
             return self.grid
-        # try to get the grid selection set on the command line
-        try:
-            grid_selection, grid_partition = self.vars.get("grid_run")
-        except TypeError:
-            grid_selection = None
-            grid_partition = None
+        
+        # get the grid selection set on the command line
+        grid_selection = self.vars.get("grid")
+        grid_partition = self.vars.get("grid_partition")
+        grid_jobs = self.vars.get("grid_jobs")
         
         # set the grid instance based on the user option
-        if grid_selection is None:
+        # if no grid jobs are selected, then no grid will be used
+        if grid_jobs == 0:
             grid = _grid.Dummy()
         elif grid_selection == "slurm":
             # get the temp output folder for the slurm scripts and stdout/stderr files
