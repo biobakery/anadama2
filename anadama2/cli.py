@@ -26,48 +26,48 @@ def identify_grid():
 
 default_options = {
     "output": optparse.make_option("-o", '--output', default=None, type="str",
-                         help="""Store output in this directory. By default the 
-                         dependency database and run log are also put in 
-                         this directory"""),
+                         help=("Write output to this directory. By default the "+  
+                         "dependency database and log are written to this directory")),
     "input": optparse.make_option("-i", '--input', default=os.getcwd(), type="str",
-                         help="Collect inputs from this directory. "),
+                         help="Collect inputs from this directory."),
     "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
                          help="Print tasks to be run but don't execute their actions."),
     "grid": optparse.make_option("-g", '--grid',
-                         help="""Run gridable tasks on the grid provided. The default
-                         is the grid install identified.""",
+                         help="Run gridable tasks on this grid type.",
                          type="str", default=identify_grid()),
     "grid_partition": optparse.make_option("-p", '--grid-partition',
-                         help="Run gridable tasks on the grid partition provided.",
+                         help="Run gridable tasks on this partition.",
                          type="str", default="serial_requeue"),
     "skip_nothing": optparse.make_option("-n", '--skip-nothing', action="store_true",
                          help="Skip no tasks, even if you could; run it all."),
     "quit_early": optparse.make_option("-e", '--quit-early', action="store_true",
-                         help="""If any tasks fail, stop all execution immediately. If set to
-                         ``False`` (the default), children of failed tasks are *not*
-                         executed but children of successful or skipped tasks *are*
-                         executed: basically, keep going until you run out of tasks
-                         to execute."""),
+                         help=("If any tasks fail, stop all execution immediately. If not set, "+
+                         "children of failed tasks are not " +
+                         "executed but children of successful or skipped tasks are " +
+                         "executed. The default is to keep running until all tasks " +
+                         "that are available to execute have completed or failed.")),
     "jobs": optparse.make_option("-j", '--local-jobs', default=1, type=int, dest="jobs",
                          help="The number of tasks to execute in parallel locally."),
     "grid_jobs": optparse.make_option("-J", '--grid-jobs', default=0, type=int,
-                         help="The number of tasks to submit to the grid in parallel."),
+                         help=("The number of tasks to submit to the grid in parallel. "+
+                               "The default setting is zero jobs will be run on the grid. "+
+                               "By default, all jobs, including gridable jobs, will run locally.")),
     "until_task": optparse.make_option("-u", '--until-task', default=None,
-                         help="""Stop after running the named task. Can refer to
-                         the end task by task number or task name."""),
+                         help=("Stop after running the named task. Can refer to "+
+                         "the end task by task number or task name.")),
     "exclude_task": optparse.make_option("-U", "--exclude-task", default=[], action="append",
-                         help="""Don't execute these tasks. Use this flag multiple times 
-                         to not execute many tasks"""),
+                         help=("Don't execute these tasks. Use this flag multiple times "+ 
+                         "to not execute multiple tasks.")),
     "target": optparse.make_option("-t", "--target", default=[], action="append",
-                         help="""Only execute tasks that make these targets.  
-                         Use this flag multiple times to build many targets. If the 
-                         provided value includes `?' or `*' or `[', treat it as
-                         a pattern and build all targets that match."""),
+                         help=("Only execute tasks that make these targets. " +  
+                         "Use this flag multiple times to build many targets. If the " +
+                         "provided value includes ? or * or [, treat it as " +
+                         "a pattern and build all targets that match.")),
     "exclude_target": optparse.make_option("-T", "--exclude-target", default=[], action="append",
-                         help="""Don't execute tasks that make these targets.  
-                         Use this flag multiple times to exclude many targets. If the 
-                         provided value includes `?' or `*' or `[', treat it as
-                         a pattern and exclude all targets that match.""")
+                         help=("Don't execute tasks that make these targets. " +  
+                         "Use this flag multiple times to exclude many targets. If the " + 
+                         "provided value includes ? or * or [, treat it as " +
+                         "a pattern and exclude all targets that match."))
 }
 
 # a list of the required options (as optparse does not have a required keyword)
