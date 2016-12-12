@@ -114,7 +114,9 @@ class Slurm(Dummy):
         mem = kwargs_dict.pop("mem", None)
         if mem is None:
             raise TypeError("`mem' is a required keyword argument")
-        cores = kwargs_dict.pop("cores", 1)
+        cores = kwargs_dict.pop("cores", None)
+        if cores is None:
+            raise TypeError("`cores' is a required keyword argument")        
         partition = kwargs_dict.pop("partition", self.slurm_partition)
         extra_srun_flags = kwargs_dict.pop("extra_srun_flags",
                                            self.extra_srun_flags)
