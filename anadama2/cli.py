@@ -293,12 +293,11 @@ class Configuration(object):
         args=CommandLineOptions()
         for option in self._directives:
             option = re.sub(r'-', '_', option)
-            if isinstance(option, Directory):
-                value=self.get(option).name
-            elif isinstance(option, TrackedVariable):
-                value=self.get(option).__str__()
-            else:
-                value=self.get(option)
+            value = self.get(option)
+            if isinstance(value, Directory):
+                value=value.name
+            elif isinstance(value, TrackedVariable):
+                value=value.__str__()
             setattr(args,option,value)
                 
         return args
