@@ -206,6 +206,14 @@ class SLURMQueue():
     def __init__(self):
         # this is the refresh rate for checking the queue, in seconds
         self.refresh_rate = 10*60
+        
+        # this is the number of minutes to wait if there is an time out
+        # socket error returned from the scheduler when running a command
+        self.timeout_sleep = 5*60
+        
+        # this is the number of times to retry after a timeout error
+        self.timeout_retry_max = 3
+        
         # this is the number of seconds to wait after job submission
         self.submit_sleep = 5
         # this is the last time the queue was checked
@@ -234,11 +242,14 @@ class SLURMQueue():
     def _run_slurm_sacct(self):
         """ Check the status of the slurm ids """
         logging.info("Running slurm sacct")
-        stdout=subprocess.check_output(["sacct","-o","JobID,State,AllocCPUs,Elapsed,MaxRSS"])
+        stdout=_slurm_command_resubmit(["sacct","-o","JobID,State,AllocCPUs,Elapsed,MaxRSS"])
 
         # remove the header information from the status lines
         # split each line and remove empty lines
-        info=filter(lambda x: x, [line.rstrip().split() for line in stdout.split("\n")[2:]])
+        try:
+            info=filter(lambda x: x, [line.rstrip().split() for line in stdout.split("\n")[2:]])
+        except IndexError:
+            info=[[""]]
 
         return list(info)
     
@@ -304,6 +315,40 @@ class SLURMQueue():
             memory="{:.1f}".format(float(memory.replace("G",""))*1024.0)
 
         return elapsed, cpus, memory, status    
+    
+    def _slurm_command(self,command):
+        """ Run the slurm command and check for errors """
+        
+        error=None
+        try:
+            logging.debug("Running slurm command: %s"," ".join(command))
+            stdout=subprocess.check_output(command)
+        except subprocess.CalledProcessError as err:
+            error=err.output
+            
+        timeout_error=False
+        if error and "error" in error and "Socket timed out on send/recv operation" in error:
+            # check for a socket timeout error
+            timeout_error=True
+            
+        return stdout, timeout_error
+    
+    def _slurm_command_resubmit(self,command):
+        """ Run this slurm command, check for error, resubmit if needed """
+        
+        # run the slurm command
+        stdout, timeout_error = self._slurm_command(command)
+        
+        # retry if timeout error present after wait
+        resubmissions = 0
+        if timeout_error and resubmissions < self.timeout_retry_max:
+            resubmissions+=1
+            # wait before retrying
+            logging.warning("Unable to run slurm command, waiting and retrying")
+            time.sleep(self.timeout_sleep)
+            stdout, timeout_error = self._slurm_command(command)
+        
+        return stdout
 
     def submit_job(self,slurm_script):
         """ Submit the slurm jobs and return the slurm job id """
@@ -313,8 +358,12 @@ class SLURMQueue():
 
         # submit the job and get the slurm id
         logging.debug("Submitting job to grid")
-        stdout=subprocess.check_output(["sbatch",slurm_script])
+        stdout=_slurm_command_resubmit(["sbatch",slurm_script])
         slurm_jobid=stdout.rstrip().split()[-1]
+        
+        # check the jobid is a valid number
+        if not slurm_jobid.isdigit():
+            slurm_jobid=""
         
         # pause for the scheduler
         time.sleep(self.submit_sleep)
