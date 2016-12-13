@@ -242,7 +242,7 @@ class SLURMQueue():
     def _run_slurm_sacct(self):
         """ Check the status of the slurm ids """
         logging.info("Running slurm sacct")
-        stdout=_slurm_command_resubmit(["sacct","-o","JobID,State,AllocCPUs,Elapsed,MaxRSS"])
+        stdout=self._slurm_command_resubmit(["sacct","-o","JobID,State,AllocCPUs,Elapsed,MaxRSS"])
 
         # remove the header information from the status lines
         # split each line and remove empty lines
@@ -325,6 +325,8 @@ class SLURMQueue():
             stdout=subprocess.check_output(command)
         except subprocess.CalledProcessError as err:
             error=err.output
+        except OSError:
+            stdout="error"
             
         timeout_error=False
         if error and "error" in error and "Socket timed out on send/recv operation" in error:
@@ -358,12 +360,16 @@ class SLURMQueue():
 
         # submit the job and get the slurm id
         logging.debug("Submitting job to grid")
-        stdout=_slurm_command_resubmit(["sbatch",slurm_script])
-        slurm_jobid=stdout.rstrip().split()[-1]
+        stdout=self._slurm_command_resubmit(["sbatch",slurm_script])
+        
+        try:
+            slurm_jobid=stdout.rstrip().split()[-1]
+        except IndexError:
+            slurm_jobid="error"
         
         # check the jobid is a valid number
         if not slurm_jobid.isdigit():
-            slurm_jobid=""
+            raise OSError("Unable to submit job to queue")
         
         # pause for the scheduler
         time.sleep(self.submit_sleep)
