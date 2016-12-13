@@ -310,7 +310,7 @@ class SLURMQueue():
         self.lock_submit.acquire()
 
         # submit the job and get the slurm id
-        logging.info("Submitting job to grid")
+        logging.debug("Submitting job to grid")
         stdout=subprocess.check_output(["sbatch",slurm_script])
         slurm_jobid=stdout.rstrip().split()[-1]
         
@@ -460,7 +460,7 @@ def _run_task_command_slurm(task, extra):
     # get the benchmarking data
     reporter.task_grid_status(task.task_no,slurm_jobid,"Getting benchmarking data")
     elapsed, cpus, memory, slurm_final_status = slurm_queue.get_benchmark(slurm_jobid)
-    logging.info("Benchmark information for job id %s:\nElapsed: %s minutes\nCPUs: %s\nMEMORY: %s MB",
+    logging.info("Benchmark information for job id %s:\nElapsed Time: %s \nCores: %s\nMemory: %s MB",
         task.task_no, elapsed,cpus,memory)
     
     reporter.task_grid_status(task.task_no,slurm_jobid,"Final status of "+slurm_final_status)
