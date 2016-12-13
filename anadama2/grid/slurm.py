@@ -206,6 +206,8 @@ class SLURMQueue():
     def __init__(self):
         # this is the refresh rate for checking the queue, in seconds
         self.refresh_rate = 10*60
+        # this is the number of seconds to wait after job submission
+        self.submit_sleep = 5
         # this is the last time the queue was checked
         self.last_check = time.time()
         self.sacct = None
@@ -315,7 +317,7 @@ class SLURMQueue():
         slurm_jobid=stdout.rstrip().split()[-1]
         
         # pause for the scheduler
-        time.sleep(5)
+        time.sleep(self.submit_sleep)
         
         self.lock_submit.release()
     
