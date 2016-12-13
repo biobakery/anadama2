@@ -205,7 +205,7 @@ class SLURMQueue():
     
     def __init__(self):
         # this is the refresh rate for checking the queue, in seconds
-        self.refresh_rate = 5*60
+        self.refresh_rate = 10*60
         # this is the last time the queue was checked
         self.last_check = time.time()
         self.sacct = None
