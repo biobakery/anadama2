@@ -325,6 +325,7 @@ class SLURMQueue():
             stdout=subprocess.check_output(command)
         except subprocess.CalledProcessError as err:
             error=err.output
+            stdout="error"
         except OSError:
             stdout="error"
             
