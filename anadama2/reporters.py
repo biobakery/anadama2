@@ -435,7 +435,7 @@ class VerboseConsoleReporter(BaseReporter):
                              "} - {:6.2f}%] **{:"+str(self.stats.max_message_length)+
                              "}** Task {:"+str(max_task_length)+
                              "}: {:."+str(self.max_command_length)+"}")
-        self.grid_update_msg = six.u(" <Grid JobId {:9}: {:.25}>")
+        self.grid_update_msg = six.u(" <Grid JobId {:9}: {:.30}>")
         self.n_complete.value = 0
         self.failed = False
 
