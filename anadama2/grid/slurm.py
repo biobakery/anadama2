@@ -368,9 +368,9 @@ class SLURMQueue():
         except IndexError:
             slurm_jobid="error"
         
-        # check the jobid is a valid number
-        if not slurm_jobid.isdigit():
-            raise OSError("Unable to submit job to queue")
+        # check the jobid for a submission failed
+        if _job_submission_failed(slurm_jobid):
+            logging.error("Unable to submit job to queue")
         
         # pause for the scheduler
         time.sleep(self.submit_sleep)
@@ -476,6 +476,14 @@ def _job_failed(status):
         return True
     else:
         return False
+    
+def _job_submission_failed(jobid):
+    """ Check if the job failed in submission """
+        
+    if not jobid.isdigit():
+        return True
+    else:
+        return False
 
 def _run_task_command_slurm(task, extra):
     (perf, partition, tmpdir, extra_srun_flags, slurm_queue, reporter) = extra
@@ -492,8 +500,16 @@ def _run_task_command_slurm(task, extra):
     slurm_jobid, out_file, error_file, rc_file = _submit_slurm_job(cores, time, memory, 
         partition, tmpdir, commands, task, slurm_queue, reporter)
 
-    result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
-        out_file, error_file, rc_file, reporter)
+    # monitor job if submission was successful
+    if not _job_submission_failed(slurm_jobid):
+        result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
+            out_file, error_file, rc_file, reporter)
+    else:
+        slurm_final_status = "SUBMIT FAILED"
+        # get the anadama task result
+        result=runners._get_task_result(task)
+        # add the extra error
+        result = result._replace(error=str(result.error)+"Unable to submit job to queue.")
 
     # if a timeout or memory max, resubmit at most three times
     while slurm_final_status in ["TIMEOUT","MEMKILL"] and resubmission < 3:
@@ -515,11 +531,12 @@ def _run_task_command_slurm(task, extra):
         result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
             out_file, error_file, rc_file, reporter)
 
-    # get the benchmarking data
-    reporter.task_grid_status(task.task_no,slurm_jobid,"Getting benchmarking data")
-    elapsed, cpus, memory, slurm_final_status = slurm_queue.get_benchmark(slurm_jobid)
-    logging.info("Benchmark information for job id %s:\nElapsed Time: %s \nCores: %s\nMemory: %s MB",
-        task.task_no, elapsed,cpus,memory)
+    # get the benchmarking data if the job was submitted
+    if not _job_submission_failed(slurm_jobid):
+        reporter.task_grid_status(task.task_no,slurm_jobid,"Getting benchmarking data")
+        elapsed, cpus, memory, slurm_final_status = slurm_queue.get_benchmark(slurm_jobid)
+        logging.info("Benchmark information for job id %s:\nElapsed Time: %s \nCores: %s\nMemory: %s MB",
+            task.task_no, elapsed,cpus,memory)
     
     reporter.task_grid_status(task.task_no,slurm_jobid,"Final status of "+slurm_final_status)
     return result
@@ -537,7 +554,8 @@ def _submit_slurm_job(cores, time, memory, partition, tmpdir, commands, task, sl
     logging.info("Submitted job for task id %s: slurm id %s", task.task_no,
         slurm_jobid)
     
-    reporter.task_grid_status(task.task_no,slurm_jobid,"Submitted")
+    if not _job_submission_failed(slurm_jobid):
+        reporter.task_grid_status(task.task_no,slurm_jobid,"Submitted")
    
     return slurm_jobid, out_file, error_file, rc_file
 
