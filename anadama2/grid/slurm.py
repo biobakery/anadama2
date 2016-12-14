@@ -322,7 +322,7 @@ class SLURMQueue():
         error=None
         try:
             logging.debug("Running slurm command: %s"," ".join(command))
-            stdout=subprocess.check_output(command)
+            stdout=subprocess.check_output(command, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as err:
             error=err.output
             stdout="error"
