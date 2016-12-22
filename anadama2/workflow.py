@@ -569,7 +569,7 @@ class Workflow(object):
         self.completed_tasks = set()
         self.failed_tasks = set()
         self.task_results = [None for _ in range(len(self.tasks))]
-        self._reporter = reporter or reporters.default(self.vars.get("output"))
+        self._reporter = reporter or reporters.default(self.vars.get("output"),self.vars.get("log_level"))
         self._reporter.started(self)
         
         # if the backend is not set, then set to default
