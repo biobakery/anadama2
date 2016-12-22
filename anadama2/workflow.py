@@ -392,7 +392,7 @@ class Workflow(object):
           have these dependencies before executing the
           actions. Strings or lists of strings are interpreted as
           filenames and turned into objects of type
-          :class:`anadama2.tracked.TrackedFile`. If given just a string or just
+          :class:`anadama2.tracked.HugeTrackedFile`. If given just a string or just
           a :class:`anadama2.tracked.Base`, this method treats it as a
           one-item list of the argument provided.
         :type depends: str or :class:`anadama2.tracked.Base` or list of
@@ -402,7 +402,7 @@ class Workflow(object):
           these targets after executing the actions to be considered
           as "success". Strings or lists of strings are interpreted as
           filenames and turned into objects of type
-          :class:`anadama2.tracked.TrackedFile`. If given just a string or just
+          :class:`anadama2.tracked.HugeTrackedFile`. If given just a string or just
           a :class:`anadama2.tracked.Base`, this method treats it as a
           one-item list of the argument provided.
         :type targets: str or :class:`anadama2.tracked.Base` or list of
@@ -813,7 +813,7 @@ def _miss_exc(name):
 def discover_binaries(s):
     """Search through string ``s`` and find all existing files smaller
     than 10MB. Return those files as a list of objects of type
-    :class:`anadama2.tracked.TrackedFile`.
+    :class:`anadama2.tracked.TrackedExecutable`.
     """
 
     ds = list()
