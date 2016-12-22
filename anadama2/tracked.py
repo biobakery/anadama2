@@ -23,14 +23,14 @@ def auto(x):
     variables are expanded using :func:`os.path.expanduser` and
     :func:`os.path.expandvars`. If that's not your game, use
     :class:`anadama2.tracked.TrackedDirectory` or
-    :class:`anadama2.tracked.TrackedFile` as appropriate. The current
-    mapping is as follows:
+    :class:`anadama2.tracked.HugeTrackedFile`
+    as appropriate. The current mapping is as follows:
 
     - Subclasses of :class:`anadama2.tracked.Base` are returned as is
 
     - Strings ending in '/' ``->`` :class:`anadama2.tracked.TrackedDirectory`
 
-    - Strings not ending in '/' ``->`` :class:`anadama2.tracked.TrackedFile`
+    - Strings not ending in '/' ``->`` :class:`anadama2.tracked.HugeTrackedFile`
 
     - Instances of subclasses of :class:`anadama2.Task` are handled
       specially by :meth:`anadama2.workflow.Workflow.add_task` and
@@ -64,7 +64,7 @@ def _autostring(s):
     if s.endswith('/'):
         return TrackedDirectory(s)
     else:
-        return TrackedFile(s)
+        return HugeTrackedFile(s)
 
 
 def any_different(ds, backend):
