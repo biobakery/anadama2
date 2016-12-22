@@ -67,7 +67,10 @@ default_options = {
                          help=("Don't execute tasks that make these targets. " +  
                          "Use this flag multiple times to exclude many targets. If the " + 
                          "provided value includes ? or * or [, treat it as " +
-                         "a pattern and exclude all targets that match."))
+                         "a pattern and exclude all targets that match.")),
+    "log_level": optparse.make_option("-l","--log-level",default="INFO",
+        choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"], 
+        help="Set the level of output for the log.")
 }
 
 # a list of the required options (as optparse does not have a required keyword)

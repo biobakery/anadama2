@@ -6,12 +6,12 @@ import multiprocessing
 import six
 import time
 
-def default(output_dir=None):
+def default(output_dir=None, log_level=None):
     log = "anadama.log"
     if output_dir:
         log = os.path.join(str(output_dir), log)
     return ReporterGroup([
-        LoggerReporter("debug", log),
+        LoggerReporter(log_level, log),
         VerboseConsoleReporter()
     ])
 
