@@ -352,6 +352,9 @@ class VerboseConsoleReporter(BaseReporter):
         # Use a multiprocessing value so the total tasks completed is shared
         # for the local multiprocessing tasks (is process and thread-safe)
         self.n_complete = multiprocessing.Value('i',0)
+        
+        # Set the max length for the total output line
+        self.max_length=120
 
     def _msg(self, status, task_name, description, id, visible=True, grid_update=None):
         # create a date/time string
@@ -440,9 +443,9 @@ class VerboseConsoleReporter(BaseReporter):
             if task.visible:
                 self.n_tasks+=1
                 
-        # limit the full string length to 79 characters
+        # limit the full string length
         max_task_length=len(str(self.n_tasks))
-        self.max_command_length = 79-(20+max_task_length*3+20+self.stats.max_message_length)
+        self.max_command_length = self.max_length -(20+max_task_length*3+20+self.stats.max_message_length)
         self.msg_str = six.u("[{:"+str(max_task_length)+"}/{:"+str(max_task_length)+
                              "} - {:6.2f}%] **{:"+str(self.stats.max_message_length)+
                              "}** Task {:"+str(max_task_length)+
