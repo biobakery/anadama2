@@ -326,8 +326,6 @@ class SLURMQueue():
         except subprocess.CalledProcessError as err:
             error=err.output
             stdout="error"
-        except OSError:
-            stdout="error"
             
         timeout_error=False
         if error and "error" in error and "Socket timed out on send/recv operation" in error:
@@ -501,15 +499,8 @@ def _run_task_command_slurm(task, extra):
         partition, tmpdir, commands, task, slurm_queue, reporter)
 
     # monitor job if submission was successful
-    if not _job_submission_failed(slurm_jobid):
-        result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
-            out_file, error_file, rc_file, reporter)
-    else:
-        slurm_final_status = "SUBMIT FAILED"
-        # get the anadama task result
-        result=runners._get_task_result(task)
-        # add the extra error
-        result = result._replace(error=str(result.error)+"Unable to submit job to queue.")
+    result, slurm_final_status = _check_submission_then_monitor_slurm_job(slurm_queue, 
+        task, slurm_jobid, out_file, error_file, rc_file, reporter)
 
     # if a timeout or memory max, resubmit at most three times
     while slurm_final_status in ["TIMEOUT","MEMKILL"] and resubmission < 3:
@@ -528,9 +519,10 @@ def _run_task_command_slurm(task, extra):
         slurm_jobid, out_file, error_file, rc_file = _submit_slurm_job(cores, time, memory,
             partition, tmpdir, commands, task, slurm_queue, reporter)
 
-        result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
-            out_file, error_file, rc_file, reporter)
-
+        # monitor job if submission was successful
+        result, slurm_final_status = _check_submission_then_monitor_slurm_job(slurm_queue, 
+            task, slurm_jobid, out_file, error_file, rc_file, reporter)
+            
     # get the benchmarking data if the job was submitted
     if not _job_submission_failed(slurm_jobid):
         reporter.task_grid_status(task.task_no,slurm_jobid,"Getting benchmarking data")
@@ -558,6 +550,22 @@ def _submit_slurm_job(cores, time, memory, partition, tmpdir, commands, task, sl
         reporter.task_grid_status(task.task_no,slurm_jobid,"Submitted")
    
     return slurm_jobid, out_file, error_file, rc_file
+
+def _check_submission_then_monitor_slurm_job(slurm_queue, task, slurm_jobid, 
+    out_file, error_file, rc_file, reporter):
+    
+    # monitor job if submission was successful
+    if not _job_submission_failed(slurm_jobid):
+        result, slurm_final_status = _monitor_slurm_job(slurm_queue, task, slurm_jobid,
+            out_file, error_file, rc_file, reporter)
+    else:
+        slurm_final_status = "SUBMIT FAILED"
+        # get the anadama task result
+        result=runners._get_task_result(task)
+        # add the extra error
+        result = result._replace(error=str(result.error)+"Unable to submit job to queue.")
+        
+    return result, slurm_final_status
 
 def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_file, reporter): 
     # poll to check for status
