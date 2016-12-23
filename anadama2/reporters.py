@@ -332,19 +332,7 @@ class VerboseConsoleReporter(BaseReporter):
         # for the local multiprocessing tasks (is process and thread-safe)
         self.n_complete = multiprocessing.Value('i',0)
 
-    def _msg(self, status, task_name, command, id, visible=True, grid_update=None):
-        # print the function name or the command string
-        if six.callable(command):
-            command=command.__name__
-        else:
-            command=six.u(command).split(" ")[0]
-            
-        # if the task name is not set, then use the command name
-        if task_name == "Task "+str(id):
-            description=command
-        else:
-            description=six.u(task_name)
-            
+    def _msg(self, status, task_name, description, id, visible=True, grid_update=None):
         # create a date/time string
         s = time.strftime("(%b %d %H:%M:%S) ", time.localtime())
         
@@ -353,7 +341,7 @@ class VerboseConsoleReporter(BaseReporter):
                                 (float(self.n_complete.value)/self.n_tasks)*100, 
                                 status, id, description)
         # if command string is reduced, add ellipses
-        if len(command) > self.max_command_length:
+        if len(description) > self.max_command_length:
             s += " ..."
             
         if grid_update:
@@ -377,18 +365,18 @@ class VerboseConsoleReporter(BaseReporter):
     def task_started(self, task_no):
         # This indicates the task is ready and waiting in the queue
         self._msg(self.stats.ready, self.run_context.tasks[task_no].name,
-                  self.run_context.tasks[task_no].actions[0], task_no,
+                  self.run_context.tasks[task_no].description, task_no,
                   visible=self.run_context.tasks[task_no].visible)
         
     def task_running(self, task_no):
         self._msg(self.stats.start, self.run_context.tasks[task_no].name,
-                  self.run_context.tasks[task_no].actions[0], task_no,
+                  self.run_context.tasks[task_no].description, task_no,
                   visible=self.run_context.tasks[task_no].visible)
     
     def task_skipped(self, task_no):
         self._increment_complete(task_no)
         self._msg(self.stats.skip, self.run_context.tasks[task_no].name, 
-                  self.run_context.tasks[task_no].actions[0], task_no,
+                  self.run_context.tasks[task_no].description, task_no,
                   visible=self.run_context.tasks[task_no].visible)
 
     def task_failed(self, task_result):
@@ -397,18 +385,18 @@ class VerboseConsoleReporter(BaseReporter):
             return
         name = self.run_context.tasks[task_result.task_no].name
         self.failed_results.append((name, task_result))
-        self._msg(self.stats.fail, name, self.run_context.tasks[task_result.task_no].actions[0],
+        self._msg(self.stats.fail, name, self.run_context.tasks[task_result.task_no].description,
                   task_result.task_no, visible=self.run_context.tasks[task_result.task_no].visible)
 
     def task_completed(self, task_result):
         self._increment_complete(task_result.task_no)
         name = self.run_context.tasks[task_result.task_no].name
-        self._msg(self.stats.done, name, self.run_context.tasks[task_result.task_no].actions[0],
+        self._msg(self.stats.done, name, self.run_context.tasks[task_result.task_no].description,
                   task_result.task_no, visible=self.run_context.tasks[task_result.task_no].visible)
 
     def task_grid_status(self, task_no, grid_id, status_message):
         self._msg(self.stats.grid_run, self.run_context.tasks[task_no].name,
-                  self.run_context.tasks[task_no].actions[0], task_no, visible=True,
+                  self.run_context.tasks[task_no].description, task_no, visible=True,
                   grid_update=[grid_id, status_message])
 
     def finished(self):
