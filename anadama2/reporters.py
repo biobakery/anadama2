@@ -444,10 +444,11 @@ class LoggerReporter(BaseReporter):
     """
 
     FORMAT = "%(asctime)s\t%(name)s\t%(funcName)s\t%(levelname)s: %(message)s"
-    def __init__(self, loglevel_str="", logfile=None,
+    def __init__(self, loglevel_str=None, logfile=None,
                  fmt_str=None, *args, **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)
-        loglevel = getattr(logging, loglevel_str.upper(), logging.WARNING)
+        self.loglevel_str = loglevel_str.upper() or logging.WARNING
+        loglevel = getattr(logging, self.loglevel_str)
         logkwds = {"format": fmt_str or self.FORMAT,
                   "level":  loglevel }
         if logfile and hasattr(logfile, "write"):
@@ -456,12 +457,27 @@ class LoggerReporter(BaseReporter):
             logkwds['filename'] = logfile
         logging.basicConfig(**logkwds)
         self.any_failed = False
+        self.start_log_message="task %i, %s : %s "
 
     def _daginfo(self, task_no):
         children = self.run_context.dag.successors(task_no)
         parents = self.run_context.dag.predecessors(task_no)
         msg = " {} parents: {}.  {} children: {}."
         return msg.format(len(parents), parents, len(children), children)
+    
+    def log_event(self, msg, task_no, debug_msg=None):
+        visible=self.run_context.tasks[task_no].visible
+        description=self.run_context.tasks[task_no].description
+        
+        # If in debug level and debug message is provided, append to end of message
+        if self.loglevel_str == "DEBUG" and debug_msg is not None:
+            msg=msg+" : "+debug_msg
+        
+        # Write tasks that are not visible to log on debug level
+        if visible:
+            self.logger.info(self.start_log_message, task_no, description, msg)
+        else:
+            self.logger.debug(self.start_log_message, task_no, description, msg)
 
     def started(self, ctx):
         self.run_context = ctx
@@ -469,38 +485,28 @@ class LoggerReporter(BaseReporter):
                          len(self.run_context.tasks))
 
     def task_skipped(self, task_no):
-        msg = "task %i `%s' skipped." + self._daginfo(task_no)
-        self.logger.info(msg, task_no,
-                         self.run_context.tasks[task_no].name)
+        self.log_event("skipped", task_no, self._daginfo(task_no))
 
     def task_started(self, task_no):
-        msg = "task %i, `%s' ready and waiting for resources." + self._daginfo(task_no)
-        self.logger.info(msg, task_no,
-                         self.run_context.tasks[task_no].name)
+        self.log_event("ready and waiting for resources", task_no, self._daginfo(task_no))
         
     def task_running(self, task_no):
-        msg = "task %i, `%s' starting to run." + self._daginfo(task_no)
-        self.logger.info(msg, task_no,
-                         self.run_context.tasks[task_no].name)
+        self.log_event("starting to run",task_no,self._daginfo(task_no))
 
     def task_failed(self, task_result):
-        n = task_result.task_no
-        if n is None:
-            self.logger.error("task %s, `Unknown' failed! Error generated: %s",
-                              n, task_result.error)
-        else:
-            self.logger.error("task %i, `%s' failed! Error generated: %s",
-                              n, self.run_context.tasks[n].name, task_result.error)
+        self.logger.error(self.start_log_message,task_result.task_no,
+                          self.run_context.tasks[task_result.task_no].description,
+                          " Failed! Error message : {}".format(task_result.error))
         self.any_failed = True
 
     def task_grid_status(self, task_no, grid_id, status_message):
-        self.logger.debug("task %s with grid job id %s has status: %s",
-            task_no, grid_id, status_message)
+        # Write grid status to debug log level for all tasks
+        self.logger.debug(self.start_log_message,
+            task_no, self.run_context.tasks[task_no].description, 
+            " grid job id {} has status {}".format(grid_id, status_message))
 
     def task_completed(self, task_result):
-        n = task_result.task_no
-        self.logger.info("task %i, `%s' completed successfully.",
-                         n, self.run_context.tasks[n])
+        self.log_event("completed successfully",task_result.task_no)
 
     def finished(self):
         if self.any_failed:

@@ -28,16 +28,21 @@ class Task(object):
     """
     
     def __init__(self, name, actions, depends, targets, task_no, visible):
-        # Set a default task name if not provided
-        if name:
-            self.name=name
+        # Set a default task number
+        if task_no is None:
+            self.task_no="NA"
         else:
+            self.task_no=task_no
+            
+        # Set a default task name if not provided
+        if name is None:
             self.name="Task"+str(task_no)
+        else:
+            self.name=name
             
         self.actions=actions
         self.depends=depends
         self.targets=targets
-        self.task_no=task_no
         self.visible=visible
         
         # get a task description based on the actions or name
@@ -49,10 +54,11 @@ class Task(object):
             command=six.u(actions[0]).split(" ")[0]
             
         # if the task name is not set, then use the command name for the description
-        if name:
-            self.description=six.u(name)
-        else:
+        if name is None:
             self.description=command
+        else:
+            self.description=six.u(name)
+            
 
 
 from .workflow import Workflow
