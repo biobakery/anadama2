@@ -506,7 +506,7 @@ class LoggerReporter(BaseReporter):
         self.any_failed = True
 
     def task_grid_status(self, task_no, grid_id, status_message):
-        self.logger.info("task %s with grid job id %s has status: %s",
+        self.logger.debug("task %s with grid job id %s has status: %s",
             task_no, grid_id, status_message)
 
     def task_completed(self, task_result):
