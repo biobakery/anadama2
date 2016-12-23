@@ -432,7 +432,7 @@ def _create_slurm_script(partition,cpus,minutes,memory,command,taskid,dir):
     os.close(handle_rc)
 
     # convert the minutes to the time string "D-HH:MM:SS"
-    time=str(datetime.timedelta(minutes=minutes)).replace(' day, ','-')
+    time=str(datetime.timedelta(minutes=minutes)).replace(' day, ','-').replace(' days, ','-')
 
     slurm=slurm_template.substitute(partition=partition,cpus=cpus,time=time,
         memory=memory,command=command,output=out_file,error=error_file,rc_command="echo $? > "+rc_file)
