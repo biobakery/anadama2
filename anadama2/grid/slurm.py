@@ -568,7 +568,7 @@ def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_
         
         # check the queue stats
         slurm_job_status = slurm_queue.get_status(slurm_jobid)
-        reporter.task_grid_status(task.task_no,slurm_jobid,slurm_job_status)
+        reporter.task_grid_status_polling(task.task_no,slurm_jobid,slurm_job_status)
         
         logging.info("Status for job id %s with slurm id %s is %s",task.task_no,
             slurm_jobid,slurm_job_status)

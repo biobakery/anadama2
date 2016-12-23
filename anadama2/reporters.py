@@ -108,7 +108,24 @@ class BaseReporter(object):
         raise NotImplementedError()
 
     def task_grid_status(self, task_no, grid_id, status_message):
-        """Executed when anadama has grid information for a task.
+        """Executed when anadama has grid information for a task. These messages 
+        are reported when the status for a grid task has changed.
+
+        :param task_no: The task number of the task that is
+          being started. To get the actual :class:`anadama2.Task` object
+          that's being executed, do ``self.run_context.tasks[task_no]``.
+        :param grid_id: The id of the grid job.
+        :param status_message: The grid status message.
+
+        :type task_no: int
+
+        """
+
+        raise NotImplementedError()
+    
+    def task_grid_status_polling(self, task_no, grid_id, status_message):
+        """Executed when anadama has grid information for a task at set polling 
+        intervals. Status may repeat at each interval.
 
         :param task_no: The task number of the task that is
           being started. To get the actual :class:`anadama2.Task` object
@@ -177,6 +194,10 @@ class ReporterGroup(BaseReporter):
     def task_grid_status(self, task_no, grid_id, status_message):
         for r in self.reps:
             r.task_grid_status(task_no, grid_id, status_message)
+
+    def task_grid_status_polling(self, task_no, grid_id, status_message):
+        for r in self.reps:
+            r.task_grid_status_polling(task_no, grid_id, status_message)
 
 class ConsoleReporter(BaseReporter):
     """Prints out run progress to stderr.
@@ -398,6 +419,9 @@ class VerboseConsoleReporter(BaseReporter):
         self._msg(self.stats.grid_run, self.run_context.tasks[task_no].name,
                   self.run_context.tasks[task_no].description, task_no, visible=True,
                   grid_update=[grid_id, status_message])
+        
+    def task_grid_status_polling(self, task_no, grid_id, status_message):
+        self.task_grid_status(task_no, grid_id, status_message)
 
     def finished(self):
         sys.stdout.write(six.u("Run Finished\n"))
@@ -500,7 +524,10 @@ class LoggerReporter(BaseReporter):
         self.any_failed = True
 
     def task_grid_status(self, task_no, grid_id, status_message):
-        # Write grid status to debug log level for all tasks
+        self.log_event(" grid job id {} has status {}".format(grid_id, status_message),
+            task_no, self.run_context.tasks[task_no].description)
+        
+    def task_grid_status_polling(self, task_no, grid_id, status_message):
         self.logger.debug(self.start_log_message,
             task_no, self.run_context.tasks[task_no].description, 
             " grid job id {} has status {}".format(grid_id, status_message))
