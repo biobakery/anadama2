@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-from collections import namedtuple
+import six
 
-
-class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
-                               "task_no", "visible"])):
+class Task(object):
     """A unit of work. 
     
     :param name: The task name; must be unique to all tasks within a workflow.
@@ -28,7 +26,33 @@ class Task(namedtuple("Task", ["name", "actions", "depends", "targets",
     :type visible: bool
 
     """
-    pass # the class definition is just for the docstring
+    
+    def __init__(self, name, actions, depends, targets, task_no, visible):
+        # Set a default task name if not provided
+        if name:
+            self.name=name
+        else:
+            self.name="Task"+str(task_no)
+            
+        self.actions=actions
+        self.depends=depends
+        self.targets=targets
+        self.task_no=task_no
+        self.visible=visible
+        
+        # get a task description based on the actions or name
+        if six.callable(actions[0]):
+            # if the first action is a function, use the function name
+            command=actions[0].__name__
+        else:
+            # if the first action is a command, use the executable name
+            command=six.u(actions[0]).split(" ")[0]
+            
+        # if the task name is not set, then use the command name for the description
+        if name:
+            self.description=six.u(name)
+        else:
+            self.description=command
 
 
 from .workflow import Workflow

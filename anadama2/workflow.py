@@ -429,7 +429,6 @@ class Workflow(object):
         deps = _build_depends(depends)
         targs = _build_targets(targets)
         task_no = next(self.task_counter)
-        name = _build_name(name, task_no)
         if not actions: # must be a decorator
             def finish_add_task(fn):
                 the_task = Task(name, [fn], deps, targs, task_no, bool(visible))
@@ -796,13 +795,6 @@ def _build_targets(targets):
             raise ValueError("Can't make a task a target")
         ret.append(tracked.auto(targ))
     return ret
-
-    
-def _build_name(name, task_no):
-    if not name:
-        return "Task "+str(task_no)
-    else:
-        return name
 
 
 def _miss_exc(name):
