@@ -7,6 +7,7 @@ import logging
 import itertools
 from operator import attrgetter, itemgetter
 from collections import deque, defaultdict
+import copy
 
 import six
 from six.moves import filter, map
@@ -28,6 +29,7 @@ from .util import keepkeys
 from .util import fname
 from .grid.slurm import Slurm
 from .grid.sge import SGE
+from . import PweaveDocument
 
 second = itemgetter(1)
 logger = logging.getLogger(__name__)
@@ -71,11 +73,18 @@ class Workflow(object):
     :keyword description: A description of the workflow. This description 
       will be used in the command line ``--help`` message.
     :type description: str
+    
+    :keyword remove_options: A list of options to remove
+    :type remove_options: list
+    
+    :keyword document: Provide a custom Document class.
+    :type: document: instance of any :class: `anadama2.Document' class or None.
     """
 
 
     def __init__(self, storage_backend=None, grid=None, strict=False,
-                 vars=None, version=None, description=None, remove_options=None):
+                 vars=None, version=None, description=None, remove_options=None,
+                 document=None):
         self.task_counter = itertools.count()
         self.dag = nx.DiGraph()
         #: tasks is a :class:`anadama2.taskcontainer.TaskContainer`
@@ -99,6 +108,11 @@ class Workflow(object):
         self.strict = strict
         self.vars = vars or Configuration(description=description,
             version=version, defaults=True, remove_options=remove_options)
+        
+        if document:
+            self.document=document
+        else:
+            self.document=PweaveDocument()
 
         self._backend=None
         if storage_backend:
@@ -349,6 +363,19 @@ class Workflow(object):
         t = self.do(cmd, track_cmd, track_binaries)
         self._get_grid().do(t, **gridopts)
         return t
+    
+    def add_document(self, templates, depends=None, targets=None, vars=None):
+        """ Create and add a group of :class:`anadama2.Task` to the workflow. This
+        task will create a document which will be the target(s) provided. The
+        variables will be passed on to the template and be available when the
+        document is generated from the template. The document class provided
+        to the workflow will be used to create the document."""
+        
+        doc = copy.deepcopy(self.document)
+        doc.__init__(templates, depends, targets, vars)
+        
+        self.add_task(actions=doc.create, depends=depends, targets=targets,
+                      interpret_deps_and_targs=False)  
 
     def add_task_group(self, actions=None, depends=None, targets=None,
                        name=None, interpret_deps_and_targs=True, **kwargs):
