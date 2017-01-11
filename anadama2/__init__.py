@@ -276,7 +276,7 @@ class PweaveDocument(Document):
         pyplot.show()  
         
     def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
-                   column_width=0.25):
+                   column_width=0.12):
         """ Plot the data as a table """
         
         import matplotlib.pyplot as pyplot
@@ -287,9 +287,9 @@ class PweaveDocument(Document):
         subplot.xaxis.set_visible(False)
         subplot.yaxis.set_visible(False)
         
-        # reduce height of the empty plot to as small as possible and move to the right
+        # reduce height of the empty plot to as small as possible
         # remove subplot padding
-        fig.subplots_adjust(bottom=0.85, wspace=0, hspace=0, left=0.5)
+        fig.subplots_adjust(bottom=0.85, wspace=0, hspace=0)
         
         # if the option is set to format the data, add commas
         if format_data_comma:
@@ -311,6 +311,48 @@ class PweaveDocument(Document):
         
         # plot the table
         pyplot.show() 
+        
+    def write_table(self, column_labels, row_labels, data, file):
+        """ Write a table of data to a file """
+    
+        with open(file, "wb") as file_handle:
+            file_handle.write("\t".join(column_labels)+"\n")
+            for name, row in zip(row_labels, data):
+                file_handle.write("\t".join([name]+[str(i) for i in row])+"\n")
+        
+    def show_hclust2(self,sample_names,feature_names,data,title):
+        """ Create a hclust2 heatmap with dendrogram and show it in the document """
+        from matplotlib._png import read_png
+        import matplotlib.pyplot as pyplot
+        
+        # write a file of the data
+        handle, hclust2_input_file=tempfile.mkstemp(prefix="hclust2_input",dir=os.getcwd())
+        heatmap_file=hclust2_input_file+".png"
+        self.write_table(["# "]+sample_names,feature_names,data,hclust2_input_file)
+        
+        label_font="7"
+        # compute the aspect ratio based on the number of samples
+        # this will give 1 for when the number of samples matched the number of pathways
+        # this will give about 0.15 for 8 samples and 50 pathways
+        feature_count=len(feature_names)
+        aspect_ratio=-0.02*(feature_count-len(sample_names))+1.02
+        output=subprocess.check_output(["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,
+                                        "--title",title,
+                                        "--title_font",str(int(label_font)*2),
+                                        "--dpi","1200","--cell_aspect_ratio",str(aspect_ratio),
+                                        "--flabel_size",label_font,"--slabel_size",label_font,
+                                        "--colorbar_font_size",label_font])
+        # read the heatmap png file
+        heatmap=read_png(heatmap_file)
+        
+        # create a subplot and remove the frame and axis labels
+        fig = pyplot.figure()
+        subplot = fig.add_subplot(111, frame_on=False)
+        subplot.xaxis.set_visible(False)
+        subplot.yaxis.set_visible(False)
+        
+        # show but do not interpolate (as this will make the text hard to read)
+        pyplot.imshow(heatmap, interpolation="none")
 
 from .workflow import Workflow
 
