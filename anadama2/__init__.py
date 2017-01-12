@@ -275,6 +275,52 @@ class PweaveDocument(Document):
         
         pyplot.show()  
         
+    def plot_stacked_barchart(self, data, row_labels, column_labels, title, 
+        xlabel=None, ylabel=None, legend_title=None):
+        """ Plot a stacked barchart """
+        
+        import numpy
+        import matplotlib.pyplot as pyplot
+        
+        figure = pyplot.figure()
+        subplot=pyplot.subplot(111)
+        bar_plots=[]
+        names=[]
+        
+        # create a plot for each stacked group
+        plot_indexes=numpy.arange(len(column_labels))
+        y_offset=numpy.array([0.0]*len(column_labels))
+        for name, plot_abundance in zip(row_labels, data):
+            bar_plots.append(subplot.bar(plot_indexes, plot_abundance, 
+                bottom=y_offset, align="center"))
+            names.append(name)
+            # add to the y_offset which is the bottom of the stacked plot
+            y_offset=y_offset+plot_abundance
+            
+        # move the bottom of the figure for larger xaxis labels
+        # done first before adjusting the width of the figure
+        figure.subplots_adjust(bottom=0.3)
+            
+        # reduce the size of the plot to fit in the legend
+        subplot_position=subplot.get_position()
+        subplot.set_position([subplot_position.x0, subplot_position.y0, 
+            subplot_position.width *0.80, subplot_position.height])
+            
+        # Add the title, labels, and legend
+        if xlabel is not None:
+            subplot.set_xlabel(xlabel)
+        if ylabel is not None:
+            subplot.set_ylabel(ylabel)
+            
+        pyplot.title(title)
+        
+        pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
+        pyplot.yticks(fontsize=7)
+        subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
+            fontsize=7, title=legend_title, frameon=False)
+        
+        pyplot.show()
+        
     def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
                    column_width=0.12):
         """ Plot the data as a table """
