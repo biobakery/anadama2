@@ -322,9 +322,10 @@ class PweaveDocument(Document):
         pyplot.show()
         
     def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
-                   column_width=0.12):
+                   column_width=None):
         """ Plot the data as a table """
         
+        import numpy
         import matplotlib.pyplot as pyplot
         
         fig = pyplot.figure()
@@ -335,7 +336,7 @@ class PweaveDocument(Document):
         
         # reduce height of the empty plot to as small as possible
         # remove subplot padding
-        fig.subplots_adjust(bottom=0.85, wspace=0, hspace=0)
+        fig.subplots_adjust(bottom=0.85, wspace=0, hspace=0, left=0.4)
         
         # if the option is set to format the data, add commas
         if format_data_comma:
@@ -344,12 +345,25 @@ class PweaveDocument(Document):
                 format_data.append(["{:,}".format(int(i)) for i in row])
             data=format_data
         
+        # compute the column width as the length of the column label or the
+        # length of the data in the column which ever is larger
+        auto_column_widths=[]
+        for column_data, column_name in zip(numpy.transpose(data),column_labels):
+            max_len=max([len(str(i)) for i in list(column_data)+[column_name]])
+            auto_column_widths.append((max_len+10)/100.0)
+            
+        # use the column width if provided
+        if column_width is not None:
+            auto_column_widths=[column_width]*len(column_labels)
+        
         # create the table
         table = pyplot.table(cellText=data,
-            colWidths = [column_width]*len(column_labels),
+            colWidths = auto_column_widths,
             rowLabels=row_labels, colLabels=column_labels, loc="bottom")
         
         # set the font size for the table
+        # first must turn off the auto set font size
+        table.auto_set_font_size(False)
         table.set_fontsize(8)
         
         # add the title
