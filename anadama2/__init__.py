@@ -377,15 +377,12 @@ class PweaveDocument(Document):
         self.write_table(["# "]+sample_names,feature_names,data,hclust2_input_file)
         
         label_font="7"
-        # compute the aspect ratio based on the number of samples
-        # this will give 1 for when the number of samples matched the number of pathways
-        # this will give about 0.15 for 8 samples and 50 pathways
-        feature_count=len(feature_names)
-        aspect_ratio=-0.02*(feature_count-len(sample_names))+1.02
+        # compute the aspect ratio based on the number of samples and features
+        aspect_ratio=len(sample_names)/(len(feature_names)*1.0)
         output=subprocess.check_output(["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,
                                         "--title",title,
                                         "--title_font",str(int(label_font)*2),
-                                        "--dpi","1200","--cell_aspect_ratio",str(aspect_ratio),
+                                        "--cell_aspect_ratio",str(aspect_ratio),
                                         "--flabel_size",label_font,"--slabel_size",label_font,
                                         "--colorbar_font_size",label_font])
         # read the heatmap png file
