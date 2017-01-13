@@ -29,7 +29,7 @@ from .util import keepkeys
 from .util import fname
 from .grid.slurm import Slurm
 from .grid.sge import SGE
-from . import PweaveDocument
+from .document import PweaveDocument
 
 second = itemgetter(1)
 logger = logging.getLogger(__name__)
