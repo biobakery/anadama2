@@ -337,7 +337,8 @@ class PweaveDocument(Document):
                                         "--title_font",str(int(label_font)*2),
                                         "--cell_aspect_ratio",str(aspect_ratio),
                                         "--flabel_size",label_font,"--slabel_size",label_font,
-                                        "--colorbar_font_size",label_font])
+                                        "--colorbar_font_size",label_font,
+                                        "--log_scale"])
         # read the heatmap png file
         heatmap=read_png(heatmap_file)
         
