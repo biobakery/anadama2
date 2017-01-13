@@ -410,6 +410,75 @@ class PweaveDocument(Document):
         
         # show but do not interpolate (as this will make the text hard to read)
         pyplot.imshow(heatmap, interpolation="none")
+        
+    def _run_r(self, commands, args=None):
+        """ Run R on the commands providing the arguments """
+        
+        if args is None:
+            args=[]
+        
+        proc=subprocess.Popen(["R","--vanilla","--quiet","--args"]+args,
+            stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+        out, err = proc.communicate(input="\n".join(commands))
+        
+    def show_pcoa(self, sample_names, feature_names, data, title):
+        """ Use the vegan package in R plus matplotlib to plot a PCoA 
+        Input data should be organized with samples as columns and features as rows 
+        Data should be scaled to [0-1] """
+        
+        import matplotlib.pyplot as pyplot
+        
+        r_vegan_pcoa=[
+            "library(vegan)",
+            "args<-commandArgs(TRUE)",
+            "data<-read.table(args[1],sep='\\t',header=TRUE, row.names=1)",
+            "data.t<-as.data.frame(t(data))",
+            "pcoa<-capscale(asin(sqrt(data.t))~1,distance='bray')",
+            "write.table(head(eigenvals(pcoa)/sum(eigenvals(pcoa))),args[2],sep='\\t')",
+            "write.table(as.data.frame(scores(pcoa,display='sites')),args[3],sep='\\t')"]
+        
+        # write a file of the data
+        handle, vegan_input_file=tempfile.mkstemp(prefix="vegan_input",dir=os.getcwd())
+        eigenvalues_file=vegan_input_file+".eigen"
+        scores_file=vegan_input_file+".scores"
+        self.write_table(["# "]+sample_names,feature_names,data,vegan_input_file)
+        
+        self._run_r(r_vegan_pcoa,[vegan_input_file,eigenvalues_file,scores_file])
+        
+        # get the x and y labels
+        columns, rows, data = self.read_table(eigenvalues_file)
+        pcoa1_x_label=int(data[0][0]*100)
+        pcoa2_y_label=int(data[1][0]*100)
+        
+        # get the scores to plot
+        columns, rows, pcoa_data = self.read_table(scores_file)
+        
+        # create a figure subplot to move the legend
+        figure = pyplot.figure()
+        subplot=pyplot.subplot(111)
+        
+        # reduce the size of the plot to fit in the legend
+        subplot_position=subplot.get_position()
+        subplot.set_position([subplot_position.x0, subplot_position.y0, 
+            subplot_position.width *0.80, subplot_position.height])
+        
+        plots = []
+        for x, y in pcoa_data:
+            plots.append(subplot.scatter(x,y))
+        
+        pyplot.title(title)
+        pyplot.xlabel("PCoA 1 ("+str(pcoa1_x_label)+" %)")
+        pyplot.ylabel("PCoA 2 ("+str(pcoa2_y_label)+" %)")
+
+        # remove the tick marks on both axis
+        pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
+        pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
+        
+        subplot.legend(plots, sample_names, loc="center left", bbox_to_anchor=(1,0.5),
+            fontsize=7, title="Samples", frameon=False)
+        
+        pyplot.show()
 
 from .workflow import Workflow
 
