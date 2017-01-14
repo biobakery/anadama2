@@ -220,18 +220,25 @@ class PweaveDocument(Document):
         
         import numpy
         import matplotlib.pyplot as pyplot
+        from matplotlib import cm
         
         figure = pyplot.figure()
         subplot=pyplot.subplot(111)
         bar_plots=[]
         names=[]
         
+        # create a set of custom colors
+        # select two maps with the most variations between them and alternate
+        # so features plotted next to each other do not have similar colors
+        total_colors=len(row_labels)
+        custom_colors=[cm.Dark2(i/(1.0*total_colors)) if i % 2 else cm.jet(i/(1.0*total_colors)) for i in range(total_colors)]
+        
         # create a plot for each stacked group
         plot_indexes=numpy.arange(len(column_labels))
         y_offset=numpy.array([0.0]*len(column_labels))
-        for name, plot_abundance in zip(row_labels, data):
+        for name, plot_abundance, color in zip(row_labels, data, custom_colors):
             bar_plots.append(subplot.bar(plot_indexes, plot_abundance, 
-                bottom=y_offset, align="center"))
+                bottom=y_offset, align="center", color=color))
             names.append(name)
             # add to the y_offset which is the bottom of the stacked plot
             y_offset=y_offset+plot_abundance
