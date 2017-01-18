@@ -9,7 +9,8 @@ requires = [
     'networkx==1.11',
     'leveldb==0.193',
     'six',
-    'cloudpickle==0.2.1'
+    'cloudpickle==0.2.1',
+    'pweave==0.25'
 ]
 
 if os.name == 'posix' and sys.version_info[0] < 3:
