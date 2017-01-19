@@ -256,7 +256,7 @@ class TestWorkflow(unittest.TestCase):
         t1 = self.ctx.add_task(anadama2.util.noop, depends=["/etc/hosts"])
         self.assertEqual(len(t1.depends), 1)
         self.assertEqual(len(t1.targets), 0)
-        self.assertIs(t1.depends[0], anadama2.tracked.TrackedFile("/etc/hosts"),
+        self.assertIs(t1.depends[0], anadama2.tracked.HugeTrackedFile("/etc/hosts"),
                       "the dep should be a filedependency, /etc/hosts")
 
 
@@ -265,7 +265,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(len(t1.depends), 0)
         self.assertEqual(len(t1.targets), 1)
         self.assertIs(t1.targets[0],
-                      anadama2.tracked.TrackedFile("/tmp/test.txt"),
+                      anadama2.tracked.HugeTrackedFile("/tmp/test.txt"),
                       "the target should be a filedependency, /tmp/test.txt")
 
 
@@ -282,7 +282,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(len(ctx.tasks[0].targets), 1,
                          "The created task should have one target")
         self.assertIs(ctx.tasks[0].targets[0],
-                      anadama2.tracked.TrackedFile("/tmp/test.txt"),
+                      anadama2.tracked.HugeTrackedFile("/tmp/test.txt"),
                       "the target should be a filedependency, /tmp/test.txt")
         ret = ctx.tasks[0].actions[0]()
         self.assertEqual(ret, "testvalue",
@@ -296,7 +296,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(len(t1.depends), 0)
         self.assertEqual(len(t1.targets), 1)
         self.assertIs(t1.targets[0],
-                      anadama2.tracked.TrackedFile(outf),
+                      anadama2.tracked.HugeTrackedFile(outf),
                       "the target should be a filedependency test.txt")
         with capture(stderr=StringIO()):
             self.ctx.go()
@@ -611,6 +611,8 @@ class TestWorkflow(unittest.TestCase):
                     step2skipped = True
                 return super(CustomReporter, self).task_skipped(
                     task_no, *args, **kwargs)
+            def task_running(self, task_no):
+                pass
 
         step1_const.a = 10
         with capture(stderr=StringIO()):
@@ -643,7 +645,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertEqual(["blah"], rc.sugar_list("blah"))
         it = iter(list(range(5)))
         self.assertIs(it, rc.sugar_list(it))
-        t = anadama2.Task("dummy task", [], [], [], 0, True)
+        t = anadama2.Task("dummy task", [""], [], [], 0, True)
         self.assertEqual([t], rc.sugar_list(t))
         self.assertEqual((5,), rc.sugar_list((5,)))
 

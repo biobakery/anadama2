@@ -88,7 +88,7 @@ class TestPicklerunner(unittest.TestCase):
         result = picklerunner.decode(out)
         self.assertFalse(bool(result.error))
         self.assertEqual(len(result.dep_keys), 1)
-        compares = list(anadama2.tracked.TrackedFile(outf).compare())
+        compares = list(anadama2.tracked.HugeTrackedFile(outf).compare())
         self.assertEqual(len(compares), len(result.dep_compares[0]))
         for a, b in zip(result.dep_compares[0], compares):
             self.assertEqual(a, b, "compare() not the same")
