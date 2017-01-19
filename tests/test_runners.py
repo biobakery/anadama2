@@ -38,7 +38,14 @@ class TestRunners(unittest.TestCase):
                         "_run_task_locally should return a TaskResult")
         self.assertIs(ret.error, None, "shouldn't return an error")
 
-        t2 = t._replace(targets=[anadama2.tracked.auto(outf+".doesntexist")])
+        t2 = anadama2.Task(
+            "my task",
+            actions=[anadama2.helpers.sh("wc -l /etc/hosts > "+outf)],
+            depends=[anadama2.tracked.auto("/etc/hosts")],
+            targets=[anadama2.tracked.auto(outf+".doesntexist")],
+            task_no=1,
+            visible=True
+            )
         ret = anadama2.runners._run_task_locally(t2)
         self.assertTrue(isinstance(ret, anadama2.runners.TaskResult),
                         ("_run_task_locally should return an TaskResult "
@@ -47,7 +54,14 @@ class TestRunners(unittest.TestCase):
         self.assertIn("Failed to produce target", ret.error,
                       "The error should say that I failed to produce a target")
         
-        t3 = t._replace(actions=[anadama2.helpers.sh("exit 1")])
+        t3 = anadama2.Task(
+            "my task",
+            actions=[anadama2.helpers.sh("exit 1")],
+            depends=[anadama2.tracked.auto("/etc/hosts")],
+            targets=[anadama2.tracked.auto(outf)],
+            task_no=1,
+            visible=True
+        )
         ret = anadama2.runners._run_task_locally(t3)
         self.assertTrue(isinstance(ret, anadama2.runners.TaskResult),
                         ("_run_task_locally should return an TaskResult "

@@ -48,7 +48,7 @@ class TestTracked(unittest.TestCase):
                           "difference"))
         
     def test_auto(self):
-        t = anadama2.Task("dummy task", [], [], [], 0, True)
+        t = anadama2.Task("dummy task", [""], [], [], 0, True)
         self.assertIsInstance(anadama2.tracked.auto(t), anadama2.Task)
         n = "/tmp/foobaz"
         self.assertIsInstance(anadama2.tracked.auto(n), anadama2.tracked.TrackedFile)
