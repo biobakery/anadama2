@@ -170,6 +170,9 @@ class PweaveDocument(Document):
         figure = pyplot.figure()
         subplot=pyplot.subplot(111)
         
+        # create a set of custom colors to prevent overlap
+        custom_colors=self._custom_colors(total_colors=len(row_labels))
+        
         # change the yaxis format if set
         axis = pyplot.gca()
         if yaxis_in_millions:
@@ -183,7 +186,8 @@ class PweaveDocument(Document):
         # create the grouped barplots with gap offsets
         barplots=[]
         for i, data_set in enumerate(data):
-            barplots.append(subplot.bar(bar_start_point + i*bar_width, data_set, width=bar_width))
+            barplots.append(subplot.bar(bar_start_point + i*bar_width, data_set,
+                width=bar_width, color=custom_colors[i]))
 
         # move the bottom of the figure for larger xaxis labels
         # done first before adjusting the width of the figure
@@ -214,24 +218,37 @@ class PweaveDocument(Document):
         
         pyplot.show()  
         
+    def _custom_colors(self,total_colors):
+        """ Get a set of custom colors for a matplotlib plot """
+        
+        from matplotlib import cm
+
+        # create a set of custom colors
+        # select two maps with the most variations between them and alternate
+        # so features plotted next to each other do not have similar colors
+        if total_colors > 7:
+            custom_colors=[cm.Dark2(i/(1.0*total_colors)) if i % 2 else cm.terrain(i/(1.0*total_colors)) for i in range(total_colors)]        
+        else:
+            # if only using the max number of base colors, then use a single map
+            # color map Set2 has about 7 colors
+            custom_colors=[cm.terrain(i/7.0) for i in range(7)]  
+        
+        return custom_colors
+        
     def plot_stacked_barchart(self, data, row_labels, column_labels, title, 
         xlabel=None, ylabel=None, legend_title=None):
         """ Plot a stacked barchart """
         
         import numpy
         import matplotlib.pyplot as pyplot
-        from matplotlib import cm
         
         figure = pyplot.figure()
         subplot=pyplot.subplot(111)
         bar_plots=[]
         names=[]
         
-        # create a set of custom colors
-        # select two maps with the most variations between them and alternate
-        # so features plotted next to each other do not have similar colors
-        total_colors=len(row_labels)
-        custom_colors=[cm.Dark2(i/(1.0*total_colors)) if i % 2 else cm.jet(i/(1.0*total_colors)) for i in range(total_colors)]
+        # create a set of custom colors to prevent overlap
+        custom_colors=self._custom_colors(total_colors=len(row_labels))
         
         # create a plot for each stacked group
         plot_indexes=numpy.arange(len(column_labels))
@@ -405,14 +422,17 @@ class PweaveDocument(Document):
         figure = pyplot.figure()
         subplot=pyplot.subplot(111)
         
+        # create a set of custom colors to prevent overlap
+        custom_colors=self._custom_colors(total_colors=len(pcoa_data))
+        
         # reduce the size of the plot to fit in the legend
         subplot_position=subplot.get_position()
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
             subplot_position.width *0.80, subplot_position.height])
         
         plots = []
-        for x, y in pcoa_data:
-            plots.append(subplot.scatter(x,y))
+        for i, data_point in enumerate(pcoa_data):
+            plots.append(subplot.scatter(data_point[0],data_point[1],color=custom_colors[i]))
         
         pyplot.title(title)
         pyplot.xlabel("PCoA 1 ("+str(pcoa1_x_label)+" %)")
