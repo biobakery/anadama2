@@ -381,13 +381,19 @@ class PweaveDocument(Document):
         heatmap=read_png(heatmap_file)
         
         # create a subplot and remove the frame and axis labels
-        fig = pyplot.figure()
+        # set the figure to square and increase the dpi to the hclust2 default of 150
+        # increase the figure size to increase the size of the heatmap
+        fig = pyplot.figure(figsize=(8, 8), dpi=150)
         subplot = fig.add_subplot(111, frame_on=False)
         subplot.xaxis.set_visible(False)
         subplot.yaxis.set_visible(False)
         
         # show but do not interpolate (as this will make the text hard to read)
         pyplot.imshow(heatmap, interpolation="none")
+        
+        # adjust the heatmap to fit in the figure area
+        # this is needed to increase the image size (to fit in the increased figure)
+        pyplot.tight_layout()
         
     def _run_r(self, commands, args=None):
         """ Run R on the commands providing the arguments """
