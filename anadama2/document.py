@@ -3,6 +3,7 @@ import os
 import tempfile
 import shutil
 import subprocess
+import itertools
 
 try:
     import cPickle as pickle
@@ -187,7 +188,7 @@ class PweaveDocument(Document):
         barplots=[]
         for i, data_set in enumerate(data):
             barplots.append(subplot.bar(bar_start_point + i*bar_width, data_set,
-                width=bar_width, color=custom_colors[i]))
+                width=bar_width, color=next(custom_colors)))
 
         # move the bottom of the figure for larger xaxis labels
         # done first before adjusting the width of the figure
@@ -224,16 +225,29 @@ class PweaveDocument(Document):
         from matplotlib import cm
 
         # create a set of custom colors
-        # select two maps with the most variations between them and alternate
-        # so features plotted next to each other do not have similar colors
-        if total_colors > 7:
-            custom_colors=[cm.Dark2(i/(1.0*total_colors)) if i % 2 else cm.terrain(i/(1.0*total_colors)) for i in range(total_colors)]        
-        else:
-            # if only using the max number of base colors, then use a single map
-            # color map Set2 has about 7 colors
-            custom_colors=[cm.terrain(i/7.0) for i in range(7)]  
         
-        return custom_colors
+        # get the max amount of colors for a few different color maps
+        terrain=[cm.terrain(i/7.0) for i in range(7)]
+        dark=[cm.Dark2(i/8.0) for i in range(8)]
+        jet=[cm.jet(i/7.0) for i in range(7)]
+        nipy_spectral=[cm.nipy_spectral(i/10.0) for i in range(10)]
+        set3=[cm.Set3(i/12.0) for i in range(12)]
+        
+        # select the total numer of color maps based on the total number of colors
+        if total_colors <= 7:
+            sets=[terrain]
+        elif total_colors <= 15:
+            sets=[terrain,dark]
+        elif total_colors <= 25:
+            sets=[terrain,dark,nipy_spectral]
+        else:
+            sets=[terrain,dark,nipy_spectral,set3]
+        
+        # return a mixed set of colors from each set used
+        # repeat colors if we run out
+        for color_set in itertools.cycle(zip(*sets)):
+            for color in color_set:
+                yield color
         
     def plot_stacked_barchart(self, data, row_labels, column_labels, title, 
         xlabel=None, ylabel=None, legend_title=None):
@@ -431,8 +445,8 @@ class PweaveDocument(Document):
             subplot_position.width *0.80, subplot_position.height])
         
         plots = []
-        for i, data_point in enumerate(pcoa_data):
-            plots.append(subplot.scatter(data_point[0],data_point[1],color=custom_colors[i]))
+        for x,y in pcoa_data:
+            plots.append(subplot.scatter(x,y,color=next(custom_colors)))
         
         pyplot.title(title)
         pyplot.xlabel("PCoA 1 ("+str(pcoa1_x_label)+" %)")
