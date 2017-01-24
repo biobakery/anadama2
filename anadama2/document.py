@@ -108,13 +108,34 @@ class PweaveDocument(Document):
         # rename to the original target name and location specified
         shutil.copy(temp_template+".pdf",self.targets[0])
         
-        # move the figures folder to the output folder
-        # remove the original folder if it already exists
-        output_dir = os.path.dirname(self.targets[0])
-        if os.path.isdir(os.path.join(output_dir,"figures")):
-            shutil.rmtree(os.path.join(output_dir,"figures"))
+        # remove the final figures folder if it currently exists
+        final_figures_folder=os.path.join(os.path.dirname(self.targets[0]),"figures")
+        if os.path.isdir(final_figures_folder):
+            shutil.rmtree(final_figures_folder)
             
-        shutil.move(os.path.join(temp_directory,"figures"),os.path.dirname(self.targets[0]))
+        # create a final figures folder
+        os.mkdir(final_figures_folder)
+        
+        # rename the figure pdf files so their name corresponds to their number
+        # in the pdf document (by default their number ordering is what is expected,
+        # it just does not represent the exact number of the figure)
+        # For example, we could have two figures "template_figure4_1.pdf"
+        # and "template_figure5_1.pdf" these correspond to figure1 and figure2.
+        temp_figures_folder=os.path.join(temp_directory,"figures")
+        figure_number=1
+        
+        # sort the temp figure files by their number ordering
+        try:
+            sorted_temp_figures_files=sorted(os.listdir(temp_figures_folder),
+                key=lambda file: int(file.split("figure")[1].replace("_1.pdf","")))
+        except ValueError:
+            sorted_temp_figures_files=sorted(os.listdir(temp_figures_folder))
+        
+        # move and rename the temp files
+        for file in sorted_temp_figures_files:
+            new_file=os.path.join(final_figures_folder,"figure_"+str(figure_number)+".pdf")
+            shutil.move(os.path.join(temp_figures_folder,file),new_file)
+            figure_number+=1
         
         # remove all of the temp files in the temp folder
         shutil.rmtree(temp_directory)
