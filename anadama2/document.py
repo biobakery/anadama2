@@ -240,6 +240,25 @@ class PweaveDocument(Document):
         
         pyplot.show()  
         
+    def plot_barchart(self, data, labels, title, xlabel=None, ylabel=None):
+        """ Plot a barchart """
+        
+        import numpy
+        import matplotlib.pyplot as pyplot
+
+        positions=numpy.arange(len(data))
+        pyplot.bar(positions, data, align="center")
+        pyplot.xticks(positions, labels, rotation="vertical")
+        
+        if ylabel:
+            pyplot.ylabel(ylabel)
+        if xlabel:
+            pyplot.xlabel(xlabel)
+            
+        pyplot.title(title)
+
+        pyplot.show() 
+        
     def _custom_colors(self,total_colors):
         """ Get a set of custom colors for a matplotlib plot """
         
