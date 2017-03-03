@@ -160,6 +160,7 @@ class SGEWorker(threading.Thread):
 
     def __init__(self, work_q, result_q, lock, reporter):
         super(SGEWorker, self).__init__()
+        self.daemon = True
         self.logger = runners.logger
         self.work_q = work_q
         self.result_q = result_q
