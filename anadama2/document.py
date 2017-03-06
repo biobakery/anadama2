@@ -4,6 +4,7 @@ import tempfile
 import shutil
 import subprocess
 import itertools
+import sys
 
 try:
     import cPickle as pickle
@@ -63,7 +64,7 @@ class PweaveDocument(Document):
             try:
                 output=subprocess.check_output(["pypublish","-h"],stderr=subprocess.STDOUT)
             except EnvironmentError:
-                sys.exit("Please instally pweave for document generation")
+                sys.exit("Please install pweave for document generation")
                 
             try:
                 output=subprocess.check_output(["pdflatex","--help"],stderr=subprocess.STDOUT)
