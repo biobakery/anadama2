@@ -464,6 +464,25 @@ class PweaveDocument(Document):
             "write.table(head(eigenvals(pcoa)/sum(eigenvals(pcoa))),args[2],sep='\\t')",
             "write.table(as.data.frame(scores(pcoa,display='sites')),args[3],sep='\\t')"]
         
+        # test that the data is scaled to [0-1]
+        for row in data:
+            out_of_range=list(filter(lambda x: x < 0 or x > 1, row))
+            if len(out_of_range) > 0:
+                raise ValueError("Provide data to the AnADAMA2 document.show_pcoa function in the range of [0-1].")
+            
+        # test for duplicate feature names
+        feature_set=set(feature_names)
+        if len(list(feature_set)) < len(feature_names):
+            raise ValueError("Do not provide duplicate feature names to document.show_pcoa.")
+        
+        # test samples are provided as the columns of the data
+        if len(data[0]) != len(sample_names):
+            raise ValueError("Provide data to the AnADAMA2 document.show_pcoa function in the form of samples as columns.")
+        
+        # test features are provided as rows of the data
+        if len(data) != len(feature_names):
+            raise ValueError("Provide data to the AnADAMA2 document.show_pcoa function in the form of features as rows.")
+
         # write a file of the data
         handle, vegan_input_file=tempfile.mkstemp(prefix="vegan_input",dir=os.getcwd())
         eigenvalues_file=vegan_input_file+".eigen"
@@ -473,7 +492,11 @@ class PweaveDocument(Document):
         self._run_r(r_vegan_pcoa,[vegan_input_file,eigenvalues_file,scores_file])
         
         # get the x and y labels
-        columns, rows, data = self.read_table(eigenvalues_file)
+        try:
+            columns, rows, data = self.read_table(eigenvalues_file)
+        except EnvironmentError:
+            raise ValueError("No eigenvalues found in AnADAMA2 document.show_pcoa function. "+
+                "Provide data to this function in the form of samples as columns and features as rows.")
         pcoa1_x_label=int(data[0][0]*100)
         pcoa2_y_label=int(data[1][0]*100)
         
