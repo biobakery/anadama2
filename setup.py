@@ -5,6 +5,8 @@ import sys
 from setuptools import setup, find_packages
 import distutils
 
+VERSION="0.1.4"
+
 requires = [
     'networkx==1.11',
     'leveldb==0.193',
@@ -55,7 +57,7 @@ class SphinxBuild(distutils.cmd.Command):
 
 setup(
     name='anadama2',
-    version='0.1.2',
+    version=VERSION,
     description=('AnADAMA - '
                  'Another '
                  'Automated '
