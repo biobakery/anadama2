@@ -246,6 +246,17 @@ class PweaveDocument(Document):
         
         import numpy
         import matplotlib.pyplot as pyplot
+        
+        # check for a list of lists
+        # if a list of lists of single items is found convert to a list
+        # if lists of multiple items are found then issue error
+        if isinstance(data[0], list):
+            max_length=max([len(row) for row in data])
+            if max_length == 1:
+                data_list=[row[0] for row in data]
+                data=data_list
+            else:
+                raise ValueError("Provide data to the AnADAMA2 document.plot_barchart as a list of floats or ints.")
 
         positions=numpy.arange(len(data))
         pyplot.bar(positions, data, align="center")
