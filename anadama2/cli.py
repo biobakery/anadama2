@@ -366,8 +366,9 @@ class Configuration(object):
         s = None
         if short and short[-1] not in self._shorts:
             s = short[-1]
-        for char in name.lower():
-            if 96 < ord(char) < 123 and char not in self._shorts:
+        for char in name.lower() + name.upper():
+            char_ascii_value = ord(char)
+            if 64 < char_ascii_value < 91 or 96 < char_ascii_value < 123 and char not in self._shorts:
                 s = char
                 break
         if s is None:
