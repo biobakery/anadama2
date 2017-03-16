@@ -90,6 +90,11 @@ class PweaveDocument(Document):
         if self.vars is not None:
             # save the depends in the vars set
             self.vars["depends"]=self.depends
+            # change directories/files to the full paths (so no longer required in input)
+            # this is because pweave does not have an output folder option (just cwd so a ch is needed)
+            for variable in self.vars:
+                if os.path.isdir(self.vars[variable]) or os.path.isfile(self.vars[variable]):
+                    self.vars[variable] = os.path.abspath(self.vars[variable])
             # create a picked file with the temp template name in the same folder
             pickle.dump(self.vars, open(temp_template+".pkl", "wb"))
 
