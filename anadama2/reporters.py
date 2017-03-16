@@ -6,6 +6,8 @@ import multiprocessing
 import six
 import time
 
+from .util import mkdirp
+
 def default(output_dir=None, log_level=None):
     log = "anadama.log"
     if output_dir:
@@ -473,6 +475,9 @@ class LoggerReporter(BaseReporter):
     FORMAT = "%(asctime)s\t%(name)s\t%(funcName)s\t%(levelname)s: %(message)s"
     def __init__(self, loglevel_str=None, logfile=None,
                  fmt_str=None, *args, **kwargs):
+        # create the log file folder if needed
+        if logfile:
+            mkdirp(os.path.dirname(logfile))        
         self.logger = logging.getLogger(self.__class__.__name__)
         self.loglevel_str = loglevel_str.upper() or logging.WARNING
         loglevel = getattr(logging, self.loglevel_str)
