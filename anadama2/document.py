@@ -93,8 +93,12 @@ class PweaveDocument(Document):
             # change directories/files to the full paths (so no longer required in input)
             # this is because pweave does not have an output folder option (just cwd so a ch is needed)
             for variable in self.vars:
-                if os.path.isdir(self.vars[variable]) or os.path.isfile(self.vars[variable]):
-                    self.vars[variable] = os.path.abspath(self.vars[variable])
+                try:
+                    if os.path.isdir(self.vars[variable]) or os.path.isfile(self.vars[variable]):
+                        self.vars[variable] = os.path.abspath(self.vars[variable])
+                except (TypeError, ValueError, NameError):
+                    # ignore lists and None values
+                    continue
             # create a picked file with the temp template name in the same folder
             pickle.dump(self.vars, open(temp_template+".pkl", "wb"))
 
@@ -245,6 +249,44 @@ class PweaveDocument(Document):
             fontsize=7, title=legend_title, frameon=False)
         
         pyplot.show()  
+        
+    def plot_scatter(self, data, title, row_labels, xlabel=None, ylabel=None, trendline=None):
+        """ Plot a scatter plot """
+        
+        import numpy
+        import matplotlib.pyplot as pyplot
+        
+        # create a figure subplot to move the legend
+        figure = pyplot.figure()
+        subplot = pyplot.subplot(111)
+
+        plots=[]
+        for x,y in data:
+            # add a scatter plot
+            plots.append(subplot.scatter(x,y))
+            
+            if trendline:
+                # compute linear least squares polynomial fit, returns vector of coefficients
+                coeff = numpy.polyfit(x,y,1)
+                trendline_function = numpy.poly1d(coeff)
+                # add trendline to the plot
+                pyplot.plot(x,trendline_function(x))
+        if ylabel:
+            pyplot.ylabel(ylabel)
+        if xlabel:
+            pyplot.xlabel(xlabel)
+            
+        # reduce the size of the plot to fit in the legend and the xlabels
+        subplot_position=subplot.get_position()
+        subplot.set_position([subplot_position.x0, subplot_position.y0, 
+            subplot_position.width *0.80, subplot_position.height])
+        
+        subplot.legend(plots,row_labels,loc="center left", bbox_to_anchor=(1,0.5),
+            fontsize=7, frameon=False)
+            
+        pyplot.title(title)
+
+        pyplot.show()        
         
     def plot_barchart(self, data, labels, title, xlabel=None, ylabel=None):
         """ Plot a barchart """
