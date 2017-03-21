@@ -1,31 +1,30 @@
-# -*- coding: utf-8 -*-
+
 from anadama2 import Workflow
-import os
-import sys
 
-## Set script working directory
-os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
+workflow = Workflow(remove_options=["input","output"])
 
-ctx = Workflow(remove_options=["input","output"])
+# add a task to download the file
+workflow.add_task(
+    "wget ftp://public-ftp.hmpdacc.org/HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 -O [targets[0]]",
+    targets="hmp1.v35.hq.otu.counts.bz2")
 
-retrieve_data = ctx.do("wget "
-                       "ftp://public-ftp.hmpdacc.org/"
-                       "HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 "
-                       "-O [t:hmp1.v35.hq.otu.counts.bz2]")
+# add a task to decompress the file
+workflow.add_task(
+    "bzip2 -d < [depends[0]] > [targets[0]]",
+    depends="hmp1.v35.hq.otu.counts.bz2",
+    targets="hmp1.v35.hq.otu.counts")
 
-unzip = ctx.do("bzip2 -d < [d:hmp1.v35.hq.otu.counts.bz2] "
-               "> [t:hmp1.v35.hq.otu.counts]")
+def remove_end_tabs_function(task):
+    with open(task.targets[0].name, 'w') as file_handle_out:
+        for line in open(task.depends[0].name):
+            file_handle_out.write(line.rstrip() + "\n")
 
-def remove_end_tabs_fn(task):
-    myfile = open(str(task.depends[0]), 'r')
-    outfile = open(str(task.targets[0]), 'w')
-    for line in myfile:
-        outfile.write(line.rstrip() + "\n")
-    myfile.close()
-    outfile.close()
-remove_end_tabs = ctx.add_task(remove_end_tabs_fn, depends=unzip.targets,
-                               targets=["hmp1.v35.hq.otu.counts.notabs"],
-                               name="remove_end_tabs")
+# add a task with a function to remove the end tabs from the file
+workflow.add_task(
+    remove_end_tabs_function,
+    depends="hmp1.v35.hq.otu.counts",
+    targets="hmp1.v35.hq.otu.counts.notabs",
+    name="remove_end_tabs")
 
-ctx.go()
+workflow.go()
 
