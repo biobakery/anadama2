@@ -318,7 +318,7 @@ class SLURMQueue():
             # if memory is in KB, convert to MB
             memory="{:.1f}".format(float(memory.replace("K",""))/1024.0)
         elif "M" in memory:
-            memory="{:.1f}".format(memory.replace("M",""))
+            memory="{:.1f}".format(float(memory.replace("M","")))
         elif "G" in memory:
             # if memory is in GB, convert to MB
             memory="{:.1f}".format(float(memory.replace("G",""))*1024.0)
