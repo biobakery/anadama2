@@ -432,9 +432,7 @@ def _create_slurm_script(partition,cpus,minutes,memory,command,taskid,dir):
         "#SBATCH -e ${error}",
         "",
         "${command}",
-        "export RC=$?",
-        "echo $RC > ${rc_file}",
-        "exit $RC"]))   
+        "${rc_command}"]))
 
     # create temp files for stdout, stderr, and return code    
     handle_out, out_file=tempfile.mkstemp(suffix=".out",prefix="task_"+str(taskid)+"_",dir=dir)
@@ -448,7 +446,7 @@ def _create_slurm_script(partition,cpus,minutes,memory,command,taskid,dir):
     time=str(datetime.timedelta(minutes=minutes)).replace(' day, ','-').replace(' days, ','-')
 
     slurm=slurm_template.substitute(partition=partition,cpus=cpus,time=time,
-        memory=memory,command=command,output=out_file,error=error_file,rc_file=rc_file)
+        memory=memory,command=command,output=out_file,error=error_file,rc_command="export RC=$? ; echo $RC > "+rc_file+" ; bash -c 'exit $RC'")
     file_handle, slurm_file=tempfile.mkstemp(suffix=".slurm",prefix="task_"+str(taskid)+"_",dir=dir)
     os.write(file_handle,slurm)
     os.close(file_handle)
