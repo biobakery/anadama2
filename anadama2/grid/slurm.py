@@ -93,7 +93,7 @@ class Slurm(Dummy):
 
     """
 
-    def __init__(self, partition, tmpdir=None, extra_srun_flags=[]):
+    def __init__(self, partition, tmpdir=None, benchmark_on=None, extra_srun_flags=[]):
         self.slurm_partition = partition
         self.slurm_tmpdir = tmpdir
         if self.slurm_tmpdir:
@@ -105,7 +105,7 @@ class Slurm(Dummy):
         
         self.slurm_task_data = dict()
         
-        self.slurm_queue = SLURMQueue()
+        self.slurm_queue = SLURMQueue(benchmark_on)
 
     def _kwargs_extract(self, kwargs_dict):
         time = kwargs_dict.pop("time", None)
@@ -203,7 +203,7 @@ class Slurm(Dummy):
 
 class SLURMQueue():
     
-    def __init__(self):
+    def __init__(self, benchmark_on=None):
         # this is the refresh rate for checking the queue, in seconds
         self.refresh_rate = 10*60
         
@@ -222,6 +222,9 @@ class SLURMQueue():
         # create a lock for jobs in queue
         self.lock_status = threading.Lock()
         self.lock_submit = threading.Lock()
+        
+        # set if benchmarking should be run
+        self.benchmark_on = benchmark_on
         
     def get_slurm_status(self, refresh=None):
         """ Get the queue accounting stats """
@@ -272,9 +275,15 @@ class SLURMQueue():
         
         return info[0][1]
 
-    def get_benchmark(self,jobid):
+    def record_benchmark(self, jobid, task_number, reporter):
         """ Check the benchmarking stats of the slurm id """
-
+        
+        # check if benchmarking is set to off
+        if not self.benchmark_on:
+            logging.info("Benchmarking is set to off")
+            return
+            
+        reporter.task_grid_status(task_number,jobid,"Getting benchmarking data")
         # if the job is not shown to have finished running then
         # wait for the next queue refresh
         status=self.get_status(jobid)
@@ -313,8 +322,11 @@ class SLURMQueue():
         elif "G" in memory:
             # if memory is in GB, convert to MB
             memory="{:.1f}".format(float(memory.replace("G",""))*1024.0)
-
-        return elapsed, cpus, memory, status    
+            
+        logging.info("Benchmark information for job id %s:\nElapsed Time: %s \nCores: %s\nMemory: %s MB",
+            task_number, elapsed, cpus, memory)   
+        
+        reporter.task_grid_status(task_number,jobid,"Final status of "+status)
     
     def _slurm_command(self,command):
         """ Run the slurm command and check for errors """
@@ -528,12 +540,8 @@ def _run_task_command_slurm(task, extra):
             
     # get the benchmarking data if the job was submitted
     if not _job_submission_failed(slurm_jobid):
-        reporter.task_grid_status(task.task_no,slurm_jobid,"Getting benchmarking data")
-        elapsed, cpus, memory, slurm_final_status = slurm_queue.get_benchmark(slurm_jobid)
-        logging.info("Benchmark information for job id %s:\nElapsed Time: %s \nCores: %s\nMemory: %s MB",
-            task.task_no, elapsed,cpus,memory)
+        slurm_queue.record_benchmark(slurm_jobid, task.task_no, reporter)
     
-    reporter.task_grid_status(task.task_no,slurm_jobid,"Final status of "+slurm_final_status)
     return result
 
 def _submit_slurm_job(cores, time, memory, partition, tmpdir, commands, task, slurm_queue, reporter):

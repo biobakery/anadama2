@@ -134,6 +134,7 @@ class Workflow(object):
         grid_selection = self.vars.get("grid")
         grid_partition = self.vars.get("grid_partition")
         grid_jobs = self.vars.get("grid_jobs")
+        grid_benchmark_setting = True if self.vars.get("grid_benchmark") == "on" else False
         
         # set the grid instance based on the user option
         # if no grid jobs are selected, then no grid will be used
@@ -146,7 +147,7 @@ class Workflow(object):
                 # if no output folder is provided, then write to the current working directory
                 tmpdir = os.getcwd()
             tmpdir = os.path.join(tmpdir, "slurm_files")
-            grid = Slurm(partition=grid_partition, tmpdir=tmpdir)
+            grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting)
         elif grid_selection == "sge":
             grid = SGE(queue=grid_partition)
         else:
