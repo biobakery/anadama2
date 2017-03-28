@@ -613,11 +613,11 @@ class Workflow(object):
         keep, drop = set(), set()
         if until_task:
             for task_name_or_no in sugar_list(until_task):
-                for t in sugar_list(self.tasks[task_name_or_no]):
+                for t in self._taskmatch(task_name_or_no):
                     keep = keep.union(allparents(self.dag, t.task_no))
         if exclude_task:
             for task_name_or_no in sugar_list(exclude_task):
-                for t in sugar_list(self.tasks[task_name_or_no]):
+                for t in self._taskmatch(task_name_or_no):
                     drop = drop.union(allchildren(self.dag, t.task_no))
         if target:
             for name_or_pattern in sugar_list(target):
@@ -799,7 +799,18 @@ class Workflow(object):
             ret = set(hier(self.dag, match))
         return s.union(ret)
 
-
+    def _taskmatch(self, task_name_or_number):
+        # Find the tasks that match the name or number provided
+        # Multiple tasks can share the same name but all will have unique numbers
+        
+        taskset=[]
+        for task in self.tasks:
+            if task.name == task_name_or_number:
+                taskset.append(task)
+            elif task.task_no == task_name_or_number:
+                taskset.append(task)
+                
+        return taskset
 
 def _build_actions(actions, deps, targs, kwds, use_parse_sh=True):
     actions = filter(None, sugar_list(actions))
