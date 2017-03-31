@@ -127,7 +127,7 @@ class Slurm(Dummy):
         partition = kwargs_dict.pop("partition", self.slurm_partition)
         extra_srun_flags = kwargs_dict.pop("extra_srun_flags",
                                            self.extra_srun_flags)
-        return (PerformanceData(int(time), int(mem), int(cores)),
+        return (PerformanceData(time, mem, int(cores)),
                 partition, self.slurm_tmpdir, extra_srun_flags)
 
 
