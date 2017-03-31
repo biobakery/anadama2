@@ -109,6 +109,9 @@ class Slurm(Dummy):
         self.slurm_queue = SLURMQueue(benchmark_on)
 
     def _kwargs_extract(self, kwargs_dict, depends):
+        cores = kwargs_dict.pop("cores", None)
+        if cores is None:
+            raise TypeError("`cores' is a required keyword argument")  
         time = kwargs_dict.pop("time", None)
         if time is None:
             raise TypeError("`time' is a required keyword argument")
@@ -120,10 +123,7 @@ class Slurm(Dummy):
             raise TypeError("`mem' is a required keyword argument")
         # if memory is not an int, try to format the evaluation
         if not mem.isdigit():
-            mem = format_command(mem, depends=depends, cores=cores)
-        cores = kwargs_dict.pop("cores", None)
-        if cores is None:
-            raise TypeError("`cores' is a required keyword argument")        
+            mem = format_command(mem, depends=depends, cores=cores)      
         partition = kwargs_dict.pop("partition", self.slurm_partition)
         extra_srun_flags = kwargs_dict.pop("extra_srun_flags",
                                            self.extra_srun_flags)
