@@ -465,7 +465,7 @@ def _create_slurm_script(partition,cpus,minutes,memory,command,taskid,dir):
     os.close(handle_rc)
     
     # evaluate the time/memory requests for the job
-    time, mem = _evaluate_resource_requests(time, mem)
+    time, memory = _evaluate_resource_requests(time, memory)
 
     # convert the minutes to the time string "D-HH:MM:SS"
     time=str(datetime.timedelta(minutes=minutes)).replace(' day, ','-').replace(' days, ','-')
