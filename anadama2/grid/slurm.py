@@ -23,6 +23,7 @@ from .. import picklerunner
 from ..util import underscore
 from ..util import find_on_path
 from ..util import keepkeys
+from ..helpers import format_command
 
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
@@ -107,13 +108,19 @@ class Slurm(Dummy):
         
         self.slurm_queue = SLURMQueue(benchmark_on)
 
-    def _kwargs_extract(self, kwargs_dict):
+    def _kwargs_extract(self, kwargs_dict, depends):
         time = kwargs_dict.pop("time", None)
         if time is None:
             raise TypeError("`time' is a required keyword argument")
+        # if time is not an int, try to format the evaluation
+        if not time.isdigit():
+            time = format_command(time, depends=depends, cores=cores)
         mem = kwargs_dict.pop("mem", None)
         if mem is None:
             raise TypeError("`mem' is a required keyword argument")
+        # if memory is not an int, try to format the evaluation
+        if not mem.isdigit():
+            mem = format_command(mem, depends=depends, cores=cores)
         cores = kwargs_dict.pop("cores", None)
         if cores is None:
             raise TypeError("`cores' is a required keyword argument")        
@@ -159,7 +166,7 @@ class Slurm(Dummy):
         :type extra_srun_flags: list of str
 
         """
-        params = self._kwargs_extract(kwargs)
+        params = self._kwargs_extract(kwargs, task.depends)
         self.slurm_task_data[task.task_no] = params
 
     
@@ -186,7 +193,7 @@ class Slurm(Dummy):
         :type extra_srun_flags: list of str
 
         """
-        params = self._kwargs_extract(kwargs)
+        params = self._kwargs_extract(kwargs, task.depends)
         self.slurm_task_data[task.task_no] = params
 
 
@@ -418,6 +425,21 @@ def _run_task_slurm(task, extra):
         return _run_task_function_slurm(task, extra)
     else:
         return _run_task_command_slurm(task, extra)
+    
+def _evaluate_resource_requests(time,mem):
+    """ Evaluate the time/memory requests for the slurm job, allowing for ints or formulas """
+    
+    try:
+        time=eval(str(time))
+    except TypeError:
+        raise TypeError("Unable to evaluate time request for task: "+ time)
+    
+    try:
+        mem=eval(str(mem))
+    except TypeError:
+        raise TypeError("Unable to evaluate memory request for task: "+ mem)
+    
+    return time, mem    
         
 def _create_slurm_script(partition,cpus,minutes,memory,command,taskid,dir):
     """ Create a slurm script from the template also creating temp stdout and stderr files """
@@ -441,6 +463,9 @@ def _create_slurm_script(partition,cpus,minutes,memory,command,taskid,dir):
     os.close(handle_err)
     handle_rc, rc_file=tempfile.mkstemp(suffix=".rc",prefix="task_"+str(taskid)+"_",dir=dir)
     os.close(handle_rc)
+    
+    # evaluate the time/memory requests for the job
+    time, mem = _evaluate_resource_requests(time, mem)
 
     # convert the minutes to the time string "D-HH:MM:SS"
     time=str(datetime.timedelta(minutes=minutes)).replace(' day, ','-').replace(' days, ','-')
