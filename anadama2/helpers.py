@@ -84,6 +84,9 @@ def format_command(command, **kwargs):
     # start with the longest keys for replacement first
     keys=sorted(kwargs.keys(), key=len)
         
+    # store the original command, incase needed for error message
+    original_command = command
+        
     # replace instances of "[key]" with value
     # for values that are lists, replace "[key[0]]" with value
     for key in keys:
@@ -91,10 +94,21 @@ def format_command(command, **kwargs):
         if isinstance(replacement, list) or isinstance(replacement, tuple):
             for i, item in enumerate(replacement):
                 command=command.replace("["+str(key)+"["+str(i)+"]]",str(item))
+            # for lists/tuples with one item, allow for index to not be included
+            if len(replacement) == 1:
+                command=command.replace("["+str(key)+"]",str(replacement[0]))
         else:
             command=command.replace("["+str(key)+"]",str(replacement))
             # also allow for the item to be referenced as the first object
             command=command.replace("["+str(key)+"[0]]",str(replacement))
+            
+    # check for any keywords in the command that were not replaced
+    if "[" in command:
+        message="Unable to replace all keys in command.  "
+        message+="Original command: "+original_command+"  "
+        message+="Final formatted command: "+command+"  "
+        raise KeyError(message)
+    
     return command 
 
 def parse_sh(s, **kwargs):
