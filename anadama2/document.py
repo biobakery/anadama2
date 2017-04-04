@@ -48,6 +48,9 @@ class PweaveDocument(Document):
         self.targets=targets
         self.vars=vars
         
+        # set the max number of x tick labels to be shown on plots
+        self.max_labels = 25
+        
         # check for the required dependencies when using a pweave document
         # only check when creating an instance with a template to run
         if templates is not None:
@@ -384,14 +387,17 @@ class PweaveDocument(Document):
             subplot_position.width *0.80, subplot_position.height])
             
         # Add the title, labels, and legend
-        if xlabel is not None:
+        if xlabel is not None and len(column_labels) <= self.max_labels:
             subplot.set_xlabel(xlabel)
         if ylabel is not None:
             subplot.set_ylabel(ylabel)
             
         pyplot.title(title)
         
-        pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
+        if len(column_labels) <= self.max_labels:
+            pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
+        else:
+            pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
         pyplot.yticks(fontsize=7)
         subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
             fontsize=7, title=legend_title, frameon=False)
@@ -585,7 +591,8 @@ class PweaveDocument(Document):
         pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
         pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
         
-        subplot.legend(plots, sample_names, loc="center left", bbox_to_anchor=(1,0.5),
-            fontsize=7, title="Samples", frameon=False)
+        if len(sample_names) <= self.max_labels:
+            subplot.legend(plots, sample_names, loc="center left", bbox_to_anchor=(1,0.5),
+                fontsize=7, title="Samples", frameon=False)
         
         pyplot.show()
