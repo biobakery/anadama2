@@ -377,7 +377,7 @@ class Workflow(object):
         doc.__init__(templates, depends, targets, vars)
         
         self.add_task(actions=doc.create, depends=depends, targets=targets,
-                      interpret_deps_and_targs=False)  
+                      interpret_deps_and_targs=False, name="document")  
         
     def add_archive(self, depends, targets, archive_software, remove_log=None):
         """ Create an archive including the dependencies. Name it the target. This
