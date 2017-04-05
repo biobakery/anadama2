@@ -8,8 +8,10 @@ import time
 
 from .util import mkdirp
 
+LOG_FILE_NAME = "anadama.log"
+
 def default(output_dir=None, log_level=None):
-    log = "anadama.log"
+    log = LOG_FILE_NAME
     if not output_dir:
         output_dir=os.getcwd()
     log = os.path.join(str(output_dir), log)

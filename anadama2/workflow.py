@@ -8,6 +8,7 @@ import itertools
 from operator import attrgetter, itemgetter
 from collections import deque, defaultdict
 import copy
+import subprocess
 
 import six
 from six.moves import filter, map
@@ -377,6 +378,68 @@ class Workflow(object):
         
         self.add_task(actions=doc.create, depends=depends, targets=targets,
                       interpret_deps_and_targs=False)  
+        
+    def add_archive(self, depends, targets, archive_software, remove_log=None):
+        """ Create an archive including the dependencies. Name it the target. This
+        adds a :class:`anadama2.Task` to the workflow to create the archive. """
+
+        # convert the depends and targets to lists if strings
+        depends=sugar_list(depends)
+        targets=sugar_list(targets)
+        
+        # if there is an output folder, change the depends to relative paths
+        # so the full path is not included in the archive
+        if self.vars.get("output") is not None:
+            archive_inputs=[os.path.relpath(file, start=str(self.vars.get("output"))) for file in depends]
+        else:
+            archive_inputs=depends
+
+        # check that the software is installed to create the archive
+        try:
+            output=subprocess.check_output([archive_software,"--help"])
+        except EnvironmentError:
+            raise EnvironmentError("Unable to archive document with software requested. Please install " +archive_software)
+        
+        # get the possible location of the db folder and the log
+        document_db_folder="*"+backends.LOCAL_DB_FOLDER+"*"
+        document_log=reporters.LOG_FILE_NAME
+        
+        # create the command always removing the database, if found
+        # if the database is not found this will not issue an error it just will not be excluded
+        if archive_software == "zip":
+            command=["zip","-r",targets[0]]
+            command+=archive_inputs
+            command+=["-x",document_db_folder]
+            if remove_log:
+                command+=["-x",document_log]
+        elif archive_software == "tar": 
+            if targets[0].endswith(".tar.gz"):
+                settings="czvf"
+            elif targets[0].endswith(".tar"):
+                settings="cvf"
+            elif targets[0].endswith(".tar.bz2"):
+                settings="cjvf"
+            else:
+                raise TypeError("Unknown archive software extension. Please use .tar.gz, .tar, or .tar.bz2 with tar software.")
+                
+            command=["tar",settings,targets[0]]
+            command+=archive_inputs
+            command+=["--exclude",document_db_folder]
+            if remove_log:
+                command+=["--exclude",document_log]
+        else:
+            raise TypeError("Unknown archive software provided. Please select zip or tar with .tar.gz or .tar or .tar.bz2")
+        
+        # move to the directory of the output folder to not include full paths in archives
+        # if there is an output folder being used
+        if self.vars.get("output") is not None:
+            cwd=os.getcwd()
+            command=["cd",str(self.vars.get("output")),";"]+command+[";","cd",cwd]
+            
+        command=" ".join(command)
+        
+        self.add_task(actions=command, depends=depends, targets=targets,
+                      interpret_deps_and_targs=False, name="archive")
 
     def add_task_group(self, actions=None, depends=None, targets=None,
                        name=None, interpret_deps_and_targs=True, **kwargs):
