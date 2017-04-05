@@ -9,6 +9,7 @@ import leveldb
 from .util import mkdirp
 
 ENV_VAR = "ANADAMA_BACKEND_DIR"
+LOCAL_DB_FOLDER = ".anadama"
 
 _default_backend = None
 
@@ -16,7 +17,7 @@ def default(output_dir=None):
     global _default_backend
     if output_dir is not None:
         return LevelDBBackend(
-            _try_dir(os.path.join(str(output_dir), ".anadama", "db"))
+            _try_dir(os.path.join(str(output_dir), LOCAL_DB_FOLDER, "db"))
             )
     if _default_backend is None:
         _default_backend = LevelDBBackend()
@@ -56,8 +57,9 @@ def _try_dir(maybe_datadir):
     
 def _fallback_datadir():
     try:
-        mkdirp(".anadama/db")
-        return os.path.abspath(".anadama/db")
+        folder=os.path.join(LOCAL_DB_FOLDER,"db")
+        mkdirp(folder)
+        return os.path.abspath(folder)
     except:
         mkdirp("/tmp/anadama/db")        
         return "/tmp/anadama/db"
