@@ -376,7 +376,7 @@ class Workflow(object):
         doc = copy.deepcopy(self.document)
         doc.__init__(templates, depends, targets, vars)
         
-        self.add_task(actions=doc.create, depends=depends, targets=targets,
+        return self.add_task(actions=doc.create, depends=depends, targets=targets,
                       interpret_deps_and_targs=False, name="document")  
         
     def add_archive(self, depends, targets, archive_software, remove_log=None):
@@ -387,12 +387,13 @@ class Workflow(object):
         depends=sugar_list(depends)
         targets=sugar_list(targets)
         
+        # remove any tasks from the depends list of archive inputs
+        archive_inputs=list(filter(lambda x: not isinstance(x,Task), depends))
+        
         # if there is an output folder, change the depends to relative paths
         # so the full path is not included in the archive
         if self.vars.get("output") is not None:
-            archive_inputs=[os.path.relpath(file, start=str(self.vars.get("output"))) for file in depends]
-        else:
-            archive_inputs=depends
+            archive_inputs=[os.path.relpath(file, start=str(self.vars.get("output"))) for file in archive_inputs]
 
         # check that the software is installed to create the archive
         try:
@@ -438,7 +439,7 @@ class Workflow(object):
             
         command=" ".join(command)
         
-        self.add_task(actions=command, depends=depends, targets=targets,
+        return self.add_task(actions=command, depends=depends, targets=targets,
                       interpret_deps_and_targs=False, name="archive")
 
     def add_task_group(self, actions=None, depends=None, targets=None,
@@ -450,16 +451,23 @@ class Workflow(object):
         This function will call ``add_task`` for each task in the group. Please
         see the ``add_task`` documentation for more information."""
         
+        task_group=[]
         for deps, targs in zip(depends, targets):
-            self.add_task(actions, deps, targs, name, interpret_deps_and_targs, **kwargs) 
+            task_group.append(self.add_task(actions, deps, targs, name, interpret_deps_and_targs, **kwargs))
+            
+        return task_group
             
     def add_task_group_gridable(self, actions=None, depends=None, targets=None,
                        name=None, interpret_deps_and_targs=True, **kwargs):
         """Create gridable tasks as a group."""
         
+        task_group=[]
         for deps, targs in zip(depends, targets):
             task = self.add_task(actions, deps, targs, name, interpret_deps_and_targs, **kwargs)
-            self._get_grid().add_task(task, **kwargs)        
+            task_group.append(task)
+            self._get_grid().add_task(task, **kwargs)
+        
+        return task_group        
 
     def add_task(self, actions=None, depends=None, targets=None,
                  name=None, visible=True,
