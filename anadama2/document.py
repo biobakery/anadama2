@@ -93,6 +93,10 @@ class PweaveDocument(Document):
         if self.vars is not None:
             # save the depends in the vars set
             self.vars["depends"]=self.depends
+            
+            # save the targets
+            self.vars["targets"]=self.targets
+            
             # change directories/files to the full paths (so no longer required in input)
             # this is because pweave does not have an output folder option (just cwd so a ch is needed)
             for variable in self.vars:
@@ -169,9 +173,13 @@ class PweaveDocument(Document):
         return vars
             
     
-    def read_table(self, file, invert=None, delimiter="\t", only_data_columns=None):
+    def read_table(self, file, invert=None, delimiter="\t", only_data_columns=None, format_data=None):
         """ Read the table from a text file with the first line the column
         names and the first column the row names. """
+        
+        # if not set, format data to floats
+        if format_data is None:
+            format_data=float
         
         data=[]
         row_names=[]
@@ -180,7 +188,7 @@ class PweaveDocument(Document):
             for line in file_handle:
                 line=line.rstrip().split(delimiter)
                 row_names.append(line[0])
-                data.append([float(i) for i in line[1:]])
+                data.append([format_data(i) for i in line[1:]])
                 
         # remove extra columns if not requested
         if only_data_columns is not None:
@@ -191,7 +199,6 @@ class PweaveDocument(Document):
             data=new_data
                 
         return column_names, row_names, data
-        
 
     def plot_grouped_barchart(self, data, row_labels, column_labels, title, 
         xlabel=None, ylabel=None, legend_title=None, yaxis_in_millions=None):
@@ -460,6 +467,10 @@ class PweaveDocument(Document):
         
     def write_table(self, column_labels, row_labels, data, file):
         """ Write a table of data to a file """
+        
+        # if the folder for the table does not exist, then create
+        if not os.path.isdir(os.path.dirname(file)):
+            os.makedirs(os.path.dirname(file))
     
         with open(file, "wb") as file_handle:
             file_handle.write("\t".join(column_labels)+"\n")
