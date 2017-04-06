@@ -234,7 +234,7 @@ class PweaveDocument(Document):
             subplot_position.width *0.80, subplot_position.height])
         
         # add labels and title
-        if xlabel is not None:
+        if xlabel is not None and len(column_labels) <= self.max_labels:
             pyplot.xlabel(xlabel)
         if ylabel is not None:
             pyplot.ylabel(ylabel)
@@ -242,7 +242,10 @@ class PweaveDocument(Document):
         pyplot.title(title)
         
         # place the xticks in the middle of each group
-        pyplot.xticks(bar_start_point + 0.5, column_labels, fontsize=7, rotation="vertical")
+        if len(column_labels) <= self.max_labels:
+            pyplot.xticks(bar_start_point + 0.5, column_labels, fontsize=7, rotation="vertical")
+        else:
+            pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
         pyplot.yticks(fontsize=7)
         
         # set the limits on the x axis so the edge gaps are correct
