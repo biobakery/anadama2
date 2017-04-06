@@ -476,13 +476,15 @@ class PweaveDocument(Document):
         label_font="7"
         # compute the aspect ratio based on the number of samples and features
         aspect_ratio=len(sample_names)/(len(feature_names)*1.0)
-        output=subprocess.check_output(["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,
-                                        "--title",title,
-                                        "--title_font",str(int(label_font)*2),
-                                        "--cell_aspect_ratio",str(aspect_ratio),
-                                        "--flabel_size",label_font,"--slabel_size",label_font,
-                                        "--colorbar_font_size",label_font,
-                                        "--log_scale"])
+        command=["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,"--title",title,
+            "--title_font",str(int(label_font)*2),"--cell_aspect_ratio",str(aspect_ratio),
+            "--flabel_size",label_font,"--slabel_size",label_font,
+            "--colorbar_font_size",label_font,"--log_scale"]
+        # if more than the max samples, do not include sample labels on the heatmap
+        if len(sample_names) > self.max_labels:
+            command+=["--no_slabels"]
+            
+        output=subprocess.check_output(command)
         # read the heatmap png file
         heatmap=read_png(heatmap_file)
         
