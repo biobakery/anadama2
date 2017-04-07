@@ -51,6 +51,27 @@ class PweaveDocument(Document):
         # set the max number of x tick labels to be shown on plots
         self.max_labels = 25
         
+        # set the location of the final figures and data folders
+        # only create if the document has a target
+        if self.targets:
+            self.figures_folder = os.path.join(os.path.dirname(self.targets[0]),"figures")
+            if not os.path.isdir(self.figures_folder):
+                os.makedirs(self.figures_folder)
+                
+            self.data_folder = os.path.join(os.path.dirname(self.targets[0]),"data")
+            if not os.path.isdir(self.data_folder):
+                os.makedirs(self.data_folder)
+        else:
+            # if a target is not provided use the variables to try to find the folder locations
+            try:
+                self.vars=self.get_vars()
+            except IndexError:
+                self.vars=None
+                
+            if self.vars:
+                self.figures_folder = os.path.join(os.path.dirname(self.vars["targets"][0]),"figures")
+                self.data_folder = os.path.join(os.path.dirname(self.vars["targets"][0]),"data")
+        
         # check for the required dependencies when using a pweave document
         # only check when creating an instance with a template to run
         if templates is not None:
@@ -125,14 +146,6 @@ class PweaveDocument(Document):
         # rename to the original target name and location specified
         shutil.copy(temp_template+".pdf",self.targets[0])
         
-        # remove the final figures folder if it currently exists
-        final_figures_folder=os.path.join(os.path.dirname(self.targets[0]),"figures")
-        if os.path.isdir(final_figures_folder):
-            shutil.rmtree(final_figures_folder)
-            
-        # create a final figures folder
-        os.mkdir(final_figures_folder)
-        
         # rename the figure pdf files so their name corresponds to their number
         # in the pdf document (by default their number ordering is what is expected,
         # it just does not represent the exact number of the figure)
@@ -150,12 +163,20 @@ class PweaveDocument(Document):
         
         # move and rename the temp files
         for file in sorted_temp_figures_files:
-            new_file=os.path.join(final_figures_folder,"figure_"+str(figure_number)+".pdf")
+            new_file=os.path.join(self.figures_folder,"figure_"+str(figure_number)+".pdf")
             shutil.move(os.path.join(temp_figures_folder,file),new_file)
             figure_number+=1
         
         # remove all of the temp files in the temp folder
         shutil.rmtree(temp_directory)
+        
+        # remove the figures folder if it is empty
+        if len(os.listdir(self.figures_folder)) == 0:
+            os.rmdir(self.figures_folder)
+        
+        # remove the data folder if it is empty
+        if len(os.listdir(self.data_folder)) == 0:
+            os.rmdir(self.data_folder)
         
         
     def get_vars(self):
