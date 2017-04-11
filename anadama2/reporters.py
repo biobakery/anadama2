@@ -525,7 +525,7 @@ class LoggerReporter(BaseReporter):
         except (AttributeError, TypeError):
             options={}
             
-        if vars:
+        if options:
             self.logger.info("Workflow configuration options")
         
         for name, value in options.items():
