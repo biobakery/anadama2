@@ -518,6 +518,19 @@ class LoggerReporter(BaseReporter):
         self.run_context = ctx
         self.logger.info("Beginning AnADAMA run with %i tasks.",
                          len(self.run_context.tasks))
+        
+        # if there are workflow variables set, add them to the log
+        try:
+            options=vars(ctx.vars.get_option_values())
+        except (AttributeError, TypeError):
+            options={}
+            
+        if vars:
+            self.logger.info("Workflow configuration options")
+        
+        for name, value in options.items():
+            self.logger.info("{} = {}".format(name, value))
+            
 
     def task_skipped(self, task_no):
         self.log_event("skipped", task_no, self._daginfo(task_no))
