@@ -49,7 +49,7 @@ class PweaveDocument(Document):
         self.vars=vars
         
         # set the max number of x tick labels to be shown on plots
-        self.max_labels = 25
+        self.max_labels = 30
         
         # set the location of the final figures and data folders
         # only create if the document has a target
