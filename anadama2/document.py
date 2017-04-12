@@ -198,6 +198,17 @@ class PweaveDocument(Document):
         """ Read the table from a text file with the first line the column
         names and the first column the row names. """
         
+        def try_format_data(function, data):
+            """ Try to format the data, except use zero """
+            
+            try:
+                formatted_data=function(data)
+            except ValueError:
+                formatted_data=function(0)
+                
+            return formatted_data
+            
+        
         # if not set, format data to floats
         if format_data is None:
             format_data=float
@@ -209,7 +220,7 @@ class PweaveDocument(Document):
             for line in file_handle:
                 line=line.rstrip().split(delimiter)
                 row_names.append(line[0])
-                data.append([format_data(i) for i in line[1:]])
+                data.append([try_format_data(format_data, i) for i in line[1:]])
                 
         # remove extra columns if not requested
         if only_data_columns is not None:
