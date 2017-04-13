@@ -560,6 +560,32 @@ class PweaveDocument(Document):
 
         out, err = proc.communicate(input="\n".join(commands))
         
+    def filter_zero_rows(self, row_names, data):
+        """ Filter the rows from the data set that sum to zero """
+         
+        new_names=[]
+        new_data=[]
+        for name, row in zip(row_names, data):
+            if sum(row) != 0:
+                new_names.append(name)
+                new_data.append(row)
+            
+        return new_names, new_data
+    
+    def filter_zero_columns(self, column_names, data):
+        """ Filter the columns from the data set that sum to zero """
+
+        import numpy
+         
+        new_names, new_data = self.filter_zero_rows(column_names, numpy.transpose(data))
+        data_temp = []
+        for row in numpy.transpose(new_data):
+            data_temp.append(list(row))
+            
+        new_data = data_temp
+            
+        return new_names, new_data
+        
     def show_pcoa(self, sample_names, feature_names, data, title):
         """ Use the vegan package in R plus matplotlib to plot a PCoA 
         Input data should be organized with samples as columns and features as rows 
@@ -594,6 +620,12 @@ class PweaveDocument(Document):
         # test features are provided as rows of the data
         if len(data) != len(feature_names):
             raise ValueError("Provide data to the AnADAMA2 document.show_pcoa function in the form of features as rows.")
+        
+        # remove any samples from the data for which all features are zero
+        sample_names, data = self.filter_zero_columns(sample_names, data)
+
+        # remove any features from the data for which all samples have zero values
+        feature_names, data = self.filter_zero_rows(feature_names, data)
 
         # write a file of the data
         handle, vegan_input_file=tempfile.mkstemp(prefix="vegan_input",dir=os.getcwd())
