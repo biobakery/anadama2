@@ -379,7 +379,7 @@ class Workflow(object):
         return self.add_task(actions=doc.create, depends=depends, targets=targets,
                       interpret_deps_and_targs=False, name="document")  
         
-    def add_archive(self, depends, targets, archive_software, remove_log=None):
+    def add_archive(self, depends, targets, archive_software=None, remove_log=None):
         """ Create an archive including the dependencies. Name it the target. This
         adds a :class:`anadama2.Task` to the workflow to create the archive. """
 
@@ -387,6 +387,13 @@ class Workflow(object):
         depends=sugar_list(depends)
         targets=sugar_list(targets)
         
+        # determine the archive software based on the target extension
+        if archive_software is None:
+            if targets[0].endswith(".zip"):
+                archive_software = "zip"
+            else:
+                archive_software = "tar"
+            
         # remove any tasks from the depends list of archive inputs
         archive_inputs=list(filter(lambda x: not isinstance(x,Task), depends))
         
