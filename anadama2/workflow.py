@@ -393,6 +393,16 @@ class Workflow(object):
                 archive_software = "zip"
             else:
                 archive_software = "tar"
+                
+        # get the archive extension
+        if archive_software == "zip":
+            extension=".zip"
+        else:
+            extension=".tar"+targets[0].split("tar")[-1]
+                
+        # normalize a path to remove any extra separators included by the user
+        # allows joining a folder ending with a separator with an extension as a target
+        targets[0]=targets[0].replace(os.pathsep+extension,extension)
             
         # remove any tasks from the depends list of archive inputs
         archive_inputs=list(filter(lambda x: not isinstance(x,Task), depends))
