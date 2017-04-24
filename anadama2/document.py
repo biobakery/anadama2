@@ -98,16 +98,29 @@ class PweaveDocument(Document):
     def create(self, task):
         """ Create the documents specified as targets """
 
+        # get the template extension
+        if self.templates[0].endswith(".mdw"):
+            template_extension="mdw"
+        else:
+            template_extension="py"
+            
+        # get the report and figure extensions based on the target
+        if self.targets[0].endswith(".html"):
+            report_extension="html"
+        else:
+            report_extension="pdf"
+
         # create the temp file to run with when ready to create the document
         temp_directory = tempfile.mkdtemp(dir=os.path.dirname(self.targets[0]))
-        handle, temp_template = tempfile.mkstemp(dir=temp_directory, prefix="template")
+        temp_template = os.path.join(temp_directory,os.path.basename(self.targets[0]).replace("."+report_extension,""))
         
         # merge the templates into the temp file
-        for file in self.templates:
-            for line in open(file):
-                os.write(handle,line)
+        with open(temp_template,"w") as handle:
+            for file in self.templates:
+                for line in open(file):
+                    handle.write(line)
                 
-        os.close(handle)
+        handle.close()
         
         # if variables are provided, then create a pickled file to store these
         # for use when the document is created
@@ -137,35 +150,29 @@ class PweaveDocument(Document):
         # template file and the pdf files are written to the current working directory
         current_working_directory = os.getcwd()
         os.chdir(temp_directory)
-        
-        output = subprocess.check_output(["pypublish",temp_template,"-f","pdf"])
+            
+        # process the template based on the extension type
+        temp_report = temp_template+"."+report_extension
+        if template_extension == "mdw":
+            if report_extension == "html":
+                output = subprocess.check_output(["pweave","-f","pandoc",temp_template])
+                output = subprocess.check_output(["pandoc","-s", temp_template+".md","-o",temp_report])
+            else:
+                output = subprocess.check_output(["pweave","-f","pandoc2latex",temp_template])
+                output = subprocess.check_output(["pdflatex",temp_template+".tex"])
+        else:
+            output = subprocess.check_output(["pypublish",temp_template,"-f",report_extension])
         
         # change back to original working directory
         os.chdir(current_working_directory)
         
         # rename to the original target name and location specified
-        shutil.copy(temp_template+".pdf",self.targets[0])
+        shutil.copy(temp_report,self.targets[0])
         
-        # rename the figure pdf files so their name corresponds to their number
-        # in the pdf document (by default their number ordering is what is expected,
-        # it just does not represent the exact number of the figure)
-        # For example, we could have two figures "template_figure4_1.pdf"
-        # and "template_figure5_1.pdf" these correspond to figure1 and figure2.
+        # move the temp figures files
         temp_figures_folder=os.path.join(temp_directory,"figures")
-        figure_number=1
-        
-        # sort the temp figure files by their number ordering
-        try:
-            sorted_temp_figures_files=sorted(os.listdir(temp_figures_folder),
-                key=lambda file: int(file.split("figure")[1].replace("_1.pdf","")))
-        except ValueError:
-            sorted_temp_figures_files=sorted(os.listdir(temp_figures_folder))
-        
-        # move and rename the temp files
-        for file in sorted_temp_figures_files:
-            new_file=os.path.join(self.figures_folder,"figure_"+str(figure_number)+".pdf")
-            shutil.move(os.path.join(temp_figures_folder,file),new_file)
-            figure_number+=1
+        for file in os.listdir(temp_figures_folder):
+            shutil.move(os.path.join(temp_figures_folder,file),os.path.join(self.figures_folder,file))
         
         # remove all of the temp files in the temp folder
         shutil.rmtree(temp_directory)
