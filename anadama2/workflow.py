@@ -150,7 +150,7 @@ class Workflow(object):
             tmpdir = os.path.join(tmpdir, "slurm_files")
             grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting)
         elif grid_selection == "sge":
-            grid = SGE(queue=grid_partition)
+            grid = SGE(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting)
         else:
             print("Grid selected ( "+grid_selection+" ) can not be found. Tasks will run locally.")
             grid = _grid.Dummy()
