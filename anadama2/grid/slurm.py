@@ -15,10 +15,9 @@ from math import exp
 from collections import namedtuple
 
 import six
-from six.moves import queue
 
-from . import Dummy
 from .grid import GridWorker
+from .grid import Grid
 from .. import runners
 from .. import picklerunner
 from ..util import underscore
@@ -31,27 +30,10 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 else:
     import subprocess
 
-available = bool(find_on_path("srun"))
-
 sigmoid = lambda t: 1/(1-exp(-t))
 
-class PerformanceData(namedtuple("PerformanceData", ["time", "mem", "cores"])):
-    """Performance Data. Defines the resources or performance a task used,
-    is limited to use, or is expected to use.
 
-    :param time: Wall clock time in minutes.
-    :type time: int
-
-    :param mem: RAM Usage in MB (8*1024*1024 bits).
-    :type mem: int
-
-    :param cores: CPU cores.
-    :type cores: int
-    """
-    pass # the class definition is just for the docstring
-
-
-class Slurm(Dummy):
+class Slurm(Grid):
     """This class enables the Workflow class to dispatch tasks to
     SLURM. Use it like so:
 
@@ -84,130 +66,20 @@ class Slurm(Dummy):
     :param partition: The name of the SLURM partition to submit tasks to
     :type partition: str
 
-    :keyword tmpdir: A directory to store temporary files in. All
+    :param tmpdir: A directory to store temporary files in. All
       machines in the cluster must be able to read the contents of
       this directory; uses :mod:`anadama2.picklerunner` to create
       self-contained scripts to run individual tasks and calls
       ``srun`` to run the script on the cluster.
     :type tmpdir: str
-
-    :type extra_srun_flags: list of str
+    
+    :keyword benchmark_on: Option to turn on/off benchmarking
+    : type benchmark_on: bool
 
     """
 
-    def __init__(self, partition, tmpdir=None, benchmark_on=None, extra_srun_flags=[]):
-        self.slurm_partition = partition
-        self.slurm_tmpdir = tmpdir
-        if self.slurm_tmpdir:
-            # create the folder if it does not already exist
-            if not os.path.isdir(self.slurm_tmpdir):
-                os.makedirs(self.slurm_tmpdir)
-            
-        self.extra_srun_flags = extra_srun_flags
-        
-        self.slurm_task_data = dict()
-        
-        self.slurm_queue = SLURMQueue(benchmark_on)
-
-    def _kwargs_extract(self, kwargs_dict, depends):
-        cores = kwargs_dict.pop("cores", None)
-        if cores is None:
-            raise TypeError("`cores' is a required keyword argument")  
-        time = kwargs_dict.pop("time", None)
-        if time is None:
-            raise TypeError("`time' is a required keyword argument")
-        # if time is not an int, try to format the evaluation
-        if not str(time).isdigit():
-            time = format_command(time, depends=depends, cores=cores)
-        mem = kwargs_dict.pop("mem", None)
-        if mem is None:
-            raise TypeError("`mem' is a required keyword argument")
-        # if memory is not an int, try to format the evaluation
-        if not str(mem).isdigit():
-            mem = format_command(mem, depends=depends, cores=cores)      
-        partition = kwargs_dict.pop("partition", self.slurm_partition)
-        extra_srun_flags = kwargs_dict.pop("extra_srun_flags",
-                                           self.extra_srun_flags)
-        return (PerformanceData(time, mem, int(cores)),
-                partition, self.slurm_tmpdir, extra_srun_flags)
-
-
-    def _import(self, task_dict):
-        slurm_keys = ["time", "mem", "cores", "partition", "extra_srun_flags"]
-        keys_to_keep = ["actions", "depends", "targets",
-                        "name", "interpret_deps_and_targs"]
-        if any(k in task_dict for k in slurm_keys):
-            return self.slurm_add_task(
-                **keepkeys(task_dict, slurm_keys+keys_to_keep)
-            )
-        else:
-            return self.add_task(**keepkeys(task_dict, keys_to_keep))
-
-
-    def do(self, task, **kwargs):
-        """Accepts the following extra arguments:
-        
-        :param time: The maximum time in minutes allotted to run the
-          command
-        :type time: int
-
-        :param mem: The maximum memory in megabytes allocated to run
-          the command
-        :type mem: int
-
-        :param cores: The number of CPU cores allocated to the job
-        :type cores: int
-
-        :param partition: The SLURM partiton to send this job to
-        :type partition: str
-
-        :param extra_srun_flags: Any command-line flags to augment
-          ``srun`` behavior formatted like ``--begin=22:00``,
-          ``--exclusive``, or ``-k``
-        :type extra_srun_flags: list of str
-
-        """
-        params = self._kwargs_extract(kwargs, task.depends)
-        self.slurm_task_data[task.task_no] = params
-
-    
-    def add_task(self, task, **kwargs):
-        """Accepts the following extra arguments:
-        
-        :keyword time: The maximum time in minutes allotted to run the
-          command
-        :type time: int
-
-        :keyword mem: The maximum memory in megabytes allocated to run
-          the command
-        :type mem: int
-
-        :keyword cores: The number of CPU cores allocated to the job
-        :type cores: int
-
-        :keyword partition: The SLURM partiton to send this job to
-        :type partition: str
-
-        :keyword extra_srun_flags: Any command-line flags to augment
-          ``srun`` behavior formatted like ``--begin=22:00``,
-          ``--exclusive``, or ``-k``
-        :type extra_srun_flags: list of str
-
-        """
-        params = self._kwargs_extract(kwargs, task.depends)
-        self.slurm_task_data[task.task_no] = params
-
-
-    def runner(self, ctx, jobs=1, grid_jobs=1):
-        runner = runners.GridRunner(ctx)
-        runner.add_worker(runners.ParallelLocalWorker,
-                          name="local", rate=jobs, default=True)
-        runner.add_worker(SLURMWorker, name="slurm", rate=grid_jobs)
-        runner.routes.update((
-            ( task_idx, ("slurm", list(extra)+[self.slurm_queue, ctx._reporter]) )
-            for task_idx, extra in six.iteritems(self.slurm_task_data)
-        ))
-        return runner
+    def __init__(self, partition, tmpdir, benchmark_on=None):
+        super(Slurm, self).__init__("slurm", SLURMWorker, SLURMQueue(benchmark_on), partition, tmpdir, benchmark_on)
 
 class SLURMQueue():
     
@@ -509,7 +381,7 @@ def _job_submission_failed(jobid):
         return False
 
 def _run_task_command_slurm(task, extra):
-    (perf, partition, tmpdir, extra_srun_flags, slurm_queue, reporter) = extra
+    (perf, partition, tmpdir, slurm_queue, reporter) = extra
     # report the task has started
     reporter.task_running(task.task_no)
     
@@ -653,7 +525,7 @@ def _monitor_slurm_job(slurm_queue, task, slurm_jobid, out_file, error_file, rc_
     return result, slurm_job_status
 
 def _run_task_function_slurm(task, extra):
-    (perf, partition, tmpdir, extra_srun_flags, slurm_queue, reporter) = extra
+    (perf, partition, tmpdir, slurm_queue, reporter) = extra
     # report the task has started
     reporter.task_running(task.task_no)
     script_path = picklerunner.tmp(task, dir=tmpdir).path
@@ -666,7 +538,7 @@ def _run_task_function_slurm(task, extra):
                 "--time={}".format(int(time)),
                 "--cpus-per-task="+str(perf.cores),
                 "--job-name="+job_name]
-        args += extra_srun_flags+[script_path, "-p", "-r" ]
+        args += [script_path, "-p", "-r" ]
         proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
                                 stderr=subprocess.PIPE)
         out, err = proc.communicate()
