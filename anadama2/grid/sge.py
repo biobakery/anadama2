@@ -9,6 +9,7 @@ import six
 from six.moves import queue
 
 from . import Dummy
+from .grid import GridWorker
 from .slurm import PerformanceData
 from .. import runners
 from .. import picklerunner
@@ -155,31 +156,14 @@ class SGE(Dummy):
         return pe_name
 
 
-
-class SGEWorker(threading.Thread):
+class SGEWorker(GridWorker):
 
     def __init__(self, work_q, result_q, lock, reporter):
-        super(SGEWorker, self).__init__()
-        self.daemon = True
-        self.logger = runners.logger
-        self.work_q = work_q
-        self.result_q = result_q
-        self.lock = lock
-        self.reporter = reporter
-
-    @staticmethod
-    def appropriate_q_class(*args, **kwargs):
-        return queue.Queue(*args, **kwargs)
-
-    @staticmethod
-    def appropriate_lock():
-        return threading.Lock() 
+        super(SGEWorker, self).__init__(work_q, result_q, lock, reporter))
  
     def run(self):
         return runners.worker_run_loop(self.work_q, self.result_q, 
                                        _run_task_sge)
-
-
 
 def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
     for _ in range(int(secs/pollfreq)):
