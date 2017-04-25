@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import os
 import threading
 import Queue
+
+import six
 
 from .. import runners
 from ..helpers import format_command
@@ -131,7 +134,7 @@ class GridWorker(threading.Thread):
     
     @staticmethod
     def appropriate_q_class(*args, **kwargs):
-        return queue.Queue(*args, **kwargs)    
+        return six.moves.queue.Queue(*args, **kwargs)    
 
     @staticmethod
     def appropriate_lock():
