@@ -9,7 +9,6 @@ import six
 
 from .grid import Grid
 from .grid import GridWorker
-from .slurm import PerformanceData
 from .. import runners
 from .. import picklerunner
 from ..util import underscore
@@ -72,7 +71,7 @@ class SGE(Grid):
 class SGEWorker(GridWorker):
 
     def __init__(self, work_q, result_q, lock, reporter):
-        super(SGEWorker, self).__init__(work_q, result_q, lock, reporter))
+        super(SGEWorker, self).__init__(work_q, result_q, lock, reporter)
  
     def run(self):
         return runners.worker_run_loop(self.work_q, self.result_q, 
