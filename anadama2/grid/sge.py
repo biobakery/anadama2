@@ -6,9 +6,8 @@ import tempfile
 import threading
 
 import six
-from six.moves import queue
 
-from . import Dummy
+from .grid import Grid
 from .grid import GridWorker
 from .slurm import PerformanceData
 from .. import runners
@@ -22,11 +21,7 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 else:
     import subprocess
 
-available = all( bool(find_on_path(prog)) for prog in
-                 ("qconf", "qsub"))
-
-
-class SGE(Dummy):
+class SGE(Grid):
     """This class enables the Workflow class to dispatch tasks to
     Sun Grid Engine and its lookalikes. Use it like so:
 
@@ -55,105 +50,23 @@ class SGE(Dummy):
       ctx.go()
 
 
-    :param queue: The name of the SGE queue to submit tasks to
-    :type queue: str
+    :param partition: The name of the SLURM partition to submit tasks to
+    :type partition: str
 
-    :keyword tmpdir: A directory to store temporary files in. All
+    :param tmpdir: A directory to store temporary files in. All
       machines in the cluster must be able to read the contents of
       this directory; uses :mod:`anadama2.picklerunner` to create
       self-contained scripts to run individual tasks and calls
-      ``qsub`` to run the script on the cluster.
+      ``srun`` to run the script on the cluster.
     :type tmpdir: str
-
-    :type extra_qsub_flags: list of str
+    
+    :keyword benchmark_on: Option to turn on/off benchmarking
+    : type benchmark_on: bool
 
     """
 
-    def __init__(self, queue, tmpdir="/tmp", extra_qsub_flags=[]):
-        self.sge_queue = queue
-        self.sge_tmpdir = tmpdir
-        self.extra_qsub_flags = extra_qsub_flags
-        
-        self.sge_task_data = dict()
-        self._sge_pe_name = self._find_suitable_pe()
-
-
-    def _import(self, task_dict):
-        sge_keys = ["time", "mem", "cores", "partition", "extra_srun_flags"]
-        keys_to_keep = ["actions", "depends", "targets",
-                        "name", "interpret_deps_and_targs"]
-        if any(k in task_dict for k in sge_keys):
-            task_dict = keyrename( task_dict,
-                [("partition", "queue"),
-                 ("extra_srun_flags", "extra_qsub_flags")]
-            )
-            return self.sge_add_task(
-                **keepkeys(task_dict, sge_keys+keys_to_keep)
-            )
-        else:
-            return self.add_task(**keepkeys(task_dict, keys_to_keep))
-
-
-    def do(self, task, **kwargs):
-        params = self._kwargs_extract(kwargs)
-        self.sge_task_data[task.task_no] = params
-
-    
-    def add_task(self, task, **kwargs):
-        params = self._kwargs_extract(kwargs)
-        self.sge_task_data[task.task_no] = params
-
-    
-    def runner(self, ctx, jobs=1, grid_jobs=1):
-        runner = runners.GridRunner(ctx)
-        runner.add_worker(runners.ParallelLocalWorker,
-                          name="local", rate=jobs, default=True)
-        runner.add_worker(SGEWorker, name="sge", rate=grid_jobs)
-        runner.routes.update((
-            ( task_idx, ("sge", extra) )
-            for task_idx, extra in six.iteritems(self.sge_task_data)
-        ))
-        return runner
-
-
-    def _kwargs_extract(self, kwargs_dict):
-        time = kwargs_dict.pop("time", None)
-        mem = kwargs_dict.pop("mem", None)
-        cores = kwargs_dict.pop("cores", 1)
-        partition = kwargs_dict.pop("queue", self.sge_queue)
-        extra_qsub_flags = kwargs_dict.pop("extra_qsub_flags",
-                                           self.extra_qsub_flags)
-        return (PerformanceData(int(time), int(mem), int(cores)),
-                partition, self.sge_tmpdir, self._sge_pe_name, extra_qsub_flags)
-
-
-    def _find_suitable_pe(self):
-        names, _ = subprocess.Popen(['qconf', '-spl'], 
-                                    stdout=subprocess.PIPE).communicate()
-        if not names:
-            raise OSError(
-                "Unable to find any SGE parallel environment names. \n"
-                "Ensure that SGE tools like qconf are installed, \n"
-                "ensure that this node can talk to the cluster, \n"
-                "and ensure that parallel environments are enabled.")
-
-        pe_name = None
-        for name in names.strip().split():
-            if pe_name:
-                break
-            out, _ = subprocess.Popen(["qconf", "-sp", name], 
-                                   stdout=subprocess.PIPE).communicate()
-            for line in out.split('\n'):
-                if ["allocation_rule", "$pe_slots"] == line.split():
-                    pe_name = name
-        
-        if not pe_name:
-            raise OSError(
-                "Unable to find a suitable parallel environment. "
-                "Please talk with your systems administrator to enable "
-                "a parallel environment that has an `allocation_rule` "
-                "set to `$pe_slots`.")
-        return pe_name
+    def __init__(self, partition, tmpdir, benchmark_on=None):
+        super(SGE, self).__init__("sge", SGEWorker, None, partition, tmpdir, benchmark_on)
 
 
 class SGEWorker(GridWorker):
@@ -179,17 +92,17 @@ def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
 
 
 def _run_task_sge(task, extra):
-    (perf, partition, tmpdir, pe_name, extra_qsub_flags) = extra
+    (perf, partition, tmpdir, slurm_queue, reporter) = extra
     script_path = picklerunner.tmp(task, dir=tmpdir).path
     job_name = "task{}.{}".format(task.task_no, underscore(task.name))
     tmpout = tempfile.mktemp(dir=tmpdir)
     tmperr = tempfile.mktemp(dir=tmpdir)
 
     args = ["qsub", "-R", "y", "-b", "y", "-sync", "y", "-N", job_name,
-            "-pe", pe_name, str(perf.cores), "-cwd", "-q", partition,
+            "-pe", "smp", str(perf.cores), "-cwd", "-q", partition,
             "-V", "-l", "m_mem_free={:1g}M".format(max(1, perf.mem)),
             "-o", tmpout, "-e", tmperr]
-    args += extra_qsub_flags+[script_path, "-r", "-p" ]
+    args += [script_path, "-r", "-p" ]
     proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
                             stderr=subprocess.PIPE)
     out, err = proc.communicate()
