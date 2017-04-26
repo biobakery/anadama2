@@ -10,6 +10,7 @@ import string
 import datetime
 import logging
 import itertools
+import re
 
 import six
 
@@ -332,7 +333,8 @@ class GridQueue(object):
         stdout=self.run_grid_command_resubmit(self.submit_command(grid_script))
         
         try:
-            jobid=stdout.rstrip().split()[-1]
+            # search for the decimal job id at any location in stdout
+            jobid=re.findall(r'\d+',stdout)[0]
         except IndexError:
             jobid="error"
         
