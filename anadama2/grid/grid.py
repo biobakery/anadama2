@@ -3,6 +3,10 @@
 import os
 import threading
 import Queue
+import time
+import tempfile
+import string
+import datetime
 
 import six
 
@@ -118,6 +122,244 @@ class Grid(object):
             for task_no, extra in six.iteritems(self.task_data)
         ))
         return runner   
+
+class GridQueue(object):
+    
+    def __init__(self, benchmark_on=None):
+        # this is the refresh rate for checking the queue, in seconds
+        self.refresh_rate = 10*60
+        
+        # this is the number of minutes to wait if there is an time out
+        # socket error returned from the scheduler when running a command
+        self.timeout_sleep = 5*60
+        
+        # this is the number of times to retry after a timeout error
+        self.timeout_retry_max = 3
+        
+        # this is the number of seconds to wait after job submission
+        self.submit_sleep = 5
+        
+        # this is the last time the queue was checked
+        self.last_check = time.time()
+        self.sacct = None
+        
+        # create a lock for jobs in queue
+        self.lock_status = threading.Lock()
+        self.lock_submit = threading.Lock()
+        
+        # set if benchmarking should be run
+        self.benchmark_on = benchmark_on
+        
+    @staticmethod
+    def submit_command(grid_script):
+        raise NotImplementedError
+    
+    @staticmethod
+    def submit_template():
+        raise NotImplementedError
+    
+    @staticmethod
+    def job_failed(status):
+        raise NotImplementedError
+    
+    @staticmethod
+    def job_stopped(status):
+        raise NotImplementedError
+    
+    @staticmethod
+    def job_memkill(status):
+        raise NotImplementedError
+        
+    @staticmethod
+    def job_timeout(status):
+        raise NotImplementedError
+    
+    @staticmethod
+    def get_job_status_from_stderr(error_file, grid_job_status):
+        raise NotImplementedError
+    
+    def refresh_queue_status(self, benchmarking):
+        raise NotImplementedError
+    
+    def get_queue_status(self, benchmarking=None, refresh=None):
+        """ Get the queue accounting stats """
+        
+        # lock to prevent race conditions with status update
+        self.lock_status.acquire()
+        
+        # check the last time the queue was captured and refresh if set
+        current_time = time.time()
+        if ( current_time - self.last_check > self.refresh_rate ) or refresh or self.sacct is None:
+            self.last_check = current_time
+            logging.info("Getting latest queue info to refresh job status")
+            self.sacct = self.refresh_queue_status(benchmarking)
+            
+        self.lock_status.release()
+        
+        return self.sacct
+    
+    def get_all_stats_for_jobid(self,jobid,benchmarking=None):
+        """ Get all the stats for a specific job id """
+        
+        # use the existing stats, to get the information for the jobid
+        job_stats=list(filter(lambda x: x[0].startswith(jobid),self.get_queue_status(benchmarking)))
+       
+        # if the job stats are not found for the job, return an NA state
+        if not job_stats:
+            job_stats=[[jobid,"Waiting","NA","NA","NA"]] 
+
+        return job_stats
+    
+    def get_job_status(self, jobid, benchmarking=None):
+        """ Check the status of the job """
+        
+        info=self.get_all_stats_for_jobid(jobid, benchmarking)
+        
+        return info[0][1]
+
+    def record_benchmark(self, jobid, task_number, reporter):
+        """ Check the benchmarking stats of the grid id """
+        
+        # check if benchmarking is set to off
+        if not self.benchmark_on:
+            logging.info("Benchmarking is set to off")
+            return
+            
+        reporter.task_grid_status(task_number,jobid,"Getting benchmarking data")
+        # if the job is not shown to have finished running then
+        # wait for the next queue refresh
+        status=self.get_job_status(jobid, benchmarking=True)
+        if not (self.job_stopped(status) or self.job_failed(status)):
+            wait_time = abs(self.refresh_rate - (time.time() - self.last_check)) + 10
+            time.sleep(wait_time)
+
+        info=self.get_all_stats_for_jobid(jobid)
+        
+        try:
+            status=info[0][1]
+        except IndexError:
+            status="Unknown"
+
+        try:
+            cpus=info[0][2]
+        except IndexError:
+            cpus="NA"
+    
+        try:
+            elapsed=info[0][3]
+        except IndexError:
+            elapsed="NA"
+
+        # get the memory max from the batch line which is the second line of output
+        try:
+            memory=info[1][4]
+        except IndexError:
+            memory="NA"
+        
+        if "K" in memory:    
+            # if memory is in KB, convert to MB
+            memory="{:.1f}".format(float(memory.replace("K",""))/1024.0)
+        elif "M" in memory:
+            memory="{:.1f}".format(float(memory.replace("M","")))
+        elif "G" in memory:
+            # if memory is in GB, convert to MB
+            memory="{:.1f}".format(float(memory.replace("G",""))*1024.0)
+            
+        logging.info("Benchmark information for job id %s:\nElapsed Time: %s \nCores: %s\nMemory: %s MB",
+            task_number, elapsed, cpus, memory)   
+        
+        reporter.task_grid_status(task_number,jobid,"Final status of "+status)
+    
+    def run_grid_command(self,command):
+        """ Run the grid command and check for errors """
+        
+        error=None
+        try:
+            logging.debug("Running grid command: %s"," ".join(command))
+            stdout=subprocess.check_output(command, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as err:
+            error=err.output
+            stdout="error"
+            
+        timeout_error=False
+        if error and "error" in error and "Socket timed out on send/recv operation" in error:
+            # check for a socket timeout error
+            timeout_error=True
+            
+        return stdout, timeout_error
+    
+    def run_grid_command_resubmit(self,command):
+        """ Run this grid command, check for error, resubmit if needed """
+        
+        # run the grid command
+        stdout, timeout_error = self.run_grid_command(command)
+        
+        # retry if timeout error present after wait
+        resubmissions = 0
+        if timeout_error and resubmissions < self.timeout_retry_max:
+            resubmissions+=1
+            # wait before retrying
+            logging.warning("Unable to run grid command, waiting and retrying")
+            time.sleep(self.timeout_sleep)
+            stdout, timeout_error = self.run_grid_command(command)
+        
+        return stdout
+    
+    @staticmethod
+    def job_submission_failed(jobid):
+        """ Check if the job failed in submission and did not get an id """
+        return True if not jobid.isdigit() else False
+
+    def submit_job(self,grid_script):
+        """ Submit the grid jobs and return the grid job id """
+        
+        # lock so only one task submits jobs to the queue at a time
+        self.lock_submit.acquire()
+
+        # submit the job and get the grid id
+        logging.debug("Submitting job to grid")
+        stdout=self.run_grid_command_resubmit(self.submit_command(grid_script))
+        
+        try:
+            jobid=stdout.rstrip().split()[-1]
+        except IndexError:
+            jobid="error"
+        
+        # check the jobid for a submission failed
+        if self.job_submission_failed(jobid):
+            logging.error("Unable to submit job to queue")
+        
+        # pause for the scheduler
+        time.sleep(self.submit_sleep)
+        
+        self.lock_submit.release()
+    
+        return jobid
+    
+    def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir):
+        """ Create a grid script from the template also creating temp stdout and stderr files """
+    
+        # create temp files for stdout, stderr, and return code    
+        handle_out, out_file=tempfile.mkstemp(suffix=".out",prefix="task_"+str(taskid)+"_",dir=dir)
+        os.close(handle_out)
+        handle_err, error_file=tempfile.mkstemp(suffix=".err",prefix="task_"+str(taskid)+"_",dir=dir)
+        os.close(handle_err)
+        handle_rc, rc_file=tempfile.mkstemp(suffix=".rc",prefix="task_"+str(taskid)+"_",dir=dir)
+        os.close(handle_rc)
+        
+        # add the remaining sections to the bash template
+        bash_template = string.Template("\n".join(["#!/bin/bash "] + self.submit_template + ["", "${command}", "${rc_command}"]))
+    
+        # convert the minutes to the time string "D-HH:MM:SS"
+        time=str(datetime.timedelta(minutes=minutes)).replace(' day, ','-').replace(' days, ','-')
+    
+        bash=bash_template.substitute(partition=partition,cpus=cpus,time=time,
+            memory=memory,command=command,output=out_file,error=error_file,rc_command="export RC=$? ; echo $RC > "+rc_file+" ; bash -c 'exit $RC'")
+        file_handle, new_file=tempfile.mkstemp(suffix=".bash",prefix="task_"+str(taskid)+"_",dir=dir)
+        os.write(file_handle,bash)
+        os.close(file_handle)
+        
+        return new_file, out_file, error_file, rc_file
 
 
 class GridWorker(threading.Thread):
