@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import threading
 import Queue
 import time
@@ -8,6 +9,7 @@ import tempfile
 import string
 import datetime
 import logging
+import itertools
 
 import six
 
