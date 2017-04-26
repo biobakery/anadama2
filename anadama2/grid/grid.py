@@ -8,12 +8,16 @@ import tempfile
 import string
 import datetime
 import logging
-import subprocess
 
 import six
 
 from .. import runners
 from ..helpers import format_command
+
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 class GridJobRequires(object):
     """Defines the resources required for a task on the grid.
@@ -388,5 +392,195 @@ class GridWorker(threading.Thread):
         return threading.Lock() 
     
     def run(self):
+        return runners.worker_run_loop(self.work_q, self.result_q, self.run_task_by_type)
+    
+    @staticmethod
+    def run_task_function(task, extra):
         raise NotImplementedError
+   
+    @classmethod 
+    def run_task_by_type(cls, task, extra):
+        # if the task is a function, then use pickle srun interface
+        if six.callable(task.actions[0]):
+            return cls.run_task_function(task, extra)
+        else:
+            return cls.run_task_command(task, extra)   
+        
+    @classmethod
+    def run_task_command(cls, task, extra):
+        (perf, partition, tmpdir, grid_queue, reporter) = extra
+        # report the task has started
+        reporter.task_running(task.task_no)
+        
+        # create a slurm script and stdout/stderr files for this task
+        commands="\n".join(task.actions)
+        logging.info("Running commands for task id %s:\n%s", task.task_no, commands)
+    
+        resubmission = 0    
+        cores, time, memory = perf.cores, perf.time, perf.mem
+    
+        jobid, out_file, error_file, rc_file = cls.submit_grid_job(cores, time, memory, 
+            partition, tmpdir, commands, task, grid_queue, reporter)
+    
+        # monitor job if submission was successful
+        result, job_final_status = cls.check_submission_then_monitor_grid_job(grid_queue, 
+            task, jobid, out_file, error_file, rc_file, reporter)
+    
+        # if a timeout or memory max, resubmit at most three times
+        while ( grid_queue.job_timeout(job_final_status) or grid_queue.job_memkill(job_final_status) ) and resubmission < 3:
+            reporter.task_grid_status(task.task_no,jobid,"Resubmitting due to "+job_final_status)
+            resubmission+=1
+            # increase the memory or the time
+            if grid_queue.job_timeout(job_final_status):
+                time = time * 2
+                logging.info("Resubmission number %s of grid job for task id %s with 2x more time: %s minutes", 
+                    resubmission, task.task_no, time)
+            elif grid_queue.job_memkill(job_final_status):
+                memory = memory * 2
+                logging.info("Resubmission number %s of grid job for task id %s with 2x more memory: %s MB",
+                    resubmission, task.task_no, memory)
+            
+            jobid, out_file, error_file, rc_file = cls.submit_grid_job(cores, time, memory,
+                partition, tmpdir, commands, task, grid_queue, reporter)
+    
+            # monitor job if submission was successful
+            result, job_final_status = cls.check_submission_then_monitor_grid_job(grid_queue, 
+                task, jobid, out_file, error_file, rc_file, reporter)
+                
+        # get the benchmarking data if the job was submitted
+        if not grid_queue.job_submission_failed(jobid):
+            grid_queue.record_benchmark(jobid, task.task_no, reporter)
+        
+        return result
+    
+    @classmethod
+    def submit_grid_job(cls, cores, time, memory, partition, tmpdir, commands, task, grid_queue, reporter):
+        
+        # evaluate the time/memory requests for the job
+        time, memory = cls.evaluate_resource_requests(time, memory)
+        
+        # create the grid bash script
+        grid_script, out_file, error_file, rc_file = grid_queue.create_grid_script(partition,
+            cores, time, memory, commands, task.task_no, tmpdir)
+    
+        logging.info("Created grid files for task id %s: %s, %s, %s, %s",
+            task.task_no, grid_script, out_file, error_file, rc_file)
+    
+        # submit the job
+        jobid = grid_queue.submit_job(grid_script)
+        
+        logging.info("Submitted job for task id %s: grid id %s", task.task_no,
+            jobid)
+        
+        if not grid_queue.job_submission_failed(jobid):
+            reporter.task_grid_status(task.task_no,jobid,"Submitted")
+       
+        return jobid, out_file, error_file, rc_file
+    
+    @staticmethod
+    def log_grid_output(taskid, file, file_type):
+        """ Write the grid stdout/stderr files to the log """
+        
+        try:
+            lines=open(file).readlines()
+        except EnvironmentError:
+            lines=[]
+            
+        logging.info("Grid %s from task id %s:\n%s",taskid, file_type, "".join(lines))
+        
+    @staticmethod
+    def get_return_code(file):
+        """ Read the return code from the file """
+    
+        try:
+            line=open(file).readline().rstrip()
+        except EnvironmentError:
+            line=""
+    
+        return line
+    
+    @staticmethod
+    def evaluate_resource_requests(time,mem):
+        """ Evaluate the time/memory requests for the grid job, allowing for ints or formulas """
+        
+        try:
+            time=eval(str(time))
+        except TypeError:
+            raise TypeError("Unable to evaluate time request for task: "+ time)
+        
+        try:
+            mem=eval(str(mem))
+        except TypeError:
+            raise TypeError("Unable to evaluate memory request for task: "+ mem)
+        
+        return time, mem  
+    
+    @classmethod
+    def check_submission_then_monitor_grid_job(cls, grid_queue, task, grid_jobid, 
+        out_file, error_file, rc_file, reporter):
+        
+        # monitor job if submission was successful
+        if not grid_queue.job_submission_failed(grid_jobid):
+            result, job_final_status = cls.monitor_grid_job(grid_queue, task, grid_jobid,
+                out_file, error_file, rc_file, reporter)
+        else:
+            job_final_status = "SUBMIT FAILED"
+            # get the anadama task result
+            result=runners._get_task_result(task)
+            # add the extra error
+            result = result._replace(error=str(result.error)+"Unable to submit job to queue.")
+            
+        return result, job_final_status
+   
+    @classmethod 
+    def monitor_grid_job(cls, grid_queue, task, grid_jobid, out_file, error_file, rc_file, reporter): 
+        # poll to check for status
+        grid_job_status=None
+        for tries in itertools.count(1):
+            # only check status at intervals
+            time.sleep(grid_queue.check_job_rate)
+            
+            # check the queue stats
+            grid_job_status = grid_queue.get_job_status(grid_jobid)
+            reporter.task_grid_status_polling(task.task_no,grid_jobid,grid_job_status)
+            
+            logging.info("Status for job id %s with grid id %s is %s",task.task_no,
+                grid_jobid,grid_job_status)
+            
+            if grid_queue.job_stopped(grid_job_status):
+                logging.info("Grid status for job id %s shows it has stopped",task.task_no)
+                break
+            
+            # check if the return code file is written
+            if os.path.getsize(rc_file) > 0:
+                logging.info("Return code file for job id %s shows it has stopped",task.task_no)
+                break
+            
+        # check if a grid error is written to the output file
+        grid_job_status = grid_queue.get_job_status_from_stderr(error_file, grid_job_status)
+        
+        # write the stdout and stderr to the log
+        cls.log_grid_output(task.task_no, out_file, "standard output")
+        cls.log_grid_output(task.task_no, error_file, "standard error")
+        cls.log_grid_output(task.task_no, rc_file, "return code")
+        
+        # check the return code
+        extra_error=""
+        return_code=cls.get_return_code(rc_file)
+        if return_code and not return_code == "0":
+            extra_error="\nReturn Code Error: " + return_code
+          
+        # check the queue status
+        if grid_queue.job_failed(grid_job_status):
+            extra_error+="\nGrid Status Error: " + grid_job_status
+     
+        # get the anadama task result
+        result=runners._get_task_result(task)
+    
+        # add the extra error if found
+        if extra_error:
+            result = result._replace(error=str(result.error)+extra_error)
+     
+        return result, grid_job_status
+    
     
