@@ -84,23 +84,19 @@ class SLURMWorker(GridWorker):
     def __init__(self, work_q, result_q, lock, reporter):
         super(SLURMWorker, self).__init__(work_q, result_q, lock, reporter)
         
-        # set the number of seconds to wait before checking the job status
-        # by checking the return code and the queue
-        self.refresh_job_status = 60
-
     def run(self):
         return runners.worker_run_loop(self.work_q, self.result_q, self.run_task_by_type)
-    
-    @staticmethod
-    def run_task_by_type(task, extra):
+   
+    @classmethod 
+    def run_task_by_type(cls, task, extra):
         # if the task is a function, then use pickle srun interface
         if six.callable(task.actions[0]):
-            return self.run_task_function(task, extra)
+            return cls.run_task_function(task, extra)
         else:
-            return self.run_task_command(task, extra)   
+            return cls.run_task_command(task, extra)   
         
-    @staticmethod
-    def run_task_command(task, extra):
+    @classmethod
+    def run_task_command(cls, task, extra):
         (perf, partition, tmpdir, grid_queue, reporter) = extra
         # report the task has started
         reporter.task_running(task.task_no)
@@ -112,11 +108,11 @@ class SLURMWorker(GridWorker):
         resubmission = 0    
         cores, time, memory = perf.cores, perf.time, perf.mem
     
-        jobid, out_file, error_file, rc_file = self.submit_grid_job(cores, time, memory, 
+        jobid, out_file, error_file, rc_file = cls.submit_grid_job(cores, time, memory, 
             partition, tmpdir, commands, task, grid_queue, reporter)
     
         # monitor job if submission was successful
-        result, job_final_status = self.check_submission_then_monitor_grid_job(grid_queue, 
+        result, job_final_status = cls.check_submission_then_monitor_grid_job(grid_queue, 
             task, jobid, out_file, error_file, rc_file, reporter)
     
         # if a timeout or memory max, resubmit at most three times
@@ -133,11 +129,11 @@ class SLURMWorker(GridWorker):
                 logging.info("Resubmission number %s of grid job for task id %s with 2x more memory: %s MB",
                     resubmission, task.task_no, memory)
             
-            jobid, out_file, error_file, rc_file = self.submit_grid_job(cores, time, memory,
+            jobid, out_file, error_file, rc_file = cls.submit_grid_job(cores, time, memory,
                 partition, tmpdir, commands, task, grid_queue, reporter)
     
             # monitor job if submission was successful
-            result, job_final_status = self.check_submission_then_monitor_grid_job(grid_queue, 
+            result, job_final_status = cls.check_submission_then_monitor_grid_job(grid_queue, 
                 task, jobid, out_file, error_file, rc_file, reporter)
                 
         # get the benchmarking data if the job was submitted
@@ -146,11 +142,11 @@ class SLURMWorker(GridWorker):
         
         return result
     
-    @staticmethod
-    def submit_grid_job(cores, time, memory, partition, tmpdir, commands, task, grid_queue, reporter):
+    @classmethod
+    def submit_grid_job(cls, cores, time, memory, partition, tmpdir, commands, task, grid_queue, reporter):
         
         # evaluate the time/memory requests for the job
-        minutes, memory = self.evaluate_resource_requests(minutes, memory)
+        time, memory = cls.evaluate_resource_requests(time, memory)
         
         # create the grid bash script
         grid_script, out_file, error_file, rc_file = grid_queue.create_grid_script(partition,
@@ -208,13 +204,13 @@ class SLURMWorker(GridWorker):
         
         return time, mem  
     
-    @staticmethod
-    def check_submission_then_monitor_grid_job(grid_queue, task, grid_jobid, 
+    @classmethod
+    def check_submission_then_monitor_grid_job(cls, grid_queue, task, grid_jobid, 
         out_file, error_file, rc_file, reporter):
         
         # monitor job if submission was successful
         if not grid_queue.job_submission_failed(grid_jobid):
-            result, job_final_status = self.monitor_grid_job(grid_queue, task, grid_jobid,
+            result, job_final_status = cls.monitor_grid_job(grid_queue, task, grid_jobid,
                 out_file, error_file, rc_file, reporter)
         else:
             job_final_status = "SUBMIT FAILED"
@@ -224,13 +220,14 @@ class SLURMWorker(GridWorker):
             result = result._replace(error=str(result.error)+"Unable to submit job to queue.")
             
         return result, job_final_status
-    
-    def monitor_grid_job(self, grid_queue, task, grid_jobid, out_file, error_file, rc_file, reporter): 
+   
+    @classmethod 
+    def monitor_grid_job(cls, grid_queue, task, grid_jobid, out_file, error_file, rc_file, reporter): 
         # poll to check for status
         grid_job_status=None
         for tries in itertools.count(1):
             # only check status at intervals
-            time.sleep(self.refresh_job_status)
+            time.sleep(grid_queue.check_job_rate)
             
             # check the queue stats
             grid_job_status = grid_queue.get_job_status(grid_jobid)
@@ -252,19 +249,19 @@ class SLURMWorker(GridWorker):
         grid_job_status = grid_queue.get_job_status_from_stderr(error_file, grid_job_status)
         
         # write the stdout and stderr to the log
-        self.log_grid_output(task.task_no, out_file, "standard output")
-        self.log_grid_output(task.task_no, error_file, "standard error")
-        self.log_grid_output(task.task_no, rc_file, "return code")
+        cls.log_grid_output(task.task_no, out_file, "standard output")
+        cls.log_grid_output(task.task_no, error_file, "standard error")
+        cls.log_grid_output(task.task_no, rc_file, "return code")
         
         # check the return code
         extra_error=""
-        return_code=self.get_return_code(rc_file)
+        return_code=cls.get_return_code(rc_file)
         if return_code and not return_code == "0":
-            extra_error="Return Code Error: " + return_code
+            extra_error="\nReturn Code Error: " + return_code
           
         # check the queue status
         if grid_queue.job_failed(grid_job_status):
-            extra_error+="Grid Status Error: " + grid_job_status
+            extra_error+="\nGrid Status Error: " + grid_job_status
      
         # get the anadama task result
         result=runners._get_task_result(task)

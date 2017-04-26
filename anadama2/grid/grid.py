@@ -7,6 +7,8 @@ import time
 import tempfile
 import string
 import datetime
+import logging
+import subprocess
 
 import six
 
@@ -128,6 +130,9 @@ class GridQueue(object):
     def __init__(self, benchmark_on=None):
         # this is the refresh rate for checking the queue, in seconds
         self.refresh_rate = 10*60
+
+        # this is the rate for checking the job status, in seconds
+        self.check_job_rate = 60
         
         # this is the number of minutes to wait if there is an time out
         # socket error returned from the scheduler when running a command
@@ -348,7 +353,7 @@ class GridQueue(object):
         os.close(handle_rc)
         
         # add the remaining sections to the bash template
-        bash_template = string.Template("\n".join(["#!/bin/bash "] + self.submit_template + ["", "${command}", "${rc_command}"]))
+        bash_template = string.Template("\n".join(["#!/bin/bash "] + self.submit_template() + ["", "${command}", "${rc_command}"]))
     
         # convert the minutes to the time string "D-HH:MM:SS"
         time=str(datetime.timedelta(minutes=minutes)).replace(' day, ','-').replace(' days, ','-')
