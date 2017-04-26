@@ -3,12 +3,12 @@ import os
 import sys
 import time
 import tempfile
-import threading
 
 import six
 
 from .grid import Grid
 from .grid import GridWorker
+
 from .. import runners
 from .. import picklerunner
 from ..util import underscore
@@ -75,7 +75,46 @@ class SGEWorker(GridWorker):
  
     def run(self):
         return runners.worker_run_loop(self.work_q, self.result_q, 
-                                       _run_task_sge)
+                                       self.run_task_function)
+        
+    @staticmethod
+    def run_task_function(task, extra):
+        (perf, partition, tmpdir, slurm_queue, reporter) = extra
+        script_path = picklerunner.tmp(task, dir=tmpdir).path
+        job_name = "task{}.{}".format(task.task_no, underscore(task.name))
+        tmpout = tempfile.mktemp(dir=tmpdir)
+        tmperr = tempfile.mktemp(dir=tmpdir)
+    
+        args = ["qsub", "-R", "y", "-b", "y", "-sync", "y", "-N", job_name,
+                "-pe", "smp", str(perf.cores), "-cwd", "-q", partition,
+                "-V", "-l", "m_mem_free={:1g}M".format(max(1, perf.mem)),
+                "-o", tmpout, "-e", tmperr]
+        args += [script_path, "-r", "-p" ]
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
+                                stderr=subprocess.PIPE)
+        out, err = proc.communicate()
+        extra_error = ""
+        try:
+            taskout = _wait_on_file(tmpout)
+            if proc.returncode != 0:
+                extra_error += _wait_on_file(tmperr)
+        except Exception as e:
+            e.task_no = task.task_no
+            return runners.exception_result(e)
+    
+        try:
+            result = picklerunner.decode(taskout)
+        except ValueError:
+            extra_error += "Unable to decode task result\n"
+            result = None
+        if proc.returncode != 0:
+            extra_error += "Qsub error: "+err+"\n"
+        if result is None:
+            return runners.TaskResult(task.task_no, extra_error or "qsub failed",
+                                      None, None)
+        elif extra_error: # (result is not None) is implicit here
+            result = result._replace(error=result.error+extra_error)
+        return result
 
 def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
     for _ in range(int(secs/pollfreq)):
@@ -90,42 +129,6 @@ def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
     raise OSError("Timed out waiting for "+fname+" to appear")
 
 
-def _run_task_sge(task, extra):
-    (perf, partition, tmpdir, slurm_queue, reporter) = extra
-    script_path = picklerunner.tmp(task, dir=tmpdir).path
-    job_name = "task{}.{}".format(task.task_no, underscore(task.name))
-    tmpout = tempfile.mktemp(dir=tmpdir)
-    tmperr = tempfile.mktemp(dir=tmpdir)
 
-    args = ["qsub", "-R", "y", "-b", "y", "-sync", "y", "-N", job_name,
-            "-pe", "smp", str(perf.cores), "-cwd", "-q", partition,
-            "-V", "-l", "m_mem_free={:1g}M".format(max(1, perf.mem)),
-            "-o", tmpout, "-e", tmperr]
-    args += [script_path, "-r", "-p" ]
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
-                            stderr=subprocess.PIPE)
-    out, err = proc.communicate()
-    extra_error = ""
-    try:
-        taskout = _wait_on_file(tmpout)
-        if proc.returncode != 0:
-            extra_error += _wait_on_file(tmperr)
-    except Exception as e:
-        e.task_no = task.task_no
-        return runners.exception_result(e)
-
-    try:
-        result = picklerunner.decode(taskout)
-    except ValueError:
-        extra_error += "Unable to decode task result\n"
-        result = None
-    if proc.returncode != 0:
-        extra_error += "Qsub error: "+err+"\n"
-    if result is None:
-        return runners.TaskResult(task.task_no, extra_error or "qsub failed",
-                                  None, None)
-    elif extra_error: # (result is not None) is implicit here
-        result = result._replace(error=result.error+extra_error)
-    return result
 
 
