@@ -214,7 +214,10 @@ class GridQueue(object):
         """ Get all the stats for a specific job id """
         
         # use the existing stats, to get the information for the jobid
-        job_stats=list(filter(lambda x: x[0].startswith(jobid),self.get_queue_status()))
+        try:
+            job_stats=list(filter(lambda x: x[0].startswith(jobid),self.get_queue_status()))
+        except IndexError:
+            job_stats=[]
        
         # if the job stats are not found for the job, return an NA state
         if not job_stats:
