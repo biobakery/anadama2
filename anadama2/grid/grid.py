@@ -178,20 +178,20 @@ class GridQueue(object):
     def job_stopped(status):
         raise NotImplementedError
     
+    def refresh_queue_status(self):
+        raise NotImplementedError
+    
     @staticmethod
     def job_memkill(status):
-        raise NotImplementedError
+        return False
         
     @staticmethod
     def job_timeout(status):
-        raise NotImplementedError
+        return False
     
     @staticmethod
     def get_job_status_from_stderr(error_file, grid_job_status, grid_jobid):
-        raise NotImplementedError
-    
-    def refresh_queue_status(self):
-        raise NotImplementedError
+        return grid_job_status
     
     def get_queue_status(self, refresh=None):
         """ Get the queue accounting stats """
