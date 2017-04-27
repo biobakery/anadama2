@@ -169,7 +169,7 @@ class SLURMQueue(GridQueue):
         return True if status == "TIMEOUT" else False
     
     @staticmethod
-    def get_job_status_from_stderr(error_file, grid_job_status):
+    def get_job_status_from_stderr(error_file, grid_job_status, grid_jobid):
         # read the error file to see if any time or memory errors were reported
         try:
             slurm_errors=subprocess.check_output(["grep","-F","slurmstepd: error:",error_file]).split("\n")
