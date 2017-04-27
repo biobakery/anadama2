@@ -187,7 +187,7 @@ class GridQueue(object):
         raise NotImplementedError
     
     @staticmethod
-    def get_job_status_from_stderr(error_file, grid_job_status):
+    def get_job_status_from_stderr(error_file, grid_job_status, grid_jobid):
         raise NotImplementedError
     
     def refresh_queue_status(self):
@@ -564,7 +564,7 @@ class GridWorker(threading.Thread):
                 break
             
         # check if a grid error is written to the output file
-        grid_job_status = grid_queue.get_job_status_from_stderr(error_file, grid_job_status)
+        grid_job_status = grid_queue.get_job_status_from_stderr(error_file, grid_job_status, grid_jobid)
         
         # write the stdout and stderr to the log
         cls.log_grid_output(task.task_no, out_file, "standard output")
