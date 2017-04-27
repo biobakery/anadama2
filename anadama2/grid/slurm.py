@@ -201,7 +201,7 @@ class SLURMQueue(GridQueue):
         try:
             info=filter(lambda x: x, [line.rstrip().split() for line in stdout.split("\n")[2:]])
         except IndexError:
-            info=[[""]]
+            info=[]
 
         return list(info)
     
