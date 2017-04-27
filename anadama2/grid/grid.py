@@ -190,10 +190,10 @@ class GridQueue(object):
     def get_job_status_from_stderr(error_file, grid_job_status):
         raise NotImplementedError
     
-    def refresh_queue_status(self, benchmarking):
+    def refresh_queue_status(self):
         raise NotImplementedError
     
-    def get_queue_status(self, benchmarking=None, refresh=None):
+    def get_queue_status(self, refresh=None):
         """ Get the queue accounting stats """
         
         # lock to prevent race conditions with status update
@@ -204,17 +204,17 @@ class GridQueue(object):
         if ( current_time - self.last_check > self.refresh_rate ) or refresh or self.sacct is None:
             self.last_check = current_time
             logging.info("Getting latest queue info to refresh job status")
-            self.sacct = self.refresh_queue_status(benchmarking)
+            self.sacct = self.refresh_queue_status()
             
         self.lock_status.release()
         
         return self.sacct
     
-    def get_all_stats_for_jobid(self,jobid,benchmarking=None):
+    def get_all_stats_for_jobid(self,jobid):
         """ Get all the stats for a specific job id """
         
         # use the existing stats, to get the information for the jobid
-        job_stats=list(filter(lambda x: x[0].startswith(jobid),self.get_queue_status(benchmarking)))
+        job_stats=list(filter(lambda x: x[0].startswith(jobid),self.get_queue_status()))
        
         # if the job stats are not found for the job, return an NA state
         if not job_stats:
@@ -222,10 +222,10 @@ class GridQueue(object):
 
         return job_stats
     
-    def get_job_status(self, jobid, benchmarking=None):
+    def get_job_status(self, jobid):
         """ Check the status of the job """
         
-        info=self.get_all_stats_for_jobid(jobid, benchmarking)
+        info=self.get_all_stats_for_jobid(jobid)
         
         return info[0][1]
 
@@ -240,7 +240,7 @@ class GridQueue(object):
         reporter.task_grid_status(task_number,jobid,"Getting benchmarking data")
         # if the job is not shown to have finished running then
         # wait for the next queue refresh
-        status=self.get_job_status(jobid, benchmarking=True)
+        status=self.get_job_status(jobid)
         if not (self.job_stopped(status) or self.job_failed(status)):
             wait_time = abs(self.refresh_rate - (time.time() - self.last_check)) + 10
             time.sleep(wait_time)

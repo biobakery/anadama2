@@ -189,7 +189,7 @@ class SLURMQueue(GridQueue):
                 
         return grid_job_status
 
-    def refresh_queue_status(self, benchmarking):
+    def refresh_queue_status(self):
         """ Get the latest status for the grid jobs using the same command for
         jobs in the queue and for completed jobs to benchmark """
         
