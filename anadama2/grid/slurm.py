@@ -131,7 +131,15 @@ class SLURMWorker(GridWorker):
 class SLURMQueue(GridQueue):
     
     def __init__(self, benchmark_on=None):
-       super(SLURMQueue, self).__init__(benchmark_on) 
+       super(SLURMQueue, self).__init__(benchmark_on)
+       self.job_code_completed="COMPLETED"
+       self.job_code_cancelled="CANCELLED"
+       self.job_code_failed="FAILED"
+       self.job_code_timeout="TIMEOUT"
+       self.job_code_memkill="MEMKILL"
+       
+       self.all_failed_codes=[self.job_code_failed,self.job_code_timeout,self.job_code_memkill,self.job_code_cancelled]
+       self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
     
     @staticmethod
     def submit_command(grid_script):    
@@ -149,25 +157,23 @@ class SLURMQueue(GridQueue):
             "#SBATCH -e ${error}"]
         return template
     
-    @staticmethod
-    def job_failed(status):
+    def job_failed(self,status):
         # check if the job has a status that it failed
-        return True if status.startswith("CANCELLED") or status in ["FAILED","TIMEOUT","MEMKILL"] else False
+        # This will capture "CANCELLED by 0" and the short form "CANCELLED+"
+        return True if status.startswith(self.job_code_cancelled) or status in self.all_failed_codes else False
         
-    @staticmethod
-    def job_stopped(status):
+    def job_stopped(self,status):
         # check if the job has a status which indicates it stopped running
         # This will capture "CANCELLED by 0" and the short form "CANCELLED+"
-        return True if status.startswith("CANCELLED") or status in ["COMPLETED","FAILED","TIMEOUT","MEMKILL"] else False
+        return True if status.startswith(self.job_code_cancelled) or status in self.all_stopped_codes else False
         
     def job_memkill(self, status, jobid, memory):
-        return True if status == "MEMKILL" else False
+        return True if status == self.job_code_memkill else False
         
     def job_timeout(self, status, jobid, time):
-        return True if status == "TIMEOUT" else False
+        return True if status == self.job_code_timeout else False
     
-    @staticmethod
-    def get_job_status_from_stderr(error_file, grid_job_status, grid_jobid):
+    def get_job_status_from_stderr(self, error_file, grid_job_status, grid_jobid):
         # read the error file to see if any time or memory errors were reported
         try:
             slurm_errors=subprocess.check_output(["grep","-F","slurmstepd: error:",error_file]).split("\n")
@@ -176,14 +182,14 @@ class SLURMQueue(GridQueue):
                 
         if slurm_errors:
             # check for time or memory
-            if list(filter(lambda x: "TIME LIMIT" in x and "CANCELLED" in x, slurm_errors)):
+            if list(filter(lambda x: "TIME LIMIT" in x and self.job_code_cancelled in x, slurm_errors)):
                 logging.info("Slurm task %s cancelled due to time limit", grid_jobid)
                 # This has the slurm status of "TIMEOUT" from slurm sacct
-                grid_job_status="TIMEOUT"
+                grid_job_status=self.job_code_timeout
             elif list(filter(lambda x: "exceeded memory limit" in x and "being killed" in x, slurm_errors)):
                 logging.info("Slurm task %s cancelled due to memory limit", grid_jobid)
                 # This has the slurm status of "CANCELLED by 0" from slurm sacct (short form is "CANCELLED+")
-                grid_job_status="MEMKILL"
+                grid_job_status=self.job_code_memkill
                 
         return grid_job_status
 
