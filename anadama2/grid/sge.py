@@ -3,11 +3,13 @@ import os
 import sys
 import time
 import tempfile
+import pwd
 
 import six
 
 from .grid import Grid
 from .grid import GridWorker
+from .grid import GridQueue
 
 from .. import runners
 from .. import picklerunner
@@ -65,17 +67,13 @@ class SGE(Grid):
     """
 
     def __init__(self, partition, tmpdir, benchmark_on=None):
-        super(SGE, self).__init__("sge", SGEWorker, None, partition, tmpdir, benchmark_on)
+        super(SGE, self).__init__("sge", SGEWorker, SGEQueue(benchmark_on), partition, tmpdir, benchmark_on)
 
 
 class SGEWorker(GridWorker):
 
     def __init__(self, work_q, result_q, lock, reporter):
         super(SGEWorker, self).__init__(work_q, result_q, lock, reporter)
- 
-    def run(self):
-        return runners.worker_run_loop(self.work_q, self.result_q, 
-                                       self.run_task_function)
         
     @staticmethod
     def run_task_function(task, extra):
@@ -115,6 +113,107 @@ class SGEWorker(GridWorker):
         elif extra_error: # (result is not None) is implicit here
             result = result._replace(error=result.error+extra_error)
         return result
+
+class SGEQueue(GridQueue):
+    
+    def __init__(self, benchmark_on=None):
+       super(SLURMQueue, self).__init__(benchmark_on) 
+       self.job_code_completed="c"
+       self.job_code_error="e"
+       self.job_code_terminated="t"
+       
+       self.all_failed_codes=[self.job_code_error,self.job_code_terminated]
+       self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
+    
+    @staticmethod
+    def submit_command(grid_script):    
+        return ["qsub",grid_script]
+    
+    @staticmethod
+    def submit_template():
+        template = [
+            "#$$ -q ${partition}",
+            "#$$ -pe smp ${cpus}",
+            "#$$ -l h_rt=${time}",
+            "#$$ -l h_vmem=${memory}m",
+            "#$$ -o ${output}",
+            "#$$ -e ${error}"]
+        return template
+    
+    def job_failed(self,status):
+        # check if the job has a status that it failed
+        return True if status in self.all_failed_codes else False
+        
+    def job_stopped(self,status):
+        # check if the job has a status which indicates it stopped running
+        return True if status in self.all_stopped_codes else False
+    
+    def job_memkill(self, status, jobid, memory):
+        # check if the job was killed because it used too much memory
+        new_status, cpus, new_time, new_memory = self.get_benchmark(jobid)
+        
+        try:
+            exceed_allocation = True if int(new_memory) > int(memory) else False
+        except ValueError:
+            exceed_allocation = False
+            
+        return True if exceed_allocation and new_status == self.job_code_terminated else False
+            
+    def job_timeout(self, status, jobid, time):
+        # check if the job was killed because it used too much memory
+        new_status, cpus, new_time, new_memory = self.get_benchmark(jobid)
+        
+        try:
+            exceed_allocation = True if int(new_time) > int(time) else False
+        except ValueError:
+            exceed_allocation = False
+            
+        return True if exceed_allocation and new_status == self.job_code_terminated else False
+            
+    def refresh_queue_status(self):
+        """ Get the latest status for the grid jobs using the same command for
+        jobs in the queue and for completed jobs to benchmark """
+        
+        # Get the jobid and state for all jobs pending/running/completed for the current user
+        qacct_stdout=self.run_grid_command_resubmit(["qacct","-o",pwd.getpwuid(os.getuid())[0],"-j","'*'"])
+        
+        # info list should include jobid, state, cpus, time, and maxrss
+        info=[]
+        job_status=[]
+        for line in qacct_stdout.split("\n"):
+            if line.startswith("jobnumber") or line.startswith("job_number"):
+                if job_status:
+                    info.append(job_status)
+                job_status=[line.rstrip().split()[-1],"NA","NA","NA","NA"]
+            # get the states for completed jobs
+            elif line.startswith("failed"):
+                failed_code = line.rstrip().split()[-1]
+                if failed_code != "0":
+                    if failed_code == "37":
+                        job_status[1]=self.job_code_terminated
+                    else:
+                        job_status[1]=self.job_code_error
+            elif line.startswith("exit_status"):
+                # only record if status has not yet been set
+                if job_status[1] == "NA":
+                    if line.rstrip().split()[-1] == "0":
+                        job_status[1]=self.job_code_completed
+                    else:
+                        job_status[1]=self.job_code_error
+            # get the current state for running jobs
+            elif line.startswith("job_state"):
+                job_status[1]=line.rstrip().split()[-1]
+            elif line.startswith("slots"):
+                job_status[2]=line.rstrip().split()[-1]
+            elif line.startswith("ru_wallclock"):
+                job_status[3]=line.rstrip().split()[-1]
+            elif line.startswith("maxvmem"):
+                job_status[4]=line.rstrip().split()[-1]
+        
+        if job_status:
+            info.append(job_status)
+
+        return info
 
 def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
     for _ in range(int(secs/pollfreq)):
