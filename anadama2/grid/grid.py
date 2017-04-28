@@ -239,7 +239,17 @@ class GridQueue(object):
         if not self.benchmark_on:
             logging.info("Benchmarking is set to off")
             return
+        
+        status, cpus, elapsed, memory = self.get_benchmark(jobid, task_number, reporter)
             
+        logging.info("Benchmark information for job id %s:\nElapsed Time: %s \nCores: %s\nMemory: %s MB",
+            task_number, elapsed, cpus, memory)   
+        
+        reporter.task_grid_status(task_number,jobid,"Final status of "+status)
+        
+    def get_benchmark(self, jobid, task_number, reporter):
+        """ Get the benchmarking data for the jobid """
+        
         reporter.task_grid_status(task_number,jobid,"Getting benchmarking data")
         # if the job is not shown to have finished running then
         # wait for the next queue refresh
@@ -280,10 +290,7 @@ class GridQueue(object):
             # if memory is in GB, convert to MB
             memory="{:.1f}".format(float(memory.replace("G",""))*1024.0)
             
-        logging.info("Benchmark information for job id %s:\nElapsed Time: %s \nCores: %s\nMemory: %s MB",
-            task_number, elapsed, cpus, memory)   
-        
-        reporter.task_grid_status(task_number,jobid,"Final status of "+status)
+        return status, cpus, elapsed, memory
     
     def run_grid_command(self,command):
         """ Run the grid command and check for errors """
