@@ -170,12 +170,10 @@ class GridQueue(object):
     def submit_template():
         raise NotImplementedError
     
-    @staticmethod
-    def job_failed(status):
+    def job_failed(self,status):
         raise NotImplementedError
     
-    @staticmethod
-    def job_stopped(status):
+    def job_stopped(self,status):
         raise NotImplementedError
     
     def refresh_queue_status(self):
@@ -187,8 +185,7 @@ class GridQueue(object):
     def job_timeout(self, status, jobid, time):
         return False
     
-    @staticmethod
-    def get_job_status_from_stderr(error_file, grid_job_status, grid_jobid):
+    def get_job_status_from_stderr(self, error_file, grid_job_status, grid_jobid):
         return grid_job_status
     
     def get_queue_status(self, refresh=None):
