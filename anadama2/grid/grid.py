@@ -181,12 +181,10 @@ class GridQueue(object):
     def refresh_queue_status(self):
         raise NotImplementedError
     
-    @staticmethod
-    def job_memkill(status):
+    def job_memkill(self, status, jobid, memory):
         return False
         
-    @staticmethod
-    def job_timeout(status):
+    def job_timeout(self, status, jobid, time):
         return False
     
     @staticmethod
@@ -240,17 +238,17 @@ class GridQueue(object):
             logging.info("Benchmarking is set to off")
             return
         
-        status, cpus, elapsed, memory = self.get_benchmark(jobid, task_number, reporter)
+        reporter.task_grid_status(task_number,jobid,"Getting benchmarking data")
+        status, cpus, elapsed, memory = self.get_benchmark(jobid)
             
         logging.info("Benchmark information for job id %s:\nElapsed Time: %s \nCores: %s\nMemory: %s MB",
             task_number, elapsed, cpus, memory)   
         
         reporter.task_grid_status(task_number,jobid,"Final status of "+status)
         
-    def get_benchmark(self, jobid, task_number, reporter):
+    def get_benchmark(self, jobid):
         """ Get the benchmarking data for the jobid """
         
-        reporter.task_grid_status(task_number,jobid,"Getting benchmarking data")
         # if the job is not shown to have finished running then
         # wait for the next queue refresh
         status=self.get_job_status(jobid)
@@ -441,15 +439,15 @@ class GridWorker(threading.Thread):
             task, jobid, out_file, error_file, rc_file, reporter)
     
         # if a timeout or memory max, resubmit at most three times
-        while ( grid_queue.job_timeout(job_final_status) or grid_queue.job_memkill(job_final_status) ) and resubmission < 3:
+        while ( grid_queue.job_timeout(job_final_status, jobid, time) or grid_queue.job_memkill(job_final_status, jobid, memory) ) and resubmission < 3:
             reporter.task_grid_status(task.task_no,jobid,"Resubmitting due to "+job_final_status)
             resubmission+=1
             # increase the memory or the time
-            if grid_queue.job_timeout(job_final_status):
+            if grid_queue.job_timeout(job_final_status, jobid, time):
                 time = time * 2
                 logging.info("Resubmission number %s of grid job for task id %s with 2x more time: %s minutes", 
                     resubmission, task.task_no, time)
-            elif grid_queue.job_memkill(job_final_status):
+            elif grid_queue.job_memkill(job_final_status, jobid, memory):
                 memory = memory * 2
                 logging.info("Resubmission number %s of grid job for task id %s with 2x more memory: %s MB",
                     resubmission, task.task_no, memory)

@@ -160,12 +160,10 @@ class SLURMQueue(GridQueue):
         # This will capture "CANCELLED by 0" and the short form "CANCELLED+"
         return True if status.startswith("CANCELLED") or status in ["COMPLETED","FAILED","TIMEOUT","MEMKILL"] else False
         
-    @staticmethod
-    def job_memkill(status):
+    def job_memkill(self, status, jobid, memory):
         return True if status == "MEMKILL" else False
         
-    @staticmethod
-    def job_timeout(status):
+    def job_timeout(self, status, jobid, time):
         return True if status == "TIMEOUT" else False
     
     @staticmethod
