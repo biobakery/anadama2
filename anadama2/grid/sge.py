@@ -117,12 +117,13 @@ class SGEWorker(GridWorker):
 class SGEQueue(GridQueue):
     
     def __init__(self, benchmark_on=None):
-       super(SLURMQueue, self).__init__(benchmark_on) 
-       self.job_code_completed="c"
-       self.job_code_error="e"
-       self.job_code_terminated="t"
+       super(SGEQueue, self).__init__(benchmark_on) 
+       self.job_code_completed="COMPLETED"
+       self.job_code_error="FAILED"
+       self.job_code_terminated="TERMINATED"
+       self.job_code_deleted="DELETED"
        
-       self.all_failed_codes=[self.job_code_error,self.job_code_terminated]
+       self.all_failed_codes=[self.job_code_error,self.job_code_terminated,self.job_code_deleted]
        self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
     
     @staticmethod
@@ -153,7 +154,7 @@ class SGEQueue(GridQueue):
         new_status, cpus, new_time, new_memory = self.get_benchmark(jobid)
         
         try:
-            exceed_allocation = True if int(new_memory) > int(memory) else False
+            exceed_allocation = True if float(new_memory) > float(memory) else False
         except ValueError:
             exceed_allocation = False
             
@@ -164,7 +165,7 @@ class SGEQueue(GridQueue):
         new_status, cpus, new_time, new_memory = self.get_benchmark(jobid)
         
         try:
-            exceed_allocation = True if int(new_time) > int(time) else False
+            exceed_allocation = True if float(new_time) > float(time) else False
         except ValueError:
             exceed_allocation = False
             
@@ -175,7 +176,7 @@ class SGEQueue(GridQueue):
         jobs in the queue and for completed jobs to benchmark """
         
         # Get the jobid and state for all jobs pending/running/completed for the current user
-        qacct_stdout=self.run_grid_command_resubmit(["qacct","-o",pwd.getpwuid(os.getuid())[0],"-j","'*'"])
+        qacct_stdout=self.run_grid_command_resubmit(["qacct","-o",pwd.getpwuid(os.getuid())[0],"-j","*"])
         
         # info list should include jobid, state, cpus, time, and maxrss
         info=[]
@@ -187,12 +188,15 @@ class SGEQueue(GridQueue):
                 job_status=[line.rstrip().split()[-1],"NA","NA","NA","NA"]
             # get the states for completed jobs
             elif line.startswith("failed"):
-                failed_code = line.rstrip().split()[-1]
+                failed_code = line.rstrip().split()[1]
                 if failed_code != "0":
-                    if failed_code == "37":
+                    if failed_code in ["37","100"]:
                         job_status[1]=self.job_code_terminated
                     else:
                         job_status[1]=self.job_code_error
+            elif line.startswith("deleted_by"):
+                if line.rstrip().split()[-1] != "NONE" and job_status[1] == self.job_code_terminated:
+                    job_status[1]=self.job_code_deleted
             elif line.startswith("exit_status"):
                 # only record if status has not yet been set
                 if job_status[1] == "NA":
@@ -206,7 +210,11 @@ class SGEQueue(GridQueue):
             elif line.startswith("slots"):
                 job_status[2]=line.rstrip().split()[-1]
             elif line.startswith("ru_wallclock"):
-                job_status[3]=line.rstrip().split()[-1]
+                try:
+                    # get the elapsed time in minutes
+                    job_status[3]=str(float(line.rstrip().split()[-1])/60.0)
+                except ValueError:
+                    job_status[3]="NA"
             elif line.startswith("maxvmem"):
                 job_status[4]=line.rstrip().split()[-1]
         
