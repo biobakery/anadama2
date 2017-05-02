@@ -2,126 +2,78 @@
 """Save a task to a script for running by other programs"""
 
 import os
-import re
 import sys
-import pickle as pickle
-from base64 import b64decode
-from tempfile import NamedTemporaryFile
+import tempfile
+import copy
 
-import six
 import cloudpickle
 
-PICKLE_KEY = b"results_as_pickle"
-
 template = \
-r"""#!{python_bin}
+r"""
 
-import os
-import sys
-import pickle
-from base64 import b64encode
+import cloudpickle
 
 from anadama2.runners import _run_task_locally
 
 
-the_pickle = {pickle}
+# set the variables
+in_file = "{in_file}"
+out_file = "{out_file}"
 
-task = pickle.loads(the_pickle)
+# load the task
+task = cloudpickle.load(open(in_file,"rb"))
 
+# run the task
+result = _run_task_locally(task)
 
-def remove_myself():
-    myself = os.path.abspath(__file__)
-    os.remove(myself)
-
-
-def main(do_pickle=False):
-    result = _run_task_locally(task)
-    if do_pickle:
-        encoded = pickle.dumps(result)
-        result = {pickle_key}+b": "+b64encode(encoded)
-        fp = os.fdopen(sys.stdout.fileno(), 'wb')
-        fp.write(result+b"\n")
-        fp.flush()
-        fp.close()
-    else:
-        sys.stdout.write(str(result)+"\n")
-
-
-if __name__ == '__main__':
-    do_pickle = '-p' in sys.argv or '--pickle' in sys.argv
-
-    ret = main(do_pickle)
-
-    if "-r" in sys.argv or "--remove" in sys.argv:
-        remove_myself()
-
-    sys.exit(ret)
+# write the pickled results to a file
+cloudpickle.dump(result,open(out_file,"wb"))
 
 """
 
 class PickleScript(object):
-    def __init__(self, task):
+    def __init__(self, task, tmpdir, suffix):
+        # create temp files for the script, input and the output file
+        output_handle, output_file = tempfile.mkstemp(dir=tmpdir, suffix=suffix+"_output.pkl")
+        os.close(output_handle)
+        input_handle, input_file = tempfile.mkstemp(dir=tmpdir, suffix=suffix+"_input.pkl")
+        os.close(input_handle)
+        script_handle, script_file = tempfile.mkstemp(dir=tmpdir, suffix=suffix+"_picklerunner.py")
+        os.close(script_handle)
+        
         self.task = task
-        self._path = None
-
+        self.output_file = output_file
+        self.input_file = input_file
+        self.script_file = script_file
         
-    @property
-    def path(self):
-        if self._path is None:
-            raise AttributeError("A PickleScript must be saved"
-                                 " before it has a path.")
-        else:
-            return self._path
+    def create_task(self):
+        # write the input pickle file
+        cloudpickle.dump(self.task,open(self.input_file,"wb"))
+        
+        # write the script
+        custom_script = template.format(in_file=self.input_file, out_file=self.output_file)
+        with open(self.script_file,"wb") as file_handle:
+                file_handle.write(custom_script)
+        
+        # update the task to run the pickle script
+        pickle_task = copy.deepcopy(self.task)
+        pickle_task.actions = [self.run_command()]
+        
+        return pickle_task
+        
+    def run_command(self):
+        return sys.executable+" "+self.script_file
 
-
-    def save(self, path=None, to_fp=None):
-        if bool(path) == bool(to_fp): # logical not xor
-            raise ValueError("Need either path or to_fp")
-        if path:
-            self._path = path
-            with open(path, 'wb') as out_file:
-                self.render(to_fp=out_file)
-        elif to_fp:
-            self._path = to_fp.name
-            self.render(to_fp=to_fp)
-
+    def result(self, result):
+        # try to get the result from running the pickled function
+        extra_error = None
+        try:
+            result = cloudpickle.load(open(self.output_file,"rb"))
+        except ValueError:
+            extra_error = "Unable to decode pickle task result"
+        
+        if extra_error:    
+            result = result._replace(error=str(result.error)+extra_error)
             
-    def render(self, python_bin=None, to_fp=None, pickle_key=PICKLE_KEY):
-        if not python_bin:
-            python_bin = os.path.join(sys.prefix, "bin", "python")
-        if six.PY2:
-            pickle_key = "'{}'".format(pickle_key)
-        rendered = template.format(
-            python_bin = python_bin,
-            pickle     = repr(cloudpickle.dumps(self.task)),
-            pickle_key = pickle_key
-        )
-        if not to_fp:
-            return rendered
-        else:
-            to_fp.write(rendered.encode("utf-8"))
+        return result
 
-    
-    def __repr__(self):
-        return self.render()
-
-
-def tmp(task, chmod=0o755, *args, **kwargs):
-    kwargs.pop('delete', None) # don't delete it
-    suffix = kwargs.pop('suffix', '') + "_picklerunner.py"
-    with NamedTemporaryFile(delete=False, suffix=suffix, 
-                            *args, **kwargs) as tmp_file:
-        script = PickleScript(task)
-        script.save(to_fp=tmp_file)
-    os.chmod(script.path, chmod)
-    return script
-
-        
-def decode(script_output, pickle_key=PICKLE_KEY):
-    match = re.search(pickle_key+br': (\S+)$', script_output)
-    if not match:
-        msg = "Unable to find pickle key `{}' in script output"
-        raise ValueError(msg.format(pickle_key))
-    return pickle.loads(b64decode(match.group(1)))
-
-    
