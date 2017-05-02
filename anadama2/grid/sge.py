@@ -81,6 +81,9 @@ class SGEQueue(GridQueue):
        
        self.all_failed_codes=[self.job_code_error,self.job_code_terminated,self.job_code_deleted]
        self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
+       
+       # allow for jobs to be terminated when about to reach the memory requested
+       self.memory_buffer = 1024
     
     @staticmethod
     def submit_command(grid_script):    
@@ -110,7 +113,7 @@ class SGEQueue(GridQueue):
         new_status, cpus, new_time, new_memory = self.get_benchmark(jobid)
         
         try:
-            exceed_allocation = True if float(new_memory) > float(memory) else False
+            exceed_allocation = True if (float(new_memory) + self.memory_buffer) > float(memory) else False
         except ValueError:
             exceed_allocation = False
             
@@ -156,8 +159,11 @@ class SGEQueue(GridQueue):
             elif line.startswith("exit_status"):
                 # only record if status has not yet been set
                 if job_status[1] == "NA":
-                    if line.rstrip().split()[-1] == "0":
+                    exit_status = line.rstrip().split()[-1]
+                    if exit_status == "0":
                         job_status[1]=self.job_code_completed
+                    elif exit_status == "137":
+                        job_status[1]=self.job_code_terminated
                     else:
                         job_status[1]=self.job_code_error
             # get the current state for running jobs
@@ -171,8 +177,8 @@ class SGEQueue(GridQueue):
                     job_status[3]=str(float(line.rstrip().split()[-1])/60.0)
                 except ValueError:
                     job_status[3]="NA"
-            elif line.startswith("maxvmem"):
-                job_status[4]=line.rstrip().split()[-1]
+            elif line.startswith("ru_maxrss"):
+                job_status[4]=line.rstrip().split()[-1]+"K"
         
         if job_status:
             info.append(job_status)
