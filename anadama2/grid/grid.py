@@ -451,17 +451,18 @@ class GridWorker(threading.Thread):
     
         # if a timeout or memory max, resubmit at most three times
         while ( grid_queue.job_timeout(job_final_status, jobid, time) or grid_queue.job_memkill(job_final_status, jobid, memory) ) and resubmission < 3:
-            reporter.task_grid_status(task.task_no,jobid,"Resubmitting due to "+job_final_status)
             resubmission+=1
             # increase the memory or the time
             if grid_queue.job_timeout(job_final_status, jobid, time):
                 time = time * 2
                 logging.info("Resubmission number %s of grid job for task id %s with 2x more time: %s minutes", 
                     resubmission, task.task_no, time)
+                reporter.task_grid_status(task.task_no,jobid,"Resubmitting due to time out")
             elif grid_queue.job_memkill(job_final_status, jobid, memory):
                 memory = memory * 2
                 logging.info("Resubmission number %s of grid job for task id %s with 2x more memory: %s MB",
                     resubmission, task.task_no, memory)
+                reporter.task_grid_status(task.task_no,jobid,"Resubmitting due to max memory")
             
             jobid, out_file, error_file, rc_file = cls.submit_grid_job(cores, time, memory,
                 partition, tmpdir, commands, task, grid_queue, reporter)
