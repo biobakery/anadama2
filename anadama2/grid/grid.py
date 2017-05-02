@@ -245,13 +245,13 @@ class GridQueue(object):
         
         reporter.task_grid_status(task_number,jobid,"Final status of "+status)
         
-    def get_benchmark(self, jobid):
+    def get_benchmark(self, jobid, wait=None):
         """ Get the benchmarking data for the jobid """
         
         # if the job is not shown to have finished running then
         # wait for the next queue refresh
         status=self.get_job_status(jobid)
-        if not (self.job_stopped(status) or self.job_failed(status)):
+        if wait or not (self.job_stopped(status) or self.job_failed(status)):
             wait_time = abs(self.refresh_rate - (time.time() - self.last_check)) + 10
             time.sleep(wait_time)
 
