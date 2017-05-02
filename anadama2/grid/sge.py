@@ -112,6 +112,10 @@ class SGEQueue(GridQueue):
         # check if the job was killed because it used too much memory
         new_status, cpus, new_time, new_memory = self.get_benchmark(jobid)
         
+        # if memory is not yet available for the job, wait for a new benchmark
+        if new_memory == "NA":
+            new_status, cpus, new_time, new_memory = self.get_benchmark(jobid, wait=True)
+        
         try:
             exceed_allocation = True if (float(new_memory) + self.memory_buffer) > float(memory) else False
         except ValueError:
@@ -122,6 +126,10 @@ class SGEQueue(GridQueue):
     def job_timeout(self, status, jobid, time):
         # check if the job was killed because it used too much memory
         new_status, cpus, new_time, new_memory = self.get_benchmark(jobid)
+        
+        # if time is not yet available for the job, wait for a new benchmark
+        if new_time == "NA":
+            new_status, cpus, new_time, new_memory = self.get_benchmark(jobid, wait=True)
         
         try:
             exceed_allocation = True if float(new_time) > float(time) else False
