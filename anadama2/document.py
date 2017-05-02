@@ -65,7 +65,7 @@ class PweaveDocument(Document):
             # if a target is not provided use the variables to try to find the folder locations
             try:
                 self.vars=self.get_vars()
-            except IndexError:
+            except (IndexError, EOFError):
                 self.vars=None
                 
             if self.vars:
