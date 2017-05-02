@@ -15,6 +15,8 @@ import re
 import six
 
 from .. import runners
+from .. import picklerunner
+
 from ..helpers import format_command
 
 if os.name == 'posix' and sys.version_info[0] < 3:
@@ -402,10 +404,6 @@ class GridWorker(threading.Thread):
     
     def run(self):
         return runners.worker_run_loop(self.work_q, self.result_q, self.run_task_by_type)
-    
-    @staticmethod
-    def run_task_function(task, extra):
-        raise NotImplementedError
    
     @classmethod 
     def run_task_by_type(cls, task, extra):
@@ -414,6 +412,22 @@ class GridWorker(threading.Thread):
             return cls.run_task_function(task, extra)
         else:
             return cls.run_task_command(task, extra)   
+        
+    @classmethod
+    def run_task_function(cls, task, extra):
+        (perf, partition, tmpdir, grid_queue, reporter) = extra
+        
+        # create a script to run the python function
+        pickle_script = picklerunner.PickleScript(task, tmpdir, "task_"+str(task.task_no))
+        pickle_task = pickle_script.create_task()
+        
+        # run the task as a command
+        result = cls.run_task_command(pickle_task, extra)
+        
+        # decode the result
+        result = pickle_script.result(result)
+
+        return result
         
     @classmethod
     def run_task_command(cls, task, extra):
