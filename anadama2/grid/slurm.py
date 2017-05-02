@@ -6,28 +6,16 @@ import logging
 import itertools
 import time
 
-from math import exp
-
 import six
 
 from .grid import Grid
 from .grid import GridWorker
 from .grid import GridQueue
 
-from .. import runners
-from .. import picklerunner
-
-from ..util import underscore
-from ..util import find_on_path
-from ..util import keepkeys
-
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
 else:
     import subprocess
-
-sigmoid = lambda t: 1/(1-exp(-t))
-
 
 class Slurm(Grid):
     """This class enables the Workflow class to dispatch tasks to
@@ -75,57 +63,7 @@ class Slurm(Grid):
     """
 
     def __init__(self, partition, tmpdir, benchmark_on=None):
-        super(Slurm, self).__init__("slurm", SLURMWorker, SLURMQueue(benchmark_on), partition, tmpdir, benchmark_on)
-
-class SLURMWorker(GridWorker):
-
-    def __init__(self, work_q, result_q, lock, reporter):
-        super(SLURMWorker, self).__init__(work_q, result_q, lock, reporter)
-        
-    @staticmethod
-    def run_task_function(task, extra):
-        (perf, partition, tmpdir, grid_queue, reporter) = extra
-        # report the task has started
-        reporter.task_running(task.task_no)
-        script_path = picklerunner.tmp(task, dir=tmpdir).path
-        job_name = "task{}:{}".format(task.task_no, underscore(task.name))
-        mem, time = perf.mem, perf.time
-        for tries in itertools.count(1):
-            rerun = False
-            args = ["srun", "-v", "--export=ALL", "--partition="+partition,
-                    "--mem={}".format(int(mem)),
-                    "--time={}".format(int(time)),
-                    "--cpus-per-task="+str(perf.cores),
-                    "--job-name="+job_name]
-            args += [script_path, "-p", "-r" ]
-            proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
-                                    stderr=subprocess.PIPE)
-            out, err = proc.communicate()
-            if "Exceeded job memory limit" in out+err:
-                used = re.search(r'memory limit \((\d+) > \d+\)', out+err).group(1)
-                mem = int(used)/1024 * 1.3
-                rerun = True
-            if re.search(r"due to time limit", out+err, re.IGNORECASE):
-                time = time * (sigmoid(tries/10.)*2.7)
-                rerun = True
-            if not rerun:
-                break
-        extra_error = ""
-        try:
-            result = picklerunner.decode(out)
-        except ValueError:
-            extra_error += "Unable to decode task result\n"
-            logging.error("Unable to decode task result, \nOut: %s\nErr: %s",
-                          out, err)
-            result = None
-        if proc.returncode != 0:
-            extra_error += "Srun error: "+err+"\n"
-        if result is None:
-            return runners.TaskResult(task.task_no, extra_error or "srun failed",
-                                      None, None)
-        elif extra_error: # (result is not None) is implicit here
-            result = result._replace(error=str(result.error)+extra_error)
-        return result
+        super(Slurm, self).__init__("slurm", GridWorker, SLURMQueue(benchmark_on), partition, tmpdir, benchmark_on)
 
 
 class SLURMQueue(GridQueue):
