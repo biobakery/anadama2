@@ -407,8 +407,8 @@ class GridWorker(threading.Thread):
    
     @classmethod 
     def run_task_by_type(cls, task, extra):
-        # if the task is a function, then use pickle srun interface
-        if six.callable(task.actions[0]):
+        # if any of the tasks are a function, then use pickle interface
+        if list(filter(six.callable,task.actions)):
             return cls.run_task_function(task, extra)
         else:
             return cls.run_task_command(task, extra)   
@@ -435,7 +435,7 @@ class GridWorker(threading.Thread):
         # report the task has started
         reporter.task_running(task.task_no)
         
-        # create a slurm script and stdout/stderr files for this task
+        # create a script and stdout/stderr files for this task
         commands="\n".join(task.actions)
         logging.info("Running commands for task id %s:\n%s", task.task_no, commands)
     
