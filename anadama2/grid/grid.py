@@ -274,7 +274,7 @@ class GridQueue(object):
 
         # get the memory max from the batch line which is the second line of output
         try:
-            memory=info[1][4]
+            memory=info[0][4]
         except IndexError:
             memory="NA"
         
