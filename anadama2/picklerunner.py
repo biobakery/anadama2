@@ -69,7 +69,7 @@ class PickleScript(object):
         extra_error = None
         try:
             result = cloudpickle.load(open(self.output_file,"rb"))
-        except ValueError:
+        except (ValueError, EOFError):
             extra_error = "Unable to decode pickle task result"
         
         if extra_error:    
