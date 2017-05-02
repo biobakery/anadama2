@@ -67,52 +67,8 @@ class SGE(Grid):
     """
 
     def __init__(self, partition, tmpdir, benchmark_on=None):
-        super(SGE, self).__init__("sge", SGEWorker, SGEQueue(benchmark_on), partition, tmpdir, benchmark_on)
-
-
-class SGEWorker(GridWorker):
-
-    def __init__(self, work_q, result_q, lock, reporter):
-        super(SGEWorker, self).__init__(work_q, result_q, lock, reporter)
+        super(SGE, self).__init__("sge", GridWorker, SGEQueue(benchmark_on), partition, tmpdir, benchmark_on)
         
-    @staticmethod
-    def run_task_function(task, extra):
-        (perf, partition, tmpdir, slurm_queue, reporter) = extra
-        script_path = picklerunner.tmp(task, dir=tmpdir).path
-        job_name = "task{}.{}".format(task.task_no, underscore(task.name))
-        tmpout = tempfile.mktemp(dir=tmpdir)
-        tmperr = tempfile.mktemp(dir=tmpdir)
-    
-        args = ["qsub", "-R", "y", "-b", "y", "-sync", "y", "-N", job_name,
-                "-pe", "smp", str(perf.cores), "-cwd", "-q", partition,
-                "-V", "-l", "m_mem_free={:1g}M".format(max(1, perf.mem)),
-                "-o", tmpout, "-e", tmperr]
-        args += [script_path, "-r", "-p" ]
-        proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
-                                stderr=subprocess.PIPE)
-        out, err = proc.communicate()
-        extra_error = ""
-        try:
-            taskout = _wait_on_file(tmpout)
-            if proc.returncode != 0:
-                extra_error += _wait_on_file(tmperr)
-        except Exception as e:
-            e.task_no = task.task_no
-            return runners.exception_result(e)
-    
-        try:
-            result = picklerunner.decode(taskout)
-        except ValueError:
-            extra_error += "Unable to decode task result\n"
-            result = None
-        if proc.returncode != 0:
-            extra_error += "Qsub error: "+err+"\n"
-        if result is None:
-            return runners.TaskResult(task.task_no, extra_error or "qsub failed",
-                                      None, None)
-        elif extra_error: # (result is not None) is implicit here
-            result = result._replace(error=result.error+extra_error)
-        return result
 
 class SGEQueue(GridQueue):
     
@@ -222,18 +178,6 @@ class SGEQueue(GridQueue):
             info.append(job_status)
 
         return info
-
-def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
-    for _ in range(int(secs/pollfreq)):
-        if os.path.exists(fname):
-            with open(fname) as f:
-                ret = f.read()
-            if rm is True:
-                os.unlink(fname)
-            return ret
-        else:
-            time.sleep(pollfreq)
-    raise OSError("Timed out waiting for "+fname+" to appear")
 
 
 
