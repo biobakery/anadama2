@@ -218,7 +218,7 @@ class GridQueue(object):
        
         # if the job stats are not found for the job, return an NA state
         if not job_stats:
-            job_stats=[[jobid,"Waiting","NA","NA","NA"]] 
+            job_stats=[[jobid,"Pending","NA","NA","NA"]] 
 
         return job_stats
     
