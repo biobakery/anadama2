@@ -453,51 +453,66 @@ class PweaveDocument(Document):
         
         pyplot.show()
         
-    def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
-                   column_width=None):
+    def show_table(self, data, row_labels, column_labels, title, format_data_comma=None):
         """ Plot the data as a table """
         
         import numpy
         import matplotlib.pyplot as pyplot
-        
-        fig = pyplot.figure()
-        # create a subplot and remove frame and x/y axis
-        subplot = fig.add_subplot(111, frame_on=False)
-        subplot.xaxis.set_visible(False)
-        subplot.yaxis.set_visible(False)
-        
-        # reduce height of the empty plot to as small as possible
-        # remove subplot padding
-        fig.subplots_adjust(bottom=0.85, wspace=0, hspace=0, left=0.4)
+        from matplotlib.table import Table
         
         # if the option is set to format the data, add commas
         if format_data_comma:
-            format_data=[]
-            for row in data:
-                format_data.append(["{:,}".format(int(i)) for i in row])
-            data=format_data
+            format_data = [map(lambda x: "{:,}".format(int(x)),row) for row in data]
+        else:
+            format_data = [map(str,row) for row in data]
+        data=format_data
         
-        # compute the column width as the length of the column label or the
-        # length of the data in the column which ever is larger
-        auto_column_widths=[]
-        for column_data, column_name in zip(numpy.transpose(data),column_labels):
-            max_len=max([len(str(i)) for i in list(column_data)+[column_name]])
-            auto_column_widths.append((max_len+10)/100.0)
-            
-        # use the column width if provided
-        if column_width is not None:
-            auto_column_widths=[column_width]*len(column_labels)
+        # create a figure in one subplot
+        figure, axis = pyplot.subplots()
+        axis.set_axis_off()
         
-        # create the table
-        table = pyplot.table(cellText=data,
-            colWidths = auto_column_widths,
-            rowLabels=row_labels, colLabels=column_labels, loc="bottom")
+        # create a new table instance
+        table = Table(axis, bbox=[0,0,1,1])
+    
+        total_rows=len(row_labels)
+        total_columns=len(column_labels)
+    
+        height = 1.0 / total_rows
+    
+        # get the width of the columns based on
+        # the length of the labels and values
+        max_width_chars = [max(map(len,row_labels))]
+        for i in range(total_columns):
+            current_values=[str(value) for value in [column_labels[i]]+[row[i] for row in data]]
+            max_width_chars.append(max(map(len,current_values)))
         
+        # compute the widths for each column
+        total_chars=sum(max_width_chars)*1.0
+        column_widths=[i/total_chars for i in max_width_chars]
+    
+        # add column labels
+        for i, label in enumerate(column_labels):
+            table.add_cell(0, i+1, width=column_widths[i+1], height=height, text=label, loc="center")
+    
+        # add row labels
+        for i, label in enumerate(row_labels):
+            table.add_cell(i+1, 0, width=column_widths[0], height=height, text=label, loc="center")
+    
+        # Add data
+        for i, row in enumerate(data):
+            for j, value in enumerate(row):
+                table.add_cell(i+1, j+1, width=column_widths[j+1], height=height, text=value, loc="center")               
+
+        axis.add_table(table)
+
         # set the font size for the table
         # first must turn off the auto set font size
         table.auto_set_font_size(False)
-        table.set_fontsize(8)
-        
+        font_size=8
+        if total_columns > 5:
+            font_size=7
+        table.set_fontsize(font_size)
+    
         # add the title
         pyplot.title(title)
         
