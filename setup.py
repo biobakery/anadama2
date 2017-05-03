@@ -5,7 +5,7 @@ import sys
 from setuptools import setup, find_packages
 import distutils
 
-VERSION="0.1.4"
+VERSION="0.2.0"
 
 requires = [
     'networkx==1.11',
