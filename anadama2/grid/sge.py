@@ -3,13 +3,14 @@ import os
 import sys
 import time
 import tempfile
-import threading
+import pwd
 
 import six
-from six.moves import queue
 
-from . import Dummy
-from .slurm import PerformanceData
+from .grid import Grid
+from .grid import GridWorker
+from .grid import GridQueue
+
 from .. import runners
 from .. import picklerunner
 from ..util import underscore
@@ -21,11 +22,7 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 else:
     import subprocess
 
-available = all( bool(find_on_path(prog)) for prog in
-                 ("qconf", "qsub"))
-
-
-class SGE(Dummy):
+class SGE(Grid):
     """This class enables the Workflow class to dispatch tasks to
     Sun Grid Engine and its lookalikes. Use it like so:
 
@@ -54,182 +51,149 @@ class SGE(Dummy):
       ctx.go()
 
 
-    :param queue: The name of the SGE queue to submit tasks to
-    :type queue: str
+    :param partition: The name of the SLURM partition to submit tasks to
+    :type partition: str
 
-    :keyword tmpdir: A directory to store temporary files in. All
+    :param tmpdir: A directory to store temporary files in. All
       machines in the cluster must be able to read the contents of
       this directory; uses :mod:`anadama2.picklerunner` to create
       self-contained scripts to run individual tasks and calls
-      ``qsub`` to run the script on the cluster.
+      ``srun`` to run the script on the cluster.
     :type tmpdir: str
-
-    :type extra_qsub_flags: list of str
+    
+    :keyword benchmark_on: Option to turn on/off benchmarking
+    : type benchmark_on: bool
 
     """
 
-    def __init__(self, queue, tmpdir="/tmp", extra_qsub_flags=[]):
-        self.sge_queue = queue
-        self.sge_tmpdir = tmpdir
-        self.extra_qsub_flags = extra_qsub_flags
+    def __init__(self, partition, tmpdir, benchmark_on=None):
+        super(SGE, self).__init__("sge", GridWorker, SGEQueue(benchmark_on), partition, tmpdir, benchmark_on)
         
-        self.sge_task_data = dict()
-        self._sge_pe_name = self._find_suitable_pe()
 
-
-    def _import(self, task_dict):
-        sge_keys = ["time", "mem", "cores", "partition", "extra_srun_flags"]
-        keys_to_keep = ["actions", "depends", "targets",
-                        "name", "interpret_deps_and_targs"]
-        if any(k in task_dict for k in sge_keys):
-            task_dict = keyrename( task_dict,
-                [("partition", "queue"),
-                 ("extra_srun_flags", "extra_qsub_flags")]
-            )
-            return self.sge_add_task(
-                **keepkeys(task_dict, sge_keys+keys_to_keep)
-            )
-        else:
-            return self.add_task(**keepkeys(task_dict, keys_to_keep))
-
-
-    def do(self, task, **kwargs):
-        params = self._kwargs_extract(kwargs)
-        self.sge_task_data[task.task_no] = params
-
+class SGEQueue(GridQueue):
     
-    def add_task(self, task, **kwargs):
-        params = self._kwargs_extract(kwargs)
-        self.sge_task_data[task.task_no] = params
-
+    def __init__(self, benchmark_on=None):
+       super(SGEQueue, self).__init__(benchmark_on) 
+       self.job_code_completed="COMPLETED"
+       self.job_code_error="FAILED"
+       self.job_code_terminated="TERMINATED"
+       self.job_code_deleted="DELETED"
+       
+       self.all_failed_codes=[self.job_code_error,self.job_code_terminated,self.job_code_deleted]
+       self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
+       
+       # allow for jobs to be terminated when about to reach the memory requested
+       self.memory_buffer = 1024
     
-    def runner(self, ctx, jobs=1, grid_jobs=1):
-        runner = runners.GridRunner(ctx)
-        runner.add_worker(runners.ParallelLocalWorker,
-                          name="local", rate=jobs, default=True)
-        runner.add_worker(SGEWorker, name="sge", rate=grid_jobs)
-        runner.routes.update((
-            ( task_idx, ("sge", extra) )
-            for task_idx, extra in six.iteritems(self.sge_task_data)
-        ))
-        return runner
-
-
-    def _kwargs_extract(self, kwargs_dict):
-        time = kwargs_dict.pop("time", None)
-        mem = kwargs_dict.pop("mem", None)
-        cores = kwargs_dict.pop("cores", 1)
-        partition = kwargs_dict.pop("queue", self.sge_queue)
-        extra_qsub_flags = kwargs_dict.pop("extra_qsub_flags",
-                                           self.extra_qsub_flags)
-        return (PerformanceData(int(time), int(mem), int(cores)),
-                partition, self.sge_tmpdir, self._sge_pe_name, extra_qsub_flags)
-
-
-    def _find_suitable_pe(self):
-        names, _ = subprocess.Popen(['qconf', '-spl'], 
-                                    stdout=subprocess.PIPE).communicate()
-        if not names:
-            raise OSError(
-                "Unable to find any SGE parallel environment names. \n"
-                "Ensure that SGE tools like qconf are installed, \n"
-                "ensure that this node can talk to the cluster, \n"
-                "and ensure that parallel environments are enabled.")
-
-        pe_name = None
-        for name in names.strip().split():
-            if pe_name:
-                break
-            out, _ = subprocess.Popen(["qconf", "-sp", name], 
-                                   stdout=subprocess.PIPE).communicate()
-            for line in out.split('\n'):
-                if ["allocation_rule", "$pe_slots"] == line.split():
-                    pe_name = name
+    @staticmethod
+    def submit_command(grid_script):    
+        return ["qsub",grid_script]
+    
+    @staticmethod
+    def submit_template():
+        template = [
+            "#$$ -q ${partition}",
+            "#$$ -pe smp ${cpus}",
+            "#$$ -l h_rt=${time}",
+            "#$$ -l h_vmem=${memory}m",
+            "#$$ -o ${output}",
+            "#$$ -e ${error}"]
+        return template
+    
+    def job_failed(self,status):
+        # check if the job has a status that it failed
+        return True if status in self.all_failed_codes else False
         
-        if not pe_name:
-            raise OSError(
-                "Unable to find a suitable parallel environment. "
-                "Please talk with your systems administrator to enable "
-                "a parallel environment that has an `allocation_rule` "
-                "set to `$pe_slots`.")
-        return pe_name
+    def job_stopped(self,status):
+        # check if the job has a status which indicates it stopped running
+        return True if status in self.all_stopped_codes else False
+    
+    def job_memkill(self, status, jobid, memory):
+        # check if the job was killed because it used too much memory
+        new_status, cpus, new_time, new_memory = self.get_benchmark(jobid)
+        
+        # if memory is not yet available for the job, wait for a new benchmark
+        if new_memory == "NA":
+            new_status, cpus, new_time, new_memory = self.get_benchmark(jobid, wait=True)
+        
+        try:
+            exceed_allocation = True if (float(new_memory) + self.memory_buffer) > float(memory) else False
+        except ValueError:
+            exceed_allocation = False
+            
+        return True if exceed_allocation and new_status == self.job_code_terminated else False
+            
+    def job_timeout(self, status, jobid, time):
+        # check if the job was killed because it used too much memory
+        new_status, cpus, new_time, new_memory = self.get_benchmark(jobid)
+        
+        # if time is not yet available for the job, wait for a new benchmark
+        if new_time == "NA":
+            new_status, cpus, new_time, new_memory = self.get_benchmark(jobid, wait=True)
+        
+        try:
+            exceed_allocation = True if float(new_time) > float(time) else False
+        except ValueError:
+            exceed_allocation = False
+            
+        return True if exceed_allocation and new_status == self.job_code_terminated else False
+            
+    def refresh_queue_status(self):
+        """ Get the latest status for the grid jobs using the same command for
+        jobs in the queue and for completed jobs to benchmark """
+        
+        # Get the jobid and state for all jobs pending/running/completed for the current user
+        qacct_stdout=self.run_grid_command_resubmit(["qacct","-o",pwd.getpwuid(os.getuid())[0],"-j","*"])
+        
+        # info list should include jobid, state, cpus, time, and maxrss
+        info=[]
+        job_status=[]
+        for line in qacct_stdout.split("\n"):
+            if line.startswith("jobnumber") or line.startswith("job_number"):
+                if job_status:
+                    info.append(job_status)
+                job_status=[line.rstrip().split()[-1],"NA","NA","NA","NA"]
+            # get the states for completed jobs
+            elif line.startswith("failed"):
+                failed_code = line.rstrip().split()[1]
+                if failed_code != "0":
+                    if failed_code in ["37","100"]:
+                        job_status[1]=self.job_code_terminated
+                    else:
+                        job_status[1]=self.job_code_error
+            elif line.startswith("deleted_by"):
+                if line.rstrip().split()[-1] != "NONE" and job_status[1] == self.job_code_terminated:
+                    job_status[1]=self.job_code_deleted
+            elif line.startswith("exit_status"):
+                # only record if status has not yet been set
+                if job_status[1] == "NA":
+                    exit_status = line.rstrip().split()[-1]
+                    if exit_status == "0":
+                        job_status[1]=self.job_code_completed
+                    elif exit_status == "137":
+                        job_status[1]=self.job_code_terminated
+                    else:
+                        job_status[1]=self.job_code_error
+            # get the current state for running jobs
+            elif line.startswith("job_state"):
+                job_status[1]=line.rstrip().split()[-1]
+            elif line.startswith("slots"):
+                job_status[2]=line.rstrip().split()[-1]
+            elif line.startswith("ru_wallclock"):
+                try:
+                    # get the elapsed time in minutes
+                    job_status[3]=str(float(line.rstrip().split()[-1])/60.0)
+                except ValueError:
+                    job_status[3]="NA"
+            elif line.startswith("ru_maxrss"):
+                job_status[4]=line.rstrip().split()[-1]+"K"
+        
+        if job_status:
+            info.append(job_status)
+
+        return info
 
 
 
-class SGEWorker(threading.Thread):
-
-    def __init__(self, work_q, result_q, lock, reporter):
-        super(SGEWorker, self).__init__()
-        self.daemon = True
-        self.logger = runners.logger
-        self.work_q = work_q
-        self.result_q = result_q
-        self.lock = lock
-        self.reporter = reporter
-
-    @staticmethod
-    def appropriate_q_class(*args, **kwargs):
-        return queue.Queue(*args, **kwargs)
-
-    @staticmethod
-    def appropriate_lock():
-        return threading.Lock() 
- 
-    def run(self):
-        return runners.worker_run_loop(self.work_q, self.result_q, 
-                                       _run_task_sge)
-
-
-
-def _wait_on_file(fname, secs=30, pollfreq=0.1, rm=True):
-    for _ in range(int(secs/pollfreq)):
-        if os.path.exists(fname):
-            with open(fname) as f:
-                ret = f.read()
-            if rm is True:
-                os.unlink(fname)
-            return ret
-        else:
-            time.sleep(pollfreq)
-    raise OSError("Timed out waiting for "+fname+" to appear")
-
-
-def _run_task_sge(task, extra):
-    (perf, partition, tmpdir, pe_name, extra_qsub_flags) = extra
-    script_path = picklerunner.tmp(task, dir=tmpdir).path
-    job_name = "task{}.{}".format(task.task_no, underscore(task.name))
-    tmpout = tempfile.mktemp(dir=tmpdir)
-    tmperr = tempfile.mktemp(dir=tmpdir)
-
-    args = ["qsub", "-R", "y", "-b", "y", "-sync", "y", "-N", job_name,
-            "-pe", pe_name, str(perf.cores), "-cwd", "-q", partition,
-            "-V", "-l", "m_mem_free={:1g}M".format(max(1, perf.mem)),
-            "-o", tmpout, "-e", tmperr]
-    args += extra_qsub_flags+[script_path, "-r", "-p" ]
-    proc = subprocess.Popen(args, stdout=subprocess.PIPE, 
-                            stderr=subprocess.PIPE)
-    out, err = proc.communicate()
-    extra_error = ""
-    try:
-        taskout = _wait_on_file(tmpout)
-        if proc.returncode != 0:
-            extra_error += _wait_on_file(tmperr)
-    except Exception as e:
-        e.task_no = task.task_no
-        return runners.exception_result(e)
-
-    try:
-        result = picklerunner.decode(taskout)
-    except ValueError:
-        extra_error += "Unable to decode task result\n"
-        result = None
-    if proc.returncode != 0:
-        extra_error += "Qsub error: "+err+"\n"
-    if result is None:
-        return runners.TaskResult(task.task_no, extra_error or "qsub failed",
-                                  None, None)
-    elif extra_error: # (result is not None) is implicit here
-        result = result._replace(error=result.error+extra_error)
-    return result
 
 
