@@ -453,7 +453,8 @@ class PweaveDocument(Document):
         
         pyplot.show()
         
-    def show_table(self, data, row_labels, column_labels, title, format_data_comma=None):
+    def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
+                   location="center", font=None):
         """ Plot the data as a table """
         
         import numpy
@@ -492,16 +493,16 @@ class PweaveDocument(Document):
     
         # add column labels
         for i, label in enumerate(column_labels):
-            table.add_cell(0, i+1, width=column_widths[i+1], height=height, text=label, loc="center")
+            table.add_cell(0, i+1, width=column_widths[i+1], height=height, text=label, loc=location)
     
         # add row labels
         for i, label in enumerate(row_labels):
-            table.add_cell(i+1, 0, width=column_widths[0], height=height, text=label, loc="center")
+            table.add_cell(i+1, 0, width=column_widths[0], height=height, text=label, loc=location)
     
         # Add data
         for i, row in enumerate(data):
             for j, value in enumerate(row):
-                table.add_cell(i+1, j+1, width=column_widths[j+1], height=height, text=value, loc="center")               
+                table.add_cell(i+1, j+1, width=column_widths[j+1], height=height, text=value, loc=location)               
 
         axis.add_table(table)
 
@@ -511,6 +512,11 @@ class PweaveDocument(Document):
         font_size=8
         if total_columns > 5:
             font_size=7
+            
+        # use the font if provided
+        if font is not None:
+            font_size=font
+            
         table.set_fontsize(font_size)
     
         # add the title
