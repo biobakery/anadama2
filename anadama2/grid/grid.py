@@ -74,7 +74,6 @@ class Grid(object):
 
     def _get_grid_task_settings(self, kwargs, depends):
         """ Get the resources required to run this task on the grid """
-        
         # check for the required keywords
         requires=[]
         for key in ["time","mem","cores"]:
@@ -82,11 +81,12 @@ class Grid(object):
                 requires.append(kwargs[key])
             except KeyError:
                 raise KeyError(key+" is a required keyword argument for a grid task")
+
         # check for optional keyword
-            try:
-                requires.append(kwargs["partition"])
-            except KeyError:
-                requires.append(None)    
+        try:
+            requires.append(kwargs["partition"])
+        except KeyError:
+            requires.append(None)    
         
         requires+=[depends]
         
@@ -152,7 +152,7 @@ class GridQueue(object):
         if not isinstance(partition, list):
             partition = [x.strip() for x in partition.split(",")] 
         try:
-            self.partition_short, self.partition_long, self.partition_cutoff = info
+            self.partition_short, self.partition_long, self.partition_cutoff = partition
             self.partition_cutoff = int(self.partition_cutoff)
         except ValueError:
             self.partition_short = info[0]
