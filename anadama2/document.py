@@ -614,7 +614,7 @@ class PweaveDocument(Document):
             
         return new_names, new_data
         
-    def show_pcoa(self, sample_names, feature_names, data, title):
+    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species"):
         """ Use the vegan package in R plus matplotlib to plot a PCoA 
         Input data should be organized with samples as columns and features as rows 
         Data should be scaled to [0-1] """
@@ -702,5 +702,14 @@ class PweaveDocument(Document):
         if len(sample_names) <= self.max_labels:
             subplot.legend(plots, sample_names, loc="center left", bbox_to_anchor=(1,0.5),
                 fontsize=7, title="Samples", frameon=False)
+
+        caption="\n".join(["Principal coordinate analysis of variance among "+sample_types+", based on Bray-Curtis ", 
+            "dissimilarities between "+feature_types+" profiles of "+sample_types+".  Filtered "+feature_types+"' relative abundances ", 
+            "were arcsin-square root transformed to approximate a normal distribution and down-weigh the effect ",
+            "of highly abundant "+feature_types+" on Bray-Curtis dissimilarities.  Numbers in parenthesis on each axis ",
+            "represent the amount of variance explained by that axis."])
         
         pyplot.show()
+        
+        return caption
+    
