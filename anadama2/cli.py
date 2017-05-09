@@ -24,6 +24,19 @@ def identify_grid():
         
     return found_grid
 
+def default_partitions():
+    """ Get default partitions based on the default grid """
+    
+    grid = identify_grid()
+    if grid == "slurm":
+        partitions = ["serial_requeue","general",4*60]
+    elif grid == "sge":
+        partitions = ["short","long",110]
+    else:
+        partitions = []
+        
+    return ",".join(map(str,partitions))
+
 default_options = {
     "output": optparse.make_option("-o", '--output', default=None, type="str",
                          help=("Write output to this directory. By default the "+  
@@ -36,8 +49,9 @@ default_options = {
                          help="Run gridable tasks on this grid type.",
                          type="str", default=identify_grid()),
     "grid_partition": optparse.make_option("-p", '--grid-partition',
-                         help="Run gridable tasks on this partition.",
-                         type="str", default="serial_requeue"),
+                         help=("Run gridable tasks on this partition. "+
+                         "Provide a single partition or a comma-delimited list of short/long partitions with a cutoff."),
+                         type="str", default=default_partitions()),
     "grid_benchmark": optparse.make_option("-b", '--grid-benchmark',
                          help="Benchmark gridable tasks.",
                          default="on", choices=["on","off"]),
