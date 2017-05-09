@@ -67,23 +67,24 @@ class SGE(Grid):
     """
 
     def __init__(self, partition, tmpdir, benchmark_on=None):
-        super(SGE, self).__init__("sge", GridWorker, SGEQueue(benchmark_on), partition, tmpdir, benchmark_on)
+        super(SGE, self).__init__("sge", GridWorker, SGEQueue(partition, benchmark_on), tmpdir, benchmark_on)
         
 
 class SGEQueue(GridQueue):
     
-    def __init__(self, benchmark_on=None):
-       super(SGEQueue, self).__init__(benchmark_on) 
-       self.job_code_completed="COMPLETED"
-       self.job_code_error="FAILED"
-       self.job_code_terminated="TERMINATED"
-       self.job_code_deleted="DELETED"
+    def __init__(self, partition, benchmark_on=None):
+            
+        super(SGEQueue, self).__init__(partition, benchmark_on) 
+        self.job_code_completed="COMPLETED"
+        self.job_code_error="FAILED"
+        self.job_code_terminated="TERMINATED"
+        self.job_code_deleted="DELETED"
        
-       self.all_failed_codes=[self.job_code_error,self.job_code_terminated,self.job_code_deleted]
-       self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
+        self.all_failed_codes=[self.job_code_error,self.job_code_terminated,self.job_code_deleted]
+        self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
        
-       # allow for jobs to be terminated when about to reach the memory requested
-       self.memory_buffer = 1024
+        # allow for jobs to be terminated when about to reach the memory requested
+        self.memory_buffer = 1024
     
     @staticmethod
     def submit_command(grid_script):    

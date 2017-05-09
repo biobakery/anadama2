@@ -63,21 +63,22 @@ class Slurm(Grid):
     """
 
     def __init__(self, partition, tmpdir, benchmark_on=None):
-        super(Slurm, self).__init__("slurm", GridWorker, SLURMQueue(benchmark_on), partition, tmpdir, benchmark_on)
+        super(Slurm, self).__init__("slurm", GridWorker, SLURMQueue(partition, benchmark_on), tmpdir, benchmark_on)
 
 
 class SLURMQueue(GridQueue):
     
-    def __init__(self, benchmark_on=None):
-       super(SLURMQueue, self).__init__(benchmark_on)
-       self.job_code_completed="COMPLETED"
-       self.job_code_cancelled="CANCELLED"
-       self.job_code_failed="FAILED"
-       self.job_code_timeout="TIMEOUT"
-       self.job_code_memkill="MEMKILL"
+    def __init__(self, partition, benchmark_on=None):
+        super(SLURMQueue, self).__init__(partition, benchmark_on)
+        
+        self.job_code_completed="COMPLETED"
+        self.job_code_cancelled="CANCELLED"
+        self.job_code_failed="FAILED"
+        self.job_code_timeout="TIMEOUT"
+        self.job_code_memkill="MEMKILL"
        
-       self.all_failed_codes=[self.job_code_failed,self.job_code_timeout,self.job_code_memkill,self.job_code_cancelled]
-       self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
+        self.all_failed_codes=[self.job_code_failed,self.job_code_timeout,self.job_code_memkill,self.job_code_cancelled]
+        self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
     
     @staticmethod
     def submit_command(grid_script):    

@@ -35,9 +35,12 @@ class GridJobRequires(object):
 
     :param cores: CPU cores.
     :type cores: int
+    
+    :param partition: grid partition.
+    :type partition: string
     """
     
-    def __init__(self, time, mem, cores, depends=None):
+    def __init__(self, time, mem, cores, partition, depends=None):
         # if time is not an int, try to format the equation
         if not str(time).isdigit():
             self.time = format_command(time, depends=depends, cores=cores)
@@ -51,16 +54,18 @@ class GridJobRequires(object):
             self.mem = int(mem)
             
         self.cores = int(cores) 
+        
+        self.partition = partition
     
 class Grid(object):
     """ Base Grid Workflow manager class """
     
-    def __init__(self, name, worker, queue, partition, tmpdir, benchmark_on=None):
+    def __init__(self, name, worker, queue, tmpdir, benchmark_on=None):
         self.name = name
         self.worker = worker
         self.queue = queue
-        self.partition = partition
         self.tmpdir = tmpdir
+        
         # create the folder if it does not already exist for temp directory
         if not os.path.isdir(self.tmpdir):
             os.makedirs(self.tmpdir)
@@ -77,9 +82,15 @@ class Grid(object):
                 requires.append(kwargs[key])
             except KeyError:
                 raise KeyError(key+" is a required keyword argument for a grid task")
+        # check for optional keyword
+            try:
+                requires.append(kwargs["partition"])
+            except KeyError:
+                requires.append(None)    
+        
         requires+=[depends]
         
-        return (GridJobRequires(*requires), self.partition, self.tmpdir)
+        return (GridJobRequires(*requires), self.tmpdir)
         
     def do(self, task, **kwargs):
         """Accepts the following extra arguments:
@@ -116,7 +127,7 @@ class Grid(object):
         :keyword cores: The number of CPU cores allocated to the job
         :type cores: int
 
-        :keyword partition: The grid partiton to send this job to
+        :keyword partition: The grid partition to send this job to
         :type partition: str
         """
         
@@ -136,7 +147,18 @@ class Grid(object):
 
 class GridQueue(object):
     
-    def __init__(self, benchmark_on=None):
+    def __init__(self, partition, benchmark_on=None):
+        # check for short/long partitions
+        if not isinstance(partition, list):
+            partition = [x.strip() for x in partition.split(",")] 
+        try:
+            self.partition_short, self.partition_long, self.partition_cutoff = info
+            self.partition_cutoff = int(self.partition_cutoff)
+        except ValueError:
+            self.partition_short = info[0]
+            self.partition_long = info[0]
+            self.partition_cutoff = 0
+            
         # this is the refresh rate for checking the queue, in seconds
         self.refresh_rate = 10*60
 
@@ -189,6 +211,18 @@ class GridQueue(object):
     
     def get_job_status_from_stderr(self, error_file, grid_job_status, grid_jobid):
         return grid_job_status
+    
+    def get_partition(self, time, partition):
+        """ Get the partition for the task based on the time requested """
+        
+        # if a partition is already set for the task, use that partition
+        if not partition is None:
+            return partition
+        
+        if time > self.partition_cutoff:
+            return self.partition_long
+        else:
+            return self.partition_short
     
     def get_queue_status(self, refresh=None):
         """ Get the queue accounting stats """
@@ -415,7 +449,7 @@ class GridWorker(threading.Thread):
         
     @classmethod
     def run_task_function(cls, task, extra):
-        (perf, partition, tmpdir, grid_queue, reporter) = extra
+        (perf, tmpdir, grid_queue, reporter) = extra
         
         # create a script to run the python function
         pickle_script = picklerunner.PickleScript(task, tmpdir, "task_"+str(task.task_no))
@@ -431,7 +465,7 @@ class GridWorker(threading.Thread):
         
     @classmethod
     def run_task_command(cls, task, extra):
-        (perf, partition, tmpdir, grid_queue, reporter) = extra
+        (perf, tmpdir, grid_queue, reporter) = extra
         # report the task has started
         reporter.task_running(task.task_no)
         
@@ -440,7 +474,7 @@ class GridWorker(threading.Thread):
         logging.info("Running commands for task id %s:\n%s", task.task_no, commands)
     
         resubmission = 0    
-        cores, time, memory = perf.cores, perf.time, perf.mem
+        cores, time, memory, partition = perf.cores, perf.time, perf.mem, perf.partition
     
         jobid, out_file, error_file, rc_file = cls.submit_grid_job(cores, time, memory, 
             partition, tmpdir, commands, task, grid_queue, reporter)
@@ -483,8 +517,11 @@ class GridWorker(threading.Thread):
         # evaluate the time/memory requests for the job
         time, memory = cls.evaluate_resource_requests(time, memory)
         
+        # get the partition for the task
+        current_partition = grid_queue.get_partition(time, partition)
+        
         # create the grid bash script
-        grid_script, out_file, error_file, rc_file = grid_queue.create_grid_script(partition,
+        grid_script, out_file, error_file, rc_file = grid_queue.create_grid_script(current_partition,
             cores, time, memory, commands, task.task_no, tmpdir)
     
         logging.info("Created grid files for task id %s: %s, %s, %s, %s",
