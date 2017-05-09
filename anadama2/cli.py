@@ -10,94 +10,6 @@ from .tracked import TrackedVariable
 from .util import kebab, Directory
 from .util.fname import script_wd
 
-def identify_grid():
-    """ Check if a grid is found on the machine and determine which type """
-    
-    found_grid="None"
-    # check for the grid job submission command for slurm and sge
-    for command, grid in [["sbatch","slurm"],["qsub","sge"]]:
-        try:
-            output=subprocess.check_output(["which",command],stderr=subprocess.STDOUT)
-            found_grid=grid
-        except subprocess.CalledProcessError:
-            pass
-        
-    return found_grid
-
-def default_partitions():
-    """ Get default partitions based on the default grid """
-    
-    grid = identify_grid()
-    if grid == "slurm":
-        partitions = ["serial_requeue","general",4*60]
-    elif grid == "sge":
-        partitions = ["short","long",110]
-    else:
-        partitions = []
-        
-    return ",".join(map(str,partitions))
-
-default_options = {
-    "output": optparse.make_option("-o", '--output', default=None, type="str",
-                         help=("Write output to this directory. By default the "+  
-                         "dependency database and log are written to this directory")),
-    "input": optparse.make_option("-i", '--input', default=os.getcwd(), type="str",
-                         help="Collect inputs from this directory."),
-    "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
-                         help="Print tasks to be run but don't execute their actions."),
-    "grid": optparse.make_option("-g", '--grid',
-                         help="Run gridable tasks on this grid type.",
-                         type="str", default=identify_grid()),
-    "grid_partition": optparse.make_option("-p", '--grid-partition',
-                         help=("Run gridable tasks on this partition. "+
-                         "Provide a single partition or a comma-delimited list of short/long partitions with a cutoff."),
-                         type="str", default=default_partitions()),
-    "grid_benchmark": optparse.make_option("-b", '--grid-benchmark',
-                         help="Benchmark gridable tasks.",
-                         default="on", choices=["on","off"]),
-    "skip_nothing": optparse.make_option("-n", '--skip-nothing', action="store_true",
-                         help="Skip no tasks, even if you could; run it all."),
-    "quit_early": optparse.make_option("-e", '--quit-early', action="store_true",
-                         help=("If any tasks fail, stop all execution immediately. If not set, "+
-                         "children of failed tasks are not " +
-                         "executed but children of successful or skipped tasks are " +
-                         "executed. The default is to keep running until all tasks " +
-                         "that are available to execute have completed or failed.")),
-    "jobs": optparse.make_option("-j", '--local-jobs', default=1, type=int, dest="jobs",
-                         help="The number of tasks to execute in parallel locally."),
-    "grid_jobs": optparse.make_option("-J", '--grid-jobs', default=0, type=int,
-                         help=("The number of tasks to submit to the grid in parallel. "+
-                               "The default setting is zero jobs will be run on the grid. "+
-                               "By default, all jobs, including gridable jobs, will run locally.")),
-    "until_task": optparse.make_option("-u", '--until-task', default=None,
-                         help=("Stop after running the named task. Can refer to "+
-                         "the end task by task number or task name.")),
-    "exclude_task": optparse.make_option("-U", "--exclude-task", default=[], action="append",
-                         help=("Don't execute these tasks. Use this flag multiple times "+ 
-                         "to not execute multiple tasks.")),
-    "target": optparse.make_option("-t", "--target", default=[], action="append",
-                         help=("Only execute tasks that make these targets. " +  
-                         "Use this flag multiple times to build many targets. If the " +
-                         "provided value includes ? or * or [, treat it as " +
-                         "a pattern and build all targets that match.")),
-    "exclude_target": optparse.make_option("-T", "--exclude-target", default=[], action="append",
-                         help=("Don't execute tasks that make these targets. " +  
-                         "Use this flag multiple times to exclude many targets. If the " + 
-                         "provided value includes ? or * or [, treat it as " +
-                         "a pattern and exclude all targets that match.")),
-    "log_level": optparse.make_option("-l","--log-level",default="INFO",
-        choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"], 
-        help="Set the level of output for the log.")
-}
-
-# a list of the required options (as optparse does not have a required keyword)
-# these options must be supplied by the user on the command line or
-# the workflow must set the option default to a value using the change function
-required_options = ["output"]
-
-_default_dir = ("output","input")
-
-
 logger = logging.getLogger(__name__)
 
 class Configuration(object):
@@ -164,18 +76,112 @@ class Configuration(object):
             version="%prog v" + self.version
         )
         if defaults:
-            self._directives.update(default_options)
-            self._required_options=required_options
-            for opt in default_options.values():
+            self._directives.update(self.get_default_options())
+            self._required_options=self.get_default_required_options()
+            for opt in self.get_default_options().values():
                 self._shorts.add(opt._short_opts[0][1])
-            for name in _default_dir:
+            for name in self.get_default_directories():
                 self._directories[name] = self._directives[name].default
 
         # remove default options, if provided
         if remove_options:
             for option in remove_options:
                 self.remove(option)
-
+                
+    @classmethod
+    def get_default_options(cls):
+        return {
+            "output": optparse.make_option("-o", '--output', default=None, type="str",
+                                 help=("Write output to this directory. By default the "+  
+                                 "dependency database and log are written to this directory")),
+            "input": optparse.make_option("-i", '--input', default=os.getcwd(), type="str",
+                                 help="Collect inputs from this directory."),
+            "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
+                                 help="Print tasks to be run but don't execute their actions."),
+            "grid": optparse.make_option("-g", '--grid',
+                                 help="Run gridable tasks on this grid type.",
+                                 type="str", default=cls.identify_grid()),
+            "grid_partition": optparse.make_option("-p", '--grid-partition',
+                                 help=("Run gridable tasks on this partition. "+
+                                 "Provide a single partition or a comma-delimited list of short/long partitions with a cutoff."),
+                                 type="str", default=cls.default_partitions()),
+            "grid_benchmark": optparse.make_option("-b", '--grid-benchmark',
+                                 help="Benchmark gridable tasks.",
+                                 default="on", choices=["on","off"]),
+            "skip_nothing": optparse.make_option("-n", '--skip-nothing', action="store_true",
+                                 help="Skip no tasks, even if you could; run it all."),
+            "quit_early": optparse.make_option("-e", '--quit-early', action="store_true",
+                                 help=("If any tasks fail, stop all execution immediately. If not set, "+
+                                 "children of failed tasks are not " +
+                                 "executed but children of successful or skipped tasks are " +
+                                 "executed. The default is to keep running until all tasks " +
+                                 "that are available to execute have completed or failed.")),
+            "jobs": optparse.make_option("-j", '--local-jobs', default=1, type=int, dest="jobs",
+                                 help="The number of tasks to execute in parallel locally."),
+            "grid_jobs": optparse.make_option("-J", '--grid-jobs', default=0, type=int,
+                                 help=("The number of tasks to submit to the grid in parallel. "+
+                                       "The default setting is zero jobs will be run on the grid. "+
+                                       "By default, all jobs, including gridable jobs, will run locally.")),
+            "until_task": optparse.make_option("-u", '--until-task', default=None,
+                                 help=("Stop after running the named task. Can refer to "+
+                                 "the end task by task number or task name.")),
+            "exclude_task": optparse.make_option("-U", "--exclude-task", default=[], action="append",
+                                 help=("Don't execute these tasks. Use this flag multiple times "+ 
+                                 "to not execute multiple tasks.")),
+            "target": optparse.make_option("-t", "--target", default=[], action="append",
+                                 help=("Only execute tasks that make these targets. " +  
+                                 "Use this flag multiple times to build many targets. If the " +
+                                 "provided value includes ? or * or [, treat it as " +
+                                 "a pattern and build all targets that match.")),
+            "exclude_target": optparse.make_option("-T", "--exclude-target", default=[], action="append",
+                                 help=("Don't execute tasks that make these targets. " +  
+                                 "Use this flag multiple times to exclude many targets. If the " + 
+                                 "provided value includes ? or * or [, treat it as " +
+                                 "a pattern and exclude all targets that match.")),
+            "log_level": optparse.make_option("-l","--log-level",default="INFO",
+                choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"], 
+                help="Set the level of output for the log.")
+        }
+                
+    @staticmethod
+    def identify_grid():
+        """ Check if a grid is found on the machine and determine which type """
+        
+        found_grid="None"
+        # check for the grid job submission command for slurm and sge
+        for command, grid in [["sbatch","slurm"],["qsub","sge"]]:
+            try:
+                output=subprocess.check_output(["which",command],stderr=subprocess.STDOUT)
+                found_grid=grid
+            except subprocess.CalledProcessError:
+                pass
+            
+        return found_grid
+    
+    @classmethod
+    def default_partitions(cls):
+        """ Get default partitions based on the default grid """
+        
+        grid = cls.identify_grid()
+        if grid == "slurm":
+            partitions = ["serial_requeue","general",4*60]
+        elif grid == "sge":
+            partitions = ["short","long",110]
+        else:
+            partitions = []
+            
+        return ",".join(map(str,partitions))
+    
+    @staticmethod
+    def get_default_required_options():
+        # a list of the required options (as optparse does not have a required keyword)
+        # these options must be supplied by the user on the command line or
+        # the workflow must set the option default to a value using the change function
+        return ["output"]
+    
+    @staticmethod
+    def get_default_directories():
+        return ("output","input")
 
     def add(self, name, desc=None, type="str", default=None, short=None,
             callback=None, tracked=False, required=None):
