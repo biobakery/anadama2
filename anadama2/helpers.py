@@ -35,6 +35,7 @@ Instead of this:
 import os
 import shutil
 import logging
+import re
 
 import six
 
@@ -103,7 +104,8 @@ def format_command(command, **kwargs):
             command=command.replace("["+str(key)+"[0]]",str(replacement))
             
     # check for any keywords in the command that were not replaced
-    if "[" in command:
+    # allow for bash test constructs
+    if re.search("\[[a-zA-Z]",command):
         message="Unable to replace all keys in command.  "
         message+="Original command: "+original_command+"  "
         message+="Final formatted command: "+command+"  "
