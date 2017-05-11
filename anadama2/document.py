@@ -402,7 +402,7 @@ class PweaveDocument(Document):
                 yield color
         
     def plot_stacked_barchart(self, data, row_labels, column_labels, title, 
-        xlabel=None, ylabel=None, legend_title=None):
+        xlabel=None, ylabel=None, legend_title=None, legend_style="normal"):
         """ Plot a stacked barchart """
         
         import numpy
@@ -449,7 +449,7 @@ class PweaveDocument(Document):
             pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
         pyplot.yticks(fontsize=7)
         subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
-            fontsize=7, title=legend_title, frameon=False)
+            title=legend_title, frameon=False, prop={"size":7, "style":legend_style})
         
         pyplot.show()
         
@@ -537,10 +537,17 @@ class PweaveDocument(Document):
             for name, row in zip(row_labels, data):
                 file_handle.write("\t".join([name]+[str(i) for i in row])+"\n")
         
-    def show_hclust2(self,sample_names,feature_names,data,title):
+    def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False):
         """ Create a hclust2 heatmap with dendrogram and show it in the document """
         from matplotlib._png import read_png
         import matplotlib.pyplot as pyplot
+        
+        # apply zscore if requested
+        if zscore:
+            from scipy import stats
+            import numpy
+            
+            data = stats.zscore(numpy.array(data),axis=1)
         
         # write a file of the data
         handle, hclust2_input_file=tempfile.mkstemp(prefix="hclust2_input",dir=os.getcwd())
@@ -553,7 +560,9 @@ class PweaveDocument(Document):
         command=["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,"--title",title,
             "--title_font",str(int(label_font)*2),"--cell_aspect_ratio",str(aspect_ratio),
             "--flabel_size",label_font,"--slabel_size",label_font,
-            "--colorbar_font_size",label_font,"--log_scale"]
+            "--colorbar_font_size",label_font]
+        if log_scale:
+            command+=["--log_scale"]
         # if more than the max samples, do not include sample labels on the heatmap
         if len(sample_names) > self.max_labels:
             command+=["--no_slabels"]
