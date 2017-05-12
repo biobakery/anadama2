@@ -95,18 +95,18 @@ class Configuration(object):
                                  help=("Write output to this directory. By default the "+  
                                  "dependency database and log are written to this directory")),
             "input": optparse.make_option("-i", '--input', default=os.getcwd(), type="str",
-                                 help="Collect inputs from this directory."),
+                                 help="Collect inputs from this directory. [default: %default]"),
             "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
                                  help="Print tasks to be run but don't execute their actions."),
             "grid": optparse.make_option("-g", '--grid',
-                                 help="Run gridable tasks on this grid type.",
+                                 help="Run gridable tasks on this grid type. [default: %default]",
                                  type="str", default=cls.identify_grid()),
             "grid_partition": optparse.make_option("-p", '--grid-partition',
                                  help=("Run gridable tasks on this partition. "+
-                                 "Provide a single partition or a comma-delimited list of short/long partitions with a cutoff."),
+                                 "Provide a single partition or a comma-delimited list of short/long partitions with a cutoff. [default: %default]"),
                                  type="str", default=cls.default_partitions()),
             "grid_benchmark": optparse.make_option("-b", '--grid-benchmark',
-                                 help="Benchmark gridable tasks.",
+                                 help="Benchmark gridable tasks. [default: %default]",
                                  default="on", choices=["on","off"]),
             "skip_nothing": optparse.make_option("-n", '--skip-nothing', action="store_true",
                                  help="Skip no tasks, even if you could; run it all."),
@@ -117,11 +117,11 @@ class Configuration(object):
                                  "executed. The default is to keep running until all tasks " +
                                  "that are available to execute have completed or failed.")),
             "jobs": optparse.make_option("-j", '--local-jobs', default=1, type=int, dest="jobs",
-                                 help="The number of tasks to execute in parallel locally."),
+                                 help="The number of tasks to execute in parallel locally. [default: %default]"),
             "grid_jobs": optparse.make_option("-J", '--grid-jobs', default=0, type=int,
                                  help=("The number of tasks to submit to the grid in parallel. "+
                                        "The default setting is zero jobs will be run on the grid. "+
-                                       "By default, all jobs, including gridable jobs, will run locally.")),
+                                       "By default, all jobs, including gridable jobs, will run locally. [default: %default]")),
             "until_task": optparse.make_option("-u", '--until-task', default=None,
                                  help=("Stop after running the named task. Can refer to "+
                                  "the end task by task number or task name.")),
@@ -140,7 +140,7 @@ class Configuration(object):
                                  "a pattern and exclude all targets that match.")),
             "log_level": optparse.make_option("-l","--log-level",default="INFO",
                 choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"], 
-                help="Set the level of output for the log.")
+                help="Set the level of output for the log. [default: %default]")
         }
                 
     @staticmethod
