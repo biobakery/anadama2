@@ -42,6 +42,16 @@ import six
 from .util import sh as _sh
 from .util import sugar_list
 
+def file_size(depends):
+    """ Return the size of the file in GB """
+    
+    try:
+        size = os.path.getsize(depends.name) / (1024.0**3)
+    except (OSError, AttributeError):
+        size = 0
+        
+    return size 
+
 def apply_sh(actions):
     """Add the shell function to any actions that are strings"""
     return [ a if six.callable(a) else sh(a) for a in actions ]
