@@ -18,6 +18,7 @@ from .. import runners
 from .. import picklerunner
 
 from ..helpers import format_command
+from ..helpers import file_size
 
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
