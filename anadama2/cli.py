@@ -362,8 +362,9 @@ class Configuration(object):
         if self._directories and 'deploy' not in self._callbacks:
             self.add("deploy", desc="Create directories used by other options",
                      callback=self._deploy, type="bool")
-        for opt in self._directives.values():
-            self.parser.add_option(opt)
+        # order options by name in help message
+        for opt in sorted(self._directives):
+            self.parser.add_option(self._directives[opt])
         opts, self.args = self.parser.parse_args(args=argv)
         for name in self._directives:
             name = re.sub(r'-', '_', name)
