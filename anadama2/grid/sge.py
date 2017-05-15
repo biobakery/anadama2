@@ -97,6 +97,7 @@ class SGEQueue(GridQueue):
             "#$$ -pe smp ${cpus}",
             "#$$ -l h_rt=${time}",
             "#$$ -l h_vmem=${memory}m",
+            '#$$ -V',
             "#$$ -o ${output}",
             "#$$ -e ${error}"]
         return template
