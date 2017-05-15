@@ -155,8 +155,8 @@ class GridQueue(object):
             self.partition_short, self.partition_long, self.partition_cutoff = partition
             self.partition_cutoff = int(self.partition_cutoff)
         except ValueError:
-            self.partition_short = info[0]
-            self.partition_long = info[0]
+            self.partition_short = partition[0]
+            self.partition_long = partition[0]
             self.partition_cutoff = 0
             
         # this is the refresh rate for checking the queue, in seconds
