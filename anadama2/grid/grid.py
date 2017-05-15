@@ -7,7 +7,6 @@ import Queue
 import time
 import tempfile
 import string
-import datetime
 import logging
 import itertools
 import re
@@ -405,8 +404,9 @@ class GridQueue(object):
         # add the remaining sections to the bash template
         bash_template = string.Template("\n".join(["#!/bin/bash "] + self.submit_template() + ["", "${command}", "${rc_command}"]))
     
-        # convert the minutes to the time string "D-HH:MM:SS"
-        time=str(datetime.timedelta(minutes=minutes)).replace(' day, ','-').replace(' days, ','-')
+        # convert the minutes to the time string "HH:MM:00"
+        hours, remaining_minutes = divmod(minutes, 60)
+        time = "{:02d}:{:02d}:00".format(hours, remaining_minutes)
     
         bash=bash_template.substitute(partition=partition,cpus=cpus,time=time,
             memory=memory,command=command,output=out_file,error=error_file,rc_command="export RC=$? ; echo $RC > "+rc_file+" ; bash -c 'exit $RC'")
