@@ -244,6 +244,9 @@ class PweaveDocument(Document):
         """ Plot a grouped barchart """
         
         import numpy
+        # set non-interactive backend to simplify server install
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as pyplot
         import matplotlib.ticker as ticker
         
@@ -306,6 +309,9 @@ class PweaveDocument(Document):
         """ Plot a scatter plot """
         
         import numpy
+        # set non-interactive backend to simplify server install
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as pyplot
         
         # create a figure subplot to move the legend
@@ -344,6 +350,9 @@ class PweaveDocument(Document):
         """ Plot a barchart """
         
         import numpy
+        # set non-interactive backend to simplify server install
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as pyplot
         
         # check for a list of lists
@@ -406,6 +415,9 @@ class PweaveDocument(Document):
         """ Plot a stacked barchart """
         
         import numpy
+        # set non-interactive backend to simplify server install
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as pyplot
         
         figure = pyplot.figure()
@@ -458,6 +470,9 @@ class PweaveDocument(Document):
         """ Plot the data as a table """
         
         import numpy
+        # set non-interactive backend to simplify server install
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as pyplot
         from matplotlib.table import Table
         
@@ -539,6 +554,11 @@ class PweaveDocument(Document):
         
     def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False):
         """ Create a hclust2 heatmap with dendrogram and show it in the document """
+
+        # set non-interactive backend to simplify server install
+        import matplotlib
+        matplotlib.use('Agg')
+        
         from matplotlib._png import read_png
         import matplotlib.pyplot as pyplot
         
@@ -627,6 +647,10 @@ class PweaveDocument(Document):
         """ Use the vegan package in R plus matplotlib to plot a PCoA 
         Input data should be organized with samples as columns and features as rows 
         Data should be scaled to [0-1] """
+        
+        # set non-interactive backend to simplify server install
+        import matplotlib
+        matplotlib.use('Agg')
         
         import matplotlib.pyplot as pyplot
         
