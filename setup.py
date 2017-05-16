@@ -12,7 +12,8 @@ requires = [
     'leveldb==0.193',
     'six',
     'cloudpickle==0.2.1',
-    'pweave==0.25'
+    'pweave==0.25',
+    'markdown'
 ]
 
 if os.name == 'posix' and sys.version_info[0] < 3:
