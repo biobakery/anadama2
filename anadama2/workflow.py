@@ -390,8 +390,15 @@ class Workflow(object):
         adds a :class:`anadama2.Task` to the workflow to create the archive. """
 
         # convert the depends and targets to lists if strings
+        # update to absolute paths
         depends=sugar_list(depends)
-        targets=sugar_list(targets)
+        targets=[os.path.abspath(target) for target in sugar_list(targets)]
+        
+        # get the absolute path to the output folder
+        if not self.vars.get("output") is None:
+            output_folder = os.path.abspath(self.vars.get("output"))
+        else:
+            output_folder = None
         
         # determine the archive software based on the target extension
         if archive_software is None:
@@ -415,8 +422,8 @@ class Workflow(object):
         
         # if there is an output folder, change the depends to relative paths
         # so the full path is not included in the archive
-        if self.vars.get("output") is not None:
-            archive_inputs=[os.path.relpath(file, start=str(self.vars.get("output"))) for file in archive_inputs]
+        if output_folder is not None:
+            archive_inputs=[os.path.relpath(file, start=output_folder) for file in archive_inputs]
 
         # check that the software is installed to create the archive
         try:
@@ -456,9 +463,9 @@ class Workflow(object):
         
         # move to the directory of the output folder to not include full paths in archives
         # if there is an output folder being used
-        if self.vars.get("output") is not None:
+        if output_folder is not None:
             cwd=os.getcwd()
-            command=["cd",str(self.vars.get("output")),";"]+command+[";","cd",cwd]
+            command=["cd",output_folder,";"]+command+[";","cd",cwd]
             
         command=" ".join(command)
         
