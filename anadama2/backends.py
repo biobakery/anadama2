@@ -17,7 +17,7 @@ def default(output_dir=None):
     global _default_backend
     if output_dir is not None:
         return LevelDBBackend(
-            _try_dir(os.path.join(str(output_dir), LOCAL_DB_FOLDER, "db"))
+            _try_dir(os.path.abspath(os.path.join(output_dir, LOCAL_DB_FOLDER, "db")))
             )
     if _default_backend is None:
         _default_backend = LevelDBBackend()

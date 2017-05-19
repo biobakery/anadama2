@@ -14,7 +14,7 @@ def default(output_dir=None, log_level=None):
     log = LOG_FILE_NAME
     if not output_dir:
         output_dir=os.getcwd()
-    log = os.path.join(str(output_dir), log)
+    log = os.path.abspath(os.path.join(output_dir, log))
     return ReporterGroup([
         LoggerReporter(log_level, log),
         VerboseConsoleReporter()
