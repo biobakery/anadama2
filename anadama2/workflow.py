@@ -200,7 +200,8 @@ class Workflow(object):
         """
         
         # get the contents of the input folder (with the full paths)
-        input = self.vars.get("input")
+        input = os.path.abspath(self.vars.get("input"))
+        
         input_folder_contents = map(lambda file: os.path.join(input, file), input.files())
         # filter out contents to only include files
         input_files = [item for item in input_folder_contents if os.path.isfile(item)]
@@ -237,7 +238,7 @@ class Workflow(object):
             convert_to_string=True
         
         # get the output folder name
-        output_folder = self.vars.get("output")
+        output_folder = os.path.abspath(self.vars.get("output"))
         # add the subfolder if provided
         if subfolder:
             output_folder = os.path.join(output_folder, subfolder)
