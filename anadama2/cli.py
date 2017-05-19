@@ -2,12 +2,12 @@
 import re
 import sys
 import logging
-import optparse
+import argparse
 import os
 import subprocess
+import collections
 
-from .tracked import TrackedVariable
-from .util import kebab, Directory
+from .util import kebab
 from .util.fname import script_wd
 
 logger = logging.getLogger(__name__)
@@ -49,99 +49,89 @@ class Configuration(object):
 
     """
     
-    def __init__(self, description=None, version=None, defaults=True,
-                 namespace=None, remove_options=None):
+    def __init__(self, description=None, version=None, defaults=True, remove_options=None):
+        # set the description and version for the workflow
         self.description = description
-        self.version = version or "0.9"
-        #: args is a list containing any positional arguments passed at
-        #: the command line. Think sys.argv.
-        self.args = []
-        self.namespace = namespace if namespace is not None else script_wd()
+        self.version = version
 
-        self._directives = {}
+        self._arguments = {}
+        self._user_arguments = collections.OrderedDict()
+
         # Add the help short option so it is not selected by the function _find_short
         # when trying to find the short option for a new user option
         self._shorts = set('h')
-        self._directories = {}
         self._user_asked = False
-        self._callbacks = {}
-        self._tracked = set()
-        self._required_options = []
 
         if not description:
-            optparse.OptionParser.format_description = lambda s, t: s.description
             self.description = "AnADAMA2 Workflow"
-        self.parser = optparse.OptionParser(
+            
+        # create a parser instance
+        self.parser = argparse.ArgumentParser(
             description=self.description,
-            version="%prog v" + self.version
-        )
+            formatter_class=argparse.RawTextHelpFormatter)
+        
         if defaults:
-            self._directives.update(self.get_default_options())
-            self._required_options=self.get_default_required_options()
-            for opt in self.get_default_options().values():
-                self._shorts.add(opt._short_opts[0][1])
-            for name in self.get_default_directories():
-                self._directories[name] = self._directives[name].default
+            self._arguments=collections.OrderedDict(self.get_default_options())
+            for opt, info in self.get_default_options():
+                self._shorts.add(info.short)
 
         # remove default options, if provided
         if remove_options:
             for option in remove_options:
                 self.remove(option)
                 
+        # add a version option if version is provided
+        if self.version:
+            self.parser.add_argument("--version", action="version", version="%(prog)s v"+self.version)
+            
+            
+    @staticmethod
+    class Argument(object):
+        def __init__(self, short, long, default=None, type=None, action=None, 
+            choices=None, help=None, dest=None, required=None):
+            
+            # set the short and long option name
+            self.short=short
+            self.long=long
+            
+            # keep the keywords for the option that are set
+            keywords={"default":default, "type":type, "action":action, "choices":choices, "help":help, "dest":dest, "required":required}
+            self.keywords = {key:value for key, value in keywords.items() if value is not None}
+                
     @classmethod
     def get_default_options(cls):
-        return {
-            "output": optparse.make_option("-o", '--output', default=None, type="str",
-                                 help=("Write output to this directory. By default the "+  
-                                 "dependency database and log are written to this directory")),
-            "input": optparse.make_option("-i", '--input', default=os.getcwd(), type="str",
-                                 help="Collect inputs from this directory. [default: %default]"),
-            "dry_run": optparse.make_option("-d", '--dry-run', action="store_true",
-                                 help="Print tasks to be run but don't execute their actions."),
-            "grid": optparse.make_option("-g", '--grid',
-                                 help="Run gridable tasks on this grid type. [default: %default]",
-                                 type="str", default=cls.identify_grid()),
-            "grid_partition": optparse.make_option("-p", '--grid-partition',
-                                 help=("Run gridable tasks on this partition. "+
-                                 "Provide a single partition or a comma-delimited list of short/long partitions with a cutoff. [default: %default]"),
-                                 type="str", default=cls.default_partitions()),
-            "grid_benchmark": optparse.make_option("-b", '--grid-benchmark',
-                                 help="Benchmark gridable tasks. [default: %default]",
-                                 default="on", choices=["on","off"]),
-            "skip_nothing": optparse.make_option("-n", '--skip-nothing', action="store_true",
-                                 help="Skip no tasks, even if you could; run it all."),
-            "quit_early": optparse.make_option("-e", '--quit-early', action="store_true",
-                                 help=("If any tasks fail, stop all execution immediately. If not set, "+
-                                 "children of failed tasks are not " +
-                                 "executed but children of successful or skipped tasks are " +
-                                 "executed. The default is to keep running until all tasks " +
-                                 "that are available to execute have completed or failed.")),
-            "jobs": optparse.make_option("-j", '--local-jobs', default=1, type=int, dest="jobs",
-                                 help="The number of tasks to execute in parallel locally. [default: %default]"),
-            "grid_jobs": optparse.make_option("-J", '--grid-jobs', default=0, type=int,
-                                 help=("The number of tasks to submit to the grid in parallel. "+
-                                       "The default setting is zero jobs will be run on the grid. "+
-                                       "By default, all jobs, including gridable jobs, will run locally. [default: %default]")),
-            "until_task": optparse.make_option("-u", '--until-task', default=None,
-                                 help=("Stop after running the named task. Can refer to "+
-                                 "the end task by task number or task name.")),
-            "exclude_task": optparse.make_option("-U", "--exclude-task", default=[], action="append",
-                                 help=("Don't execute these tasks. Use this flag multiple times "+ 
-                                 "to not execute multiple tasks.")),
-            "target": optparse.make_option("-t", "--target", default=[], action="append",
-                                 help=("Only execute tasks that make these targets. " +  
-                                 "Use this flag multiple times to build many targets. If the " +
-                                 "provided value includes ? or * or [, treat it as " +
-                                 "a pattern and build all targets that match.")),
-            "exclude_target": optparse.make_option("-T", "--exclude-target", default=[], action="append",
-                                 help=("Don't execute tasks that make these targets. " +  
-                                 "Use this flag multiple times to exclude many targets. If the " + 
-                                 "provided value includes ? or * or [, treat it as " +
-                                 "a pattern and exclude all targets that match.")),
-            "log_level": optparse.make_option("-l","--log-level",default="INFO",
-                choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"], 
-                help="Set the level of output for the log. [default: %default]")
-        }
+        return [
+            ("output", cls.Argument("-o", "--output", required=True, 
+                help="Write output to this directory")),
+            ("input", cls.Argument("-i", "--input", default=os.getcwd(), 
+                help="Find inputs in this directory \n[default: %(default)s]")),
+            ("jobs", cls.Argument(None, "--local-jobs", default=1, type=int, dest="jobs", 
+                help="Number of tasks to execute in parallel locally \n[default: %(default)s]")),
+            ("grid_jobs", cls.Argument(None, '--grid-jobs', default=0, type=int, 
+                help="Number of tasks to execute in parallel on the grid \n[default: %(default)s]")),
+            ("grid", cls.Argument(None, "--grid", default=cls.identify_grid(),
+                help="Run gridable tasks on this grid type \n[default: %(default)s]")),
+            ("grid_partition", cls.Argument(None, "--grid-partition", default=cls.default_partitions(),
+                help="Partition/queue used for gridable tasks.\nProvide a single partition or a comma-delimited list\nof short/long partitions with a cutoff.\n[default: %(default)s]")),
+            ("grid_benchmark", cls.Argument(None, "--grid-benchmark", default="on" if cls.identify_grid() != "None" else "off", choices=["on","off"],
+                help="Benchmark gridable tasks \n[default: %(default)s]")),
+            ("dry_run", cls.Argument(None, "--dry-run", action="store_true", 
+                help="Print tasks to be run but don't execute their actions ")),
+            ("skip_nothing", cls.Argument(None, "--skip-nothing", action="store_true", 
+                help="Run all tasks. Rerun tasks that have already been run.")),
+            ("quit_early", cls.Argument(None, '--quit-early', action="store_true",
+                help="Stop if a task fails. By default,\nall tasks (except sub-tasks of failed tasks) will run.")),
+            ("until_task", cls.Argument(None, "--until-task",
+                help="Stop after running this task. Use task name or number.")),
+            ("exclude_task", cls.Argument(None, "--exclude-task", action="append",
+                help="Don't run these tasks. Add multiple times to append.")),
+            ("target", cls.Argument(None, "--target", action="append",
+                help="Only run tasks that generate these targets.\nAdd multiple times to append.\nPatterns with ? and * are allowed.")),
+            ("exclude_target", cls.Argument(None, "--exclude-target", action="append",
+                help="Don't run tasks that generate these targets.\nAdd multiple times to append.\nPatterns with ? and * are allowed.")),
+            ("log_level", cls.Argument(None,"--log-level",default="INFO", choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"], 
+                help="Set the level of output for the log \n[default: %(default)s]"))
+        ]
                 
     @staticmethod
     def identify_grid():
@@ -171,20 +161,9 @@ class Configuration(object):
             partitions = []
             
         return ",".join(map(str,partitions))
-    
-    @staticmethod
-    def get_default_required_options():
-        # a list of the required options (as optparse does not have a required keyword)
-        # these options must be supplied by the user on the command line or
-        # the workflow must set the option default to a value using the change function
-        return ["output"]
-    
-    @staticmethod
-    def get_default_directories():
-        return ("output","input")
 
-    def add(self, name, desc=None, type="str", default=None, short=None,
-            callback=None, tracked=False, required=None):
+    def add(self, name, desc=None, type=None, default=None, short=None,
+            action=None, choices=None, required=None, add_short=None, add_default=None):
         """Add an option to the Configuration object.
 
         :param name: Set the name of the option. This name is
@@ -198,15 +177,7 @@ class Configuration(object):
           display shown when the user gives the ``--help`` flag.
         :type desc: str
 
-        :keyword type: Transform values for this option into a
-          particular type. Acceptable types include the types
-          understood by optparse. Additionally, "bool" and "dir" types
-          are accepted. Bool types store boolean options (True or
-          False). Dir types store objects of type
-          :class:`anadama2.util.Directory`. If any option of type "dir"
-          is added, an additional option ``--deploy`` is added to the
-          Configuration object. The ``--deploy`` option creates the
-          directories specified. Default: str.
+        :keyword type: Argparse type
         :type type: str
         
         :keyword default: Set a default for the option. This value is
@@ -216,11 +187,10 @@ class Configuration(object):
           to find a short flag based off of the value for ``name``.
         :type short: str
         
-        :keyword callback: Set a function to execute when the user
-          sets the flag for this option.
-        :type callback: callable
+        :keyword action: Set an action to execute with flag
+        :type action: function or string
         
-        :keyword required: Add this to the list of required options.
+        :keyword required: Add this to the set of required options.
 
         :returns: self (the current Configuration object)
 
@@ -229,20 +199,24 @@ class Configuration(object):
         # remove special characters from the name
         name=kebab(name)
         
-        if callback:
-            self._callbacks[name] = callback
-            type="bool"
-        type, action = self._reg_type(type, name, default)
-        d = optparse.make_option(self._find_short(name, short),
-                                 "--"+name, help=desc,
-                                 type=type, action=action, default=default)
+        # change format of final name
+        option = re.sub(r'-', '_', name)
         
-        # replace dash with underscore for name (as this will be done by optparse)
-        name=re.sub(r'-', '_',name)
-        if required:
-            self._required_options.append(name)
+        # compute the short if requested
+        if add_short:
+            short=self._find_short(name,short)
+            
+        if short:
+            short="-"+short
+            
+        # add the default to the option
+        if desc and default is not None:
+            desc=desc+"\n[default: %(default)s]"
 
-        self._directives[name] = d
+        # add the new item to the end of the user arguments
+        self._user_arguments[option] = self.Argument(short, "--"+name, default, type, action, 
+            choices, help=desc, required=required)
+
         return self
 
     def change(self, name, **kwargs):
@@ -259,33 +233,24 @@ class Configuration(object):
             ctx = Workflow(vars=Configuration().change("output", default="."))
             ...
 
-
-        :returns: self (the current Configuration object)
-
         """
-        if 'default' in kwargs:
-            self._directives[name].default = kwargs['default']
-        return self
-
+        
+        for key, value in kwargs.items():
+            self._arguments[name][key]=value
 
     def remove(self, name):
         """ Remove an option from the Configuration object.
         :param name: The name of the option to remove
-
-        :returns: self (the current Configuration object)
-
+        
         """
-        self._shorts.remove(self._directives[name]._short_opts[0][1])
-        del self._directives[name]
-        self._directories.pop(name, None)
-        self._callbacks.pop(name, None)
-        if name in self._tracked:
-            self._tracked.remove(name)
-            
-        # remove the option from the required list if included
-        if name in self._required_options:
-            self._required_options.remove(name)
-        return self
+        
+        # remove the short if set
+        try:
+            self._shorts.remove(self._arguments[name].short)
+        except KeyError:
+            pass
+        
+        del self._arguments[name]
 
 
     def get(self, name, default=None):
@@ -301,8 +266,7 @@ class Configuration(object):
         return getattr(self, name, default)
     
     def get_option_values(self):
-        """Get all of the stored option values. Replace any custom class
-        instances with their corresponding values."""
+        """Get all of the values for the command line options. Prompt user if not asked."""
         
         class CommandLineOptions(object):
             def __getattr__(self, name):
@@ -317,13 +281,9 @@ class Configuration(object):
             self.ask_user()
         
         args=CommandLineOptions()
-        for option in self._directives:
+        for option in self._user_arguments.keys() + self._arguments.keys():
             option = re.sub(r'-', '_', option)
             value = self.get(option)
-            if isinstance(value, Directory):
-                value=value.name
-            elif isinstance(value, TrackedVariable):
-                value=value.__str__()
             setattr(args,option,value)
                 
         return args
@@ -359,28 +319,19 @@ class Configuration(object):
         """
         if self._user_asked and not override:
             return self
-        if self._directories and 'deploy' not in self._callbacks:
-            self.add("deploy", desc="Create directories used by other options",
-                     callback=self._deploy, type="bool")
-        # order options by name in help message
-        for opt in sorted(self._directives):
-            self.parser.add_option(self._directives[opt])
-        opts, self.args = self.parser.parse_args(args=argv)
-        for name in self._directives:
+        
+        # add options by dictionary order starting with the user arguments
+        for arg_name, arg_values in self._user_arguments.items() + self._arguments.items():
+            if arg_values.short:
+                self.parser.add_argument(arg_values.short, arg_values.long, **arg_values.keywords)
+            else:
+                self.parser.add_argument(arg_values.long, **arg_values.keywords)
+            
+        opts = self.parser.parse_args(args=argv)
+        for name in self._user_arguments.keys() + self._arguments.keys():
             name = re.sub(r'-', '_', name)
             val = getattr(opts, name)
-            # if this is a required option, check that it has been provided
-            # by the user on the command line or that the default was set
-            # in the workflow
-            if name in self._required_options and not val:
-                self.parser.error("the "+str(self._directives[name])+" option is required")
-            if name in self._directories:
-                val = Directory(val)
-            if name in self._tracked:
-                val = TrackedVariable(self.namespace, name, val)
-            if name in self._callbacks and val is True:
-                self._callbacks[name](val)
-            logger.info("Configured variable `%s' : `%s'", name, val)
+            logger.info("Command line argument `%s' = `%s'", name, val)
             setattr(self, name, val)
         self._user_asked = True
         return self
@@ -400,19 +351,4 @@ class Configuration(object):
         self._shorts.add(s)
         return "-"+s
 
-
-    def _reg_type(self, t, name, dirname=None):
-        if t in ("dir", dir, "directory"):
-            self._directories[name] = dirname
-            return "string", "store"
-        if t in ("bool", bool):
-            return None, "store_true"
-        return t, "store"
-
-        
-    def _deploy(self):
-        for d in self._directories.values():
-            Directory(d).create()
-            print >> sys.stderr, "created directory: "+d
-        sys.exit(0)
     
