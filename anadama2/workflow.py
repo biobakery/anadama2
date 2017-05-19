@@ -139,7 +139,7 @@ class Workflow(object):
         
         # get the temp directory location
         try:
-            tmpdir=self.vars.get("output").name
+            tmpdir=self.vars.get("output")
         except AttributeError:
             # if no output folder is provided, then write to the current working directory
             tmpdir = os.getcwd()
@@ -201,7 +201,7 @@ class Workflow(object):
         
         # get the contents of the input folder (with the full paths)
         input = self.vars.get("input")
-        input_folder_contents = map(lambda file: os.path.join(input.name, file), input.files())
+        input_folder_contents = map(lambda file: os.path.join(input, file), input.files())
         # filter out contents to only include files
         input_files = [item for item in input_folder_contents if os.path.isfile(item)]
         # if extension is set, then filter files
@@ -237,7 +237,7 @@ class Workflow(object):
             convert_to_string=True
         
         # get the output folder name
-        output_folder = self.vars.get("output").name
+        output_folder = self.vars.get("output")
         # add the subfolder if provided
         if subfolder:
             output_folder = os.path.join(output_folder, subfolder)
