@@ -567,9 +567,14 @@ class PweaveDocument(Document):
             "--colorbar_font_size",label_font]
         if log_scale:
             command+=["--log_scale"]
+            
         # if more than the max samples, do not include sample labels on the heatmap
         if len(sample_names) > self.max_labels:
             command+=["--no_slabels"]
+            
+        # if more than max labels, do not include the feature labels on the heatmap
+        if len(feature_names) > self.max_labels:
+            command+=["--no_flabels"]
             
         output=subprocess.check_output(command)
         # read the heatmap png file
