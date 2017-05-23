@@ -115,6 +115,8 @@ class Configuration(object):
                 help="Partition/queue used for gridable tasks.\nProvide a single partition or a comma-delimited list\nof short/long partitions with a cutoff.\n[default: %(default)s]")),
             ("grid_benchmark", cls.Argument(None, "--grid-benchmark", default="on" if cls.identify_grid() != "None" else "off", choices=["on","off"],
                 help="Benchmark gridable tasks \n[default: %(default)s]")),
+            ("grid_options", cls.Argument(None, "--grid-options", action="append",
+                help="Grid specific options that will be applied to each grid task")),
             ("dry_run", cls.Argument(None, "--dry-run", action="store_true", 
                 help="Print tasks to be run but don't execute their actions ")),
             ("skip_nothing", cls.Argument(None, "--skip-nothing", action="store_true", 

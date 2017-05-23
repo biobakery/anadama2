@@ -63,18 +63,23 @@ class SGE(Grid):
     
     :keyword benchmark_on: Option to turn on/off benchmarking
     : type benchmark_on: bool
+    
+    :keyword options: Grid specific options to apply to each job
+    :type options: str
 
     """
 
-    def __init__(self, partition, tmpdir, benchmark_on=None):
-        super(SGE, self).__init__("sge", GridWorker, SGEQueue(partition, benchmark_on), tmpdir, benchmark_on)
+    def __init__(self, partition, tmpdir, benchmark_on=None, options=None):
+        super(SGE, self).__init__("sge", GridWorker, SGEQueue(partition, benchmark_on, options), tmpdir, benchmark_on)
         
 
 class SGEQueue(GridQueue):
     
-    def __init__(self, partition, benchmark_on=None):
-            
+    def __init__(self, partition, benchmark_on=None, options=None):
         super(SGEQueue, self).__init__(partition, benchmark_on) 
+        
+        self.options=options
+        
         self.job_code_completed="COMPLETED"
         self.job_code_error="FAILED"
         self.job_code_terminated="TERMINATED"
@@ -90,16 +95,19 @@ class SGEQueue(GridQueue):
     def submit_command(grid_script):    
         return ["qsub",grid_script]
     
-    @staticmethod
-    def submit_template():
+    def submit_template(self):
         template = [
             "#$$ -q ${partition}",
             "#$$ -pe smp ${cpus}",
             "#$$ -l h_rt=${time}",
             "#$$ -l h_vmem=${memory}m",
-            '#$$ -V',
             "#$$ -o ${output}",
             "#$$ -e ${error}"]
+
+        # add user supplied options if provided
+        if self.options:
+            template+=["#$$ "+option for option in self.options]        
+
         return template
     
     def job_failed(self,status):

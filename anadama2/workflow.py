@@ -135,6 +135,7 @@ class Workflow(object):
         grid_selection = self.vars.get("grid")
         grid_partition = self.vars.get("grid_partition")
         grid_jobs = self.vars.get("grid_jobs")
+        grid_options = self.vars.get("grid_options")
         grid_benchmark_setting = True if self.vars.get("grid_benchmark") == "on" else False
         
         # get the temp directory location
@@ -150,11 +151,13 @@ class Workflow(object):
         elif grid_selection == "slurm":
             # get the temp output folder for the slurm scripts and stdout/stderr files
             tmpdir = os.path.join(tmpdir, "slurm_files")
-            grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting)
+            grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
+                options=grid_options)
         elif grid_selection == "sge":
             # get the temp output folder for the sge scripts and stdout/stderr files
             tmpdir = os.path.join(tmpdir, "sge_files")
-            grid = SGE(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting)
+            grid = SGE(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
+                options=grid_options)
         else:
             print("Grid selected ( "+grid_selection+" ) can not be found. Tasks will run locally.")
             grid = _grid.Dummy()

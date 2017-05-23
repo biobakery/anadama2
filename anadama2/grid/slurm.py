@@ -59,17 +59,22 @@ class Slurm(Grid):
     
     :keyword benchmark_on: Option to turn on/off benchmarking
     : type benchmark_on: bool
+    
+    :keyword options: Grid specific options to apply to each job
+    :type options: str
 
     """
 
-    def __init__(self, partition, tmpdir, benchmark_on=None):
-        super(Slurm, self).__init__("slurm", GridWorker, SLURMQueue(partition, benchmark_on), tmpdir, benchmark_on)
+    def __init__(self, partition, tmpdir, benchmark_on=None, options=None):
+        super(Slurm, self).__init__("slurm", GridWorker, SLURMQueue(partition, benchmark_on, options), tmpdir, benchmark_on)
 
 
 class SLURMQueue(GridQueue):
     
-    def __init__(self, partition, benchmark_on=None):
+    def __init__(self, partition, benchmark_on=None, options=None):
         super(SLURMQueue, self).__init__(partition, benchmark_on)
+        
+        self.options=options
         
         self.job_code_completed="COMPLETED"
         self.job_code_cancelled="CANCELLED"
@@ -84,8 +89,7 @@ class SLURMQueue(GridQueue):
     def submit_command(grid_script):    
         return ["sbatch",grid_script]
     
-    @staticmethod
-    def submit_template():
+    def submit_template(self):
         template = [
             "#SBATCH -p ${partition}",
             "#SBATCH -N 1 ",
@@ -94,6 +98,11 @@ class SLURMQueue(GridQueue):
             "#SBATCH --mem ${memory}",
             "#SBATCH -o ${output}",
             "#SBATCH -e ${error}"]
+        
+        # add user supplied options if provided
+        if self.options:
+            template+=["#SBATCH "+option for option in self.options]
+            
         return template
     
     def job_failed(self,status):
