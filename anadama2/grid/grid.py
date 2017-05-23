@@ -190,8 +190,7 @@ class GridQueue(object):
     def submit_command(grid_script):
         raise NotImplementedError
     
-    @staticmethod
-    def submit_template():
+    def submit_template(self):
         raise NotImplementedError
     
     def job_failed(self,status):
