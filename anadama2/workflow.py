@@ -138,9 +138,8 @@ class Workflow(object):
         grid_benchmark_setting = True if self.vars.get("grid_benchmark") == "on" else False
         
         # get the temp directory location
-        try:
-            tmpdir=self.vars.get("output")
-        except AttributeError:
+        tmpdir=self.vars.get("output")
+        if tmpdir is None:
             # if no output folder is provided, then write to the current working directory
             tmpdir = os.getcwd()
         
