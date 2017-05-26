@@ -42,6 +42,8 @@ import six
 from .util import sh as _sh
 from .util import sugar_list
 
+from .reporters import SHELL_COMMAND
+
 def file_size(depends):
     """ Return the size of the file in GB """
     
@@ -54,10 +56,10 @@ def file_size(depends):
 
 def apply_sh(actions):
     """Add the shell function to any actions that are strings"""
-    return [ a if six.callable(a) else sh(a) for a in actions ]
+    return [ a if six.callable(a) else sh(a, log_command=False) for a in actions ]
 
 
-def sh(s, **kwargs):
+def sh(s, log_command=True, **kwargs):
     """Execute a shell command. All further keywords are passed to
     :class:`subprocess.Popen`
 
@@ -69,7 +71,8 @@ def sh(s, **kwargs):
     """
     def actually_sh(task=None):
         logger = logging.getLogger(__name__)
-        logger.info("Executing with shell: "+s)
+        if log_command:
+            logger.info(SHELL_COMMAND+s)
         kwargs['shell'] = True
         ret = _sh(s, **kwargs)
         logger.info("Execution complete. Stdout: %s\nStderr: %s",

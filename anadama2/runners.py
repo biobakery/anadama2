@@ -118,6 +118,7 @@ class SerialLocalRunner(BaseRunner):
 
             self.ctx._handle_task_started(idx)
             self.ctx._reporter.task_running(idx)
+            self.ctx._reporter.task_command(idx)
             result = _run_task_locally(self.ctx.tasks[idx])
             self.ctx._handle_task_result(result)
 
@@ -156,6 +157,7 @@ def worker_run_loop(work_q, result_q, run_task, reporter=None, lock=None):
             if lock is not None:
                 lock.acquire()
             reporter.task_running(task.task_no)
+            reporter.task_command(task.task_no)
             if lock is not None:
                 lock.release()
         result = run_task(task, extra)
