@@ -6,6 +6,7 @@ import itertools
 from glob import glob
 from operator import eq, itemgetter
 from collections import defaultdict
+import subprocess
 
 import six
 from six.moves import zip_longest
@@ -511,29 +512,36 @@ class TrackedFilePattern(TrackedFile):
 class TrackedExecutable(Base):
     """Track a script or binary executable."""
 
-    def init(self, name, version_cmd=None):
+    def init(self, name, version="--version"):
         """Initialize the dependency.
 
         :param name: Name of a script on the shell $PATH or name of
           the file to track
         :type name: str
         
-        :keyword version_cmd: Shell string to execute to get the
-          binary or script's version
-        
+        :keyword version: Option to get the executables version
+        :type version: str
         """
 
         self.name = self.__class__.key(name)
-        self.cmd = version_cmd
-
+        self.version_cmd=[self.name,version]
+            
+    def version(self):
+        try:
+            version = subprocess.check_output(self.version_cmd, stderr=subprocess.STDOUT)
+        except (subprocess.CalledProcessError, EnvironmentError):
+            version = None
+        
+        return version
 
     def exists(self):
         return os.path.exists(self.name)
         
 
     def compare(self):
-        if self.cmd:
-            yield sh(self.cmd)[0]
+        version = self.version()
+        if version:
+            yield version
         stat = os.stat(self.name)
         yield stat.st_size
         yield stat.st_mtime
