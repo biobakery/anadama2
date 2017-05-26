@@ -2,11 +2,13 @@ import os
 import sys
 import logging
 import multiprocessing
+import collections
 
 import six
 import time
 
 from .util import mkdirp
+from .tracked import TrackedExecutable
 
 LOG_FILE_NAME = "anadama.log"
 
@@ -76,6 +78,20 @@ class BaseReporter(object):
         """
 
         raise NotImplementedError()
+    
+    def task_command(self, task_no):
+        """Executed when anadama is ready to run a task. Logs the command
+            and version of any tracked executables.
+
+        :param task: The task number of the task that is
+          being started. To get the actual :class:`anadama2.Task` object
+          that's being executed, do ``self.run_context.tasks[task_no]``.
+
+        :type task_no: int
+
+        """
+
+        pass
 
     def task_failed(self, task_result):
         """Executed when a task fails.
@@ -181,6 +197,10 @@ class ReporterGroup(BaseReporter):
     def task_running(self, task_no):
         for r in self.reps:
             r.task_running(task_no)
+            
+    def task_command(self, task_no):
+        for r in self.reps:
+            r.task_command(task_no)
 
     def task_failed(self, task_result):
         for r in self.reps:
@@ -458,6 +478,9 @@ class VerboseConsoleReporter(BaseReporter):
         self.grid_update_msg = six.u(" <Grid JobId {:9}: {:.30}>")
         self.n_complete.value = 0
         self.failed = False
+        
+SHELL_COMMAND = "Executing with shell: "
+VERSION_COMMAND = "Tracked executable version: "
 
 class LoggerReporter(BaseReporter):
     """A reporter that uses :mod:`logging`.
@@ -476,6 +499,7 @@ class LoggerReporter(BaseReporter):
     """
 
     FORMAT = "%(asctime)s\t%(name)s\t%(funcName)s\t%(levelname)s: %(message)s"
+    
     def __init__(self, loglevel_str=None, logfile=None,
                  fmt_str=None, *args, **kwargs):
         # create the log file folder if needed
@@ -493,6 +517,31 @@ class LoggerReporter(BaseReporter):
         logging.basicConfig(**logkwds)
         self.any_failed = False
         self.start_log_message="task %i, %s : %s "
+        
+    @classmethod
+    def read_log(cls,file,type,remove_paths=True):
+        """ Read the data from the log file """
+        
+        # look for either commands or executable versions
+        format_output=lambda x: x
+        if type == "commands":
+            keyword = SHELL_COMMAND
+            if remove_paths:
+                format_output=lambda x: " ".join([os.path.split(i)[-1] for i in x.split(" ")])
+        else:
+            keyword = VERSION_COMMAND
+        
+        data=collections.OrderedDict()
+        with open(file) as file_handle:
+            for line in file_handle:
+                if keyword in line:
+                    data[format_output(line.split(keyword)[-1].strip())]=1
+                    
+        log_info=data.keys()
+        if not log_info:
+            log_info=["No {} found in log".format(type)]
+                
+        return log_info
 
     def _daginfo(self, task_no):
         children = self.run_context.dag.successors(task_no)
@@ -540,6 +589,17 @@ class LoggerReporter(BaseReporter):
         
     def task_running(self, task_no):
         self.log_event("starting to run",task_no,self._daginfo(task_no))
+        
+    def task_command(self, task_no):
+        # if a tracked executable is found, then log the version
+        for exe_depends in filter(lambda x: isinstance(x, TrackedExecutable), self.run_context.tasks[task_no].depends):
+            version = exe_depends.version()
+            if version:
+                self.logger.info(VERSION_COMMAND+" "+version)
+        
+        # if a command, then log the shell command(s)
+        if not list(filter(lambda x: six.callable(x), self.run_context.tasks[task_no].actions)):
+            self.logger.info(SHELL_COMMAND+" "+" ".join(self.run_context.tasks[task_no].actions))
 
     def task_failed(self, task_result):
         self.logger.error(self.start_log_message,task_result.task_no,
