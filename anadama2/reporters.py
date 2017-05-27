@@ -523,13 +523,15 @@ class LoggerReporter(BaseReporter):
         """ Read the data from the log file """
         
         # look for either commands or executable versions
-        format_output=lambda x: x
         if type == "commands":
             keyword = SHELL_COMMAND
             if remove_paths:
                 format_output=lambda x: " ".join([os.path.split(i)[-1] for i in x.split(" ")])
         else:
             keyword = VERSION_COMMAND
+            # remove redundant version from strings since these are already 
+            # identified as version information
+            format_output=lambda x: x.replace("Version:","").replace(", version","")
         
         data=collections.OrderedDict()
         with open(file) as file_handle:
