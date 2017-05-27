@@ -437,7 +437,8 @@ class GridWorker(threading.Thread):
         return threading.Lock() 
     
     def run(self):
-        return runners.worker_run_loop(self.work_q, self.result_q, self.run_task_by_type)
+        return runners.worker_run_loop(self.work_q, self.result_q, self.run_task_by_type,
+            self.reporter, self.lock)
    
     @classmethod 
     def run_task_by_type(cls, task, extra):
