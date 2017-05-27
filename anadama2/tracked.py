@@ -512,23 +512,23 @@ class TrackedFilePattern(TrackedFile):
 class TrackedExecutable(Base):
     """Track a script or binary executable."""
 
-    def init(self, name, version="--version"):
+    def init(self, name, version_command="{} --version"):
         """Initialize the dependency.
 
         :param name: Name of a script on the shell $PATH or name of
           the file to track
         :type name: str
         
-        :keyword version: Option to get the executables version
+        :keyword version: Command to get the executables version
         :type version: str
         """
 
         self.name = self.__class__.key(name)
-        self.version_cmd=[self.name,version]
+        self.version_command=version_command.format(name)
             
     def version(self):
         try:
-            version = subprocess.check_output(self.version_cmd, stderr=subprocess.STDOUT)
+            version = subprocess.check_output(self.version_command, shell=True, stderr=subprocess.STDOUT)
         except (subprocess.CalledProcessError, EnvironmentError):
             version = None
         
