@@ -489,12 +489,12 @@ class GridWorker(threading.Thread):
             resubmission+=1
             # increase the memory or the time
             if grid_queue.job_timeout(job_final_status, jobid, time):
-                time = time * 2
+                time = "({})*2".format(time) if isinstance(time,basestring) else time*2
                 logging.info("Resubmission number %s of grid job for task id %s with 2x more time: %s minutes", 
                     resubmission, task.task_no, time)
                 reporter.task_grid_status(task.task_no,jobid,"Resubmitting due to time out")
             elif grid_queue.job_memkill(job_final_status, jobid, memory):
-                memory = memory * 2
+                memory = "({})*2".format(memory) if isinstance(memory,basestring) else memory*2
                 logging.info("Resubmission number %s of grid job for task id %s with 2x more memory: %s MB",
                     resubmission, task.task_no, memory)
                 reporter.task_grid_status(task.task_no,jobid,"Resubmitting due to max memory")
