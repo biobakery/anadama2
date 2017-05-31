@@ -526,7 +526,7 @@ class LoggerReporter(BaseReporter):
         if type == "commands":
             keyword = SHELL_COMMAND
             if remove_paths:
-                format_output=lambda x: " ".join([os.path.split(i)[-1] for i in x.split(" ")])
+                format_output=lambda x: " ".join([os.path.split(i.rstrip(os.path.sep))[-1] for i in x.split(" ")])
         else:
             keyword = VERSION_COMMAND
             # remove redundant version from strings since these are already 
