@@ -6,6 +6,8 @@ import subprocess
 import itertools
 import sys
 
+from .helpers import sh
+
 try:
     import cPickle as pickle
 except ImportError:
@@ -34,12 +36,14 @@ class Document(object):
 class PweaveDocument(Document):
     """ A document using the pweave autogen tool """
     
-    def __init__(self, templates=None, depends=None, targets=None, vars=None):
+    def __init__(self, templates=None, depends=None, targets=None, vars=None, table_of_contents=None):
         # allow for a single template or multiple templates
         if templates is not None and isinstance(templates,basestring):
             templates=[templates]
         self.templates=templates
         self.depends=depends
+        
+        self.table_of_contents=table_of_contents
         
         # if targets is a single item, save as a list
         if targets is not None and isinstance(targets,basestring):
@@ -102,20 +106,16 @@ class PweaveDocument(Document):
         """ Create the documents specified as targets """
 
         # get the template extension
-        if self.templates[0].endswith(".mdw"):
-            template_extension="mdw"
-        else:
-            template_extension="py"
+        template_extension=os.path.splitext(self.templates[0])[-1]
             
         # get the report and figure extensions based on the target
-        if self.targets[0].endswith(".html"):
-            report_extension="html"
-        else:
-            report_extension="pdf"
+        report_filename, report_extension=os.path.splitext(self.targets[0])
 
         # create the temp file to run with when ready to create the document
         temp_directory = tempfile.mkdtemp(dir=os.path.dirname(self.targets[0]))
-        temp_template = os.path.join(temp_directory,os.path.basename(self.targets[0]).replace("."+report_extension,""))
+        temp_template_basename = os.path.join(temp_directory,os.path.basename(report_filename))
+        # keep the extension of the template for pweave auto reader function
+        temp_template = temp_template_basename + "." + template_extension
         
         # merge the templates into the temp file
         with open(temp_template,"w") as handle:
@@ -144,7 +144,7 @@ class PweaveDocument(Document):
                     # ignore lists and None values
                     continue
             # create a picked file with the temp template name in the same folder
-            pickle.dump(self.vars, open(temp_template+".pkl", "wb"))
+            pickle.dump(self.vars, open(temp_template_basename+".pkl", "wb"))
 
         # create the document
         # first move to the directory with the temp output files
@@ -153,18 +153,25 @@ class PweaveDocument(Document):
         # template file and the pdf files are written to the current working directory
         current_working_directory = os.getcwd()
         os.chdir(temp_directory)
+        
+        # get the intermediate output file based on the initial template type
+        if "rst" in template_extension:
+            intermediate_template = temp_template_basename+"."+"rst"
+        else:
+            intermediate_template = temp_template_basename+"."+"md"
             
         # process the template based on the extension type
-        temp_report = temp_template+"."+report_extension
-        if template_extension == "mdw":
-            if report_extension == "html":
-                output = subprocess.check_output(["pweave","-f","pandoc",temp_template])
-                output = subprocess.check_output(["pandoc","-s", temp_template+".md","-o",temp_report])
-            else:
-                output = subprocess.check_output(["pweave","-f","pandoc2latex",temp_template])
-                output = subprocess.check_output(["pdflatex",temp_template+".tex"])
-        else:
-            output = subprocess.check_output(["pypublish",temp_template,"-f",report_extension])
+        temp_report = temp_template_basename+"."+report_extension
+        
+        # set the pandoc command based on if a table of contents will be included
+        pandoc_command="pandoc {0} -o {1} --variable=linkcolor:Blue "+\
+            "--variable=toccolor:Blue --latex-engine=pdflatex --standalone" 
+        if self.table_of_contents:
+            pandoc_command+=" --toc"
+        
+        # run pweave then pandoc to generate document
+        sh("pweave {0} -o {1}".format(temp_template, intermediate_template),log_command=True)()
+        sh(pandoc_command.format(intermediate_template, temp_report),log_command=True)()          
         
         # change back to original working directory
         os.chdir(current_working_directory)

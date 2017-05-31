@@ -374,7 +374,7 @@ class Workflow(object):
         self._get_grid().do(t, **gridopts)
         return t
     
-    def add_document(self, templates, depends=None, targets=None, vars=None):
+    def add_document(self, templates, depends=None, targets=None, vars=None, table_of_contents=None):
         """ Create and add a group of :class:`anadama2.Task` to the workflow. This
         task will create a document which will be the target(s) provided. The
         variables will be passed on to the template and be available when the
@@ -382,7 +382,7 @@ class Workflow(object):
         to the workflow will be used to create the document."""
         
         doc = copy.deepcopy(self.document)
-        doc.__init__(templates, depends, targets, vars)
+        doc.__init__(templates, depends, targets, vars, table_of_contents)
         
         return self.add_task(actions=doc.create, depends=depends, targets=targets,
                       interpret_deps_and_targs=False, name="document")  
