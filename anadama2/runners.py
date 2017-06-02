@@ -78,16 +78,32 @@ class DryRunner(BaseRunner):
         tracked.TrackedFunction: "Python Function",
     }
 
+    sublist_template="  - {} ({})"
+
     def run_tasks(self, task_idx_deque):
-        for idx in task_idx_deque:
-            task = self.ctx.tasks[idx]
-            six.print_("{} - {}".format(task.task_no, task.name))
+        # order the tasks by number
+        tasks_by_number={}
+        for index in task_idx_deque:
+            number=self.ctx.tasks[index].task_no
+            try:
+                number=int(number)
+            except (ValueError, TypeError):
+                pass
+                
+            tasks_by_number[number]=self.ctx.tasks[index]
+        # print the tasks from first to last
+        for number, task in sorted(tasks_by_number.items()):
+            six.print_("{} - {}".format(number, task.name))
             six.print_("  Dependencies ({})".format(len(task.depends)))
             for dep in task.depends:
                 six.print_(self._depformat(dep))
             six.print_("  Targets ({})".format(len(task.targets)))
             for dep in task.targets:
                 six.print_(self._depformat(dep))
+            six.print_("  Actions ({})".format(len(task.actions)))
+            for action in task.actions:
+                six.print_(self._actionformat(action))
+                    
             six.print_("------------------")
 
 
@@ -97,7 +113,13 @@ class DryRunner(BaseRunner):
         else:
             t = type(d)
             desc = self._typemap.get(t, str(t))
-            return "  - {} ({})".format(d.name, desc)
+            return self.sublist_template.format(d.name, desc)
+    
+    def _actionformat(self, action):
+        if six.callable(action):
+            return self.sublist_template.format(action.__name__,"function")
+        else:
+            return self.sublist_template.format(action,"command")
 
 
 
