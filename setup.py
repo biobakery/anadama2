@@ -12,6 +12,8 @@ except ImportError:
     from urllib import urlretrieve
 
 VERSION="0.3.0"
+AUTHOR = "AnADAMA2 Development Team"
+AUTHOR_EMAIL = "anadama-users@googlegroups.com"
 
 requires = [
     'networkx==1.11',
@@ -83,20 +85,37 @@ class SphinxBuild(distutils.cmd.Command):
 
 setup(
     name='anadama2',
+    author=AUTHOR,
+    author_email=AUTHOR_EMAIL,
     version=VERSION,
-    description=('AnADAMA - '
-                 'Another '
-                 'Automated '
-                 'Data '
-                 'Analysis '
-                 'Management '
-                 'Application'),
+    license="MIT",
+    description="AnADAMA2: Another Automated Data Analysis Management Application 2",
+    long_description="AnADAMA2 is the next generation of AnADAMA. AnADAMA is "+\
+        "a tool to create reproducible workflows and execute them efficiently."+\
+        " Tasks can be run locally or in a grid computing environment to increase"+\
+        " efficiency. Essential information from all tasks is recorded, using the "+\
+        "default logger and command line reporters, to ensure reproducibility. "+\
+        "A auto-doc feature allows for workflows to generate documentation automatically"+\
+        " to further ensure reproducibility by capturing the latest essential workflow "+\
+        "information. AnADAMA2 was architected to be modular allowing users to "+\
+        "customize the application by subclassing the base grid meta-schedulers, "+\
+        "reporters, and tracked objects (ie files, executables, etc).",
+    url="http://huttenhower.sph.harvard.edu/anadama2",
+    keywords=['microbial','microbiome','bioinformatics','workflow','grid','anadama','anadama2'],
+    platforms=['Linux','MacOS'],
+    classifiers=[
+        "Programming Language :: Python",
+        "Development Status :: 5 - Production/Stable",
+        "Environment :: Console",
+        "Operating System :: MacOS",
+        "Operating System :: Unix",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.4",
+        "Topic :: Scientific/Engineering :: Bio-Informatics"
+        ],
     packages=find_packages(exclude=['ez_setup', 'tests', 'tests.*']),
     zip_safe=False,
     install_requires=requires,
-    classifiers=[
-        "Development Status :: 2 - Pre-Alpha"
-    ],
     test_suite="tests.test_suite",
     cmdclass={ 'sphinx_build' : SphinxBuild }
 )
