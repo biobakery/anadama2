@@ -48,12 +48,13 @@ class PickleScript(object):
         
     def create_task(self):
         # write the input pickle file
-        cloudpickle.dump(self.task,open(self.input_file,"wb"))
+        with open(self.input_file,"wb") as file_handle:
+            cloudpickle.dump(self.task,file_handle)
         
         # write the script
         custom_script = template.format(in_file=self.input_file, out_file=self.output_file)
         with open(self.script_file,"wb") as file_handle:
-                file_handle.write(custom_script)
+                file_handle.write(custom_script.encode("utf-8"))
         
         # update the task to run the pickle script
         pickle_task = copy.deepcopy(self.task)
@@ -68,7 +69,8 @@ class PickleScript(object):
         # try to get the result from running the pickled function
         extra_error = None
         try:
-            result = cloudpickle.load(open(self.output_file,"rb"))
+            with open(self.output_file,"rb") as file_handle:
+                result = cloudpickle.load(file_handle)
         except (ValueError, EOFError):
             extra_error = "Unable to decode pickle task result"
         

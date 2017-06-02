@@ -332,14 +332,14 @@ class Configuration(object):
             return self
         
         # add options by dictionary order starting with the user arguments
-        for arg_name, arg_values in self._user_arguments.items() + self._arguments.items():
+        for arg_name, arg_values in list(self._user_arguments.items()) + list(self._arguments.items()):
             if arg_values.short:
                 self.parser.add_argument(arg_values.short, arg_values.long, **arg_values.keywords)
             else:
                 self.parser.add_argument(arg_values.long, **arg_values.keywords)
             
         opts = self.parser.parse_args(args=argv)
-        for name in self._user_arguments.keys() + self._arguments.keys():
+        for name in list(self._user_arguments.keys()) + list(self._arguments.keys()):
             name = re.sub(r'-', '_', name)
             val = getattr(opts, name)
             logger.info("Command line argument `%s' = `%s'", name, val)
