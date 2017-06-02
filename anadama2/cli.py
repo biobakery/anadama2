@@ -49,10 +49,13 @@ class Configuration(object):
 
     """
     
-    def __init__(self, description=None, version=None, defaults=True, remove_options=None):
+    def __init__(self, description=None, version=None, defaults=True, remove_options=None, prompt_user=True):
         # set the description and version for the workflow
         self.description = description
         self.version = version
+        
+        # set if should prompt user for command line arguments
+        self.prompt_user=prompt_user
 
         self._arguments = {}
         self._user_arguments = collections.OrderedDict()
@@ -319,6 +322,12 @@ class Configuration(object):
         :returns: self (the current Configuration object)
 
         """
+        # if not set to prompt user, then use defaults
+        if not self.prompt_user:
+            for arg_name, arg_values in self._arguments.items():
+                setattr(self,arg_name,arg_values.keywords.get("default",None))
+            return self
+        
         if self._user_asked and not override:
             return self
         
