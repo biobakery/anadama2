@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 import shutil
 import unittest
 import subprocess
@@ -7,6 +8,7 @@ import subprocess
 import anadama2
 import anadama2.tracked
 from anadama2 import picklerunner
+from anadama2.runners import TaskResult
 
 
 class TestPicklerunner(unittest.TestCase):
@@ -26,8 +28,9 @@ class TestPicklerunner(unittest.TestCase):
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
         cfg = anadama2.cli.Configuration()
-        cfg._directives['output'].default = self.workdir
+        cfg._arguments["output"].keywords["default"]=self.workdir
         self.ctx = anadama2.workflow.Workflow(vars=cfg)
+        self.stub_result=TaskResult(1,None,[],[])
 
 
     def tearDown(self):
@@ -39,53 +42,31 @@ class TestPicklerunner(unittest.TestCase):
             
         if os.path.isdir(self.workdir):
             shutil.rmtree(self.workdir)
-        
 
-    def test_PickleScript(self):
+    def test_write(self):
         outf = os.path.join(self.workdir, "hosts")
         t = self.ctx.add_task("ls -alh /etc/hosts > [targets[0]]",
                               targets=outf)
-        s = picklerunner.PickleScript(t)
-        data = s.render()
-        fname = os.path.join(self.workdir, "script.py")
-        s.save(path=fname)
-        self.assertTrue(os.path.exists(fname))
-        with open(fname, 'r') as f:
-            self.assertEqual(f.read(), data)
-
-
-    def test_tmp(self):
-        outf = os.path.join(self.workdir, "hosts")
-        t = self.ctx.add_task("ls -alh /etc/hosts > [targets[0]]",
-                              targets=outf)
-        s = picklerunner.tmp(t)
-        self.assertTrue(os.path.exists(s.path))
-        proc = subprocess.Popen([s.path, "-r", "-p"], stdout=subprocess.PIPE)
+        s = picklerunner.PickleScript(t,self.workdir,"test")
+        new_task = s.create_task()
+        self.assertTrue(os.path.exists(s.script_file))
+        proc = subprocess.Popen([sys.executable,s.script_file], stdout=subprocess.PIPE)
         out, err = proc.communicate()
         self.assertEqual(proc.returncode, 0)
-        self.assertFalse(os.path.exists(s.path))
-        self.assertTrue(os.path.exists(outf))
-        self.assertIn(picklerunner.PICKLE_KEY, out)
 
     def test_decode(self):
         outf = os.path.join(self.workdir, "hosts")
         t = self.ctx.add_task("ls -alh /etc/hosts > [targets[0]]",
                               targets=outf)
-        s = picklerunner.tmp(t)
-        self.assertTrue(os.path.exists(s.path))
+        s = picklerunner.PickleScript(t,self.workdir,"test")
+        new_task = s.create_task()
+        self.assertTrue(os.path.exists(s.script_file))
         self.assertFalse(os.path.exists(outf))
-        proc = subprocess.Popen([s.path], stdout=subprocess.PIPE)
+        proc = subprocess.Popen([sys.executable,s.script_file], stdout=subprocess.PIPE)
         out, err = proc.communicate()
         self.assertEqual(proc.returncode, 0)
-        self.assertTrue(os.path.exists(s.path))
-        self.assertTrue(os.path.exists(outf))
-        with self.assertRaises(ValueError):
-            picklerunner.decode(out)
-        proc = subprocess.Popen([s.path, "-p"], stdout=subprocess.PIPE)
-        out, err = proc.communicate()
-        self.assertEqual(proc.returncode, 0)
-        self.assertTrue(os.path.exists(s.path))
-        result = picklerunner.decode(out)
+        self.assertTrue(os.path.exists(s.script_file))
+        result = s.result(self.stub_result)
         self.assertFalse(bool(result.error))
         self.assertEqual(len(result.dep_keys), 1)
         compares = list(anadama2.tracked.HugeTrackedFile(outf).compare())
@@ -98,17 +79,17 @@ class TestPicklerunner(unittest.TestCase):
         outf = os.path.join(self.workdir, "hosts")
         t = self.ctx.add_task("ls -alh /etc/hosts > [targets[0]]; exit 1",
                               targets=outf)
-        s = picklerunner.tmp(t)
-        self.assertTrue(os.path.exists(s.path))
+        s = picklerunner.PickleScript(t,self.workdir,"test")
+        new_task = s.create_task()
+        self.assertTrue(os.path.exists(s.script_file))
         self.assertFalse(os.path.exists(outf))
-        proc = subprocess.Popen([s.path, "-p"], 
+        proc = subprocess.Popen([sys.executable,s.script_file], 
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         out, err = proc.communicate()
         self.assertEqual(proc.returncode, 0)
-        self.assertTrue(os.path.exists(s.path))
         self.assertTrue(os.path.exists(outf))
-        result = picklerunner.decode(out)
+        result = s.result(self.stub_result)
         self.assertTrue(bool(result.error))
         self.assertIn("ShellException", result.error)
         

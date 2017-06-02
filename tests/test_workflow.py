@@ -41,8 +41,8 @@ class TestWorkflow(unittest.TestCase):
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
-        cfg = anadama2.cli.Configuration()
-        cfg._directives['output'].default = self.workdir
+        cfg = anadama2.cli.Configuration(prompt_user=False)
+        cfg._arguments["output"].keywords["default"]=self.workdir
         self.ctx = anadama2.workflow.Workflow(vars=cfg)
 
 
@@ -189,7 +189,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertNotIn(":", kws['name'], "markup colon not removed")
         self.assertFalse("[" in kws['name'] or "]" in kws['name'],
                          "target markup square brackets not removed")
-        self.assertIn(self.ctx.vars.output.name, kws["name"],
+        self.assertIn(self.ctx.vars.output, kws["name"],
                       "output variable should be replaced with the var value")
         self.assertNotIn("output", kws["name"],
                          "output variable should be replaced")
@@ -208,7 +208,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertFalse("[" in kws['name'] or "]" in kws['name'],
                          "target markup square brackets not removed")
         self.assertNotIn("vd", kws['name'], "vd markup not removed")
-        self.assertIn(self.ctx.vars.output.name, kws["name"],
+        self.assertIn(self.ctx.vars.output, kws["name"],
                       "output variable should be replaced with the var value")
         self.assertNotIn("output", kws["name"],
                          "output variable should be replaced")
@@ -229,7 +229,7 @@ class TestWorkflow(unittest.TestCase):
         self.assertFalse("[" in kws['name'] or "]" in kws['name'],
                          "target markup square brackets not removed")
         self.assertNotIn("dv", kws['name'], "vd markup not removed")
-        self.assertIn(self.ctx.vars.output.name, kws["name"],
+        self.assertIn(self.ctx.vars.output, kws["name"],
                       "output variable should be replaced with the var value")
         self.assertNotIn("output", kws["name"],
                          "output variable should be replaced")
@@ -334,7 +334,7 @@ class TestWorkflow(unittest.TestCase):
         a,b,c,d,e,f = [os.path.join(self.workdir, letter+".txt")
                        for letter in ("a", "b", "c", "d", "e", "f")]
         self.ctx.add_task("touch [targets[0]]", targets=[a], name="a")
-        self.ctx.add_task("touch [targets[0]]; exit 1", depends=[a], targets=[b], name="b")
+        self.ctx.add_task("touch [targets[0]]; exit 1", depends=[a], targets=[b], name="task should fail")
         self.ctx.add_task("touch [targets[0]]", depends=[b], targets=[c], name="c")
         self.ctx.add_task("touch [targets[0]]", targets=[d], name="d")
         self.ctx.add_task("touch [targets[0]]", depends=[d], targets=[e], name="e")
@@ -347,7 +347,7 @@ class TestWorkflow(unittest.TestCase):
     def test_go_quit_early(self):
         outf = os.path.join(self.workdir, "blah.txt")
         out2 = os.path.join(self.workdir, "shouldntexist.txt")
-        self.ctx.add_task("echo blah > [targets[0]]; exit 1", targets=[outf])
+        self.ctx.add_task("echo blah > [targets[0]]; exit 1", targets=[outf], name="task should fail")
         self.ctx.add_task("cat [depends[0]] > [targets[0]]",
                           depends=[outf], targets=[outf])
 
