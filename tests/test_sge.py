@@ -14,6 +14,7 @@ import anadama2
 import anadama2.grid.sge
 import anadama2.backends
 from anadama2.util import capture
+import anadama2.cli
 
 def bern(p):
     return random.random() < p
@@ -21,7 +22,7 @@ def bern(p):
 PARTITION = os.environ.get("ANASGE_QUEUE")
 TMPDIR = os.environ.get("ANASGE_TMPDIR")
 
-available = all(map(bool, (anadama2.grid.sge.available, PARTITION, TMPDIR) ))
+available = True if anadama2.cli.Configuration.identify_grid == "sge" else False
 
 
 class TestSGE(unittest.TestCase):
@@ -41,7 +42,7 @@ class TestSGE(unittest.TestCase):
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
         cfg = anadama2.cli.Configuration()
-        cfg._directives['output'].default = self.workdir
+        cfg._arguments["output"].keywords["default"]=self.workdir
         powerup = anadama2.grid.sge.SGE(PARTITION, TMPDIR)
         self.ctx = anadama2.workflow.Workflow(vars=cfg, grid=powerup)
 

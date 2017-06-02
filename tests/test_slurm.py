@@ -16,6 +16,7 @@ import anadama2.grid.slurm
 import anadama2.backends
 from anadama2.util import find_on_path
 from anadama2.util import capture
+import anadama2.cli
 
 def bern(p):
     return random.random() < p
@@ -23,7 +24,7 @@ def bern(p):
 PARTITION = os.environ.get("ANASLURM_TEST_PARTITION")
 TMPDIR = os.environ.get("ANASLURM_TMPDIR")
 
-srun_exists = all(map(bool, (find_on_path("srun"), PARTITION, TMPDIR) ))
+srun_exists = True if anadama2.cli.Configuration.identify_grid == "slurm" else False
 
 
 class TestSlurm(unittest.TestCase):
@@ -44,7 +45,7 @@ class TestSlurm(unittest.TestCase):
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
         cfg = anadama2.cli.Configuration()
-        cfg._directives['output'].default = self.workdir
+        cfg._arguments["output"].keywords["default"]=self.workdir
         self.ctx = anadama2.workflow.Workflow(vars=cfg, grid=powerup)
 
 

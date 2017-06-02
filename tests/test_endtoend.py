@@ -34,8 +34,8 @@ class TestEndToEnd(unittest.TestCase):
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
-        cfg = anadama2.cli.Configuration()
-        cfg._directives['output'].default = self.workdir
+        cfg = anadama2.cli.Configuration(prompt_user=False)
+        cfg._arguments["output"].keywords["default"]=self.workdir
         self.ctx = anadama2.workflow.Workflow(vars=cfg)
 
 

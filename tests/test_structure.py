@@ -32,7 +32,7 @@ class TestStructure(unittest.TestCase):
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
         cfg = anadama2.cli.Configuration()
-        cfg._directives['output'].default = self.workdir
+        cfg._arguments["output"].keywords["default"]=self.workdir
         self.ctx = anadama2.workflow.Workflow(vars=cfg)
 
 
