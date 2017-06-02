@@ -204,7 +204,7 @@ class Workflow(object):
         # get the contents of the input folder (with the full paths)
         input = os.path.abspath(self.vars.get("input"))
         
-        input_folder_contents = map(lambda file: os.path.join(input, file), input.files())
+        input_folder_contents = map(lambda file: os.path.join(input, file), os.listdir(input))
         # filter out contents to only include files
         input_files = [item for item in input_folder_contents if os.path.isfile(item)]
         # if extension is set, then filter files

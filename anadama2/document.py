@@ -204,7 +204,7 @@ class PweaveDocument(Document):
         # the current working directory is a temp folder
         
         # find the pickle file
-        pickle_file = filter(lambda x: x.endswith(".pkl"),os.listdir("."))
+        pickle_file = list(filter(lambda x: x.endswith(".pkl"),os.listdir(".")))
         
         vars = pickle.load(open(pickle_file[0],"rb"))
         

@@ -3,7 +3,10 @@
 import os
 import sys
 import threading
-import Queue
+try:
+    import Queue
+except ImportError:
+    import queue as Queue
 import time
 import tempfile
 import string
