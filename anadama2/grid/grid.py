@@ -334,7 +334,7 @@ class GridQueue(object):
             stdout=subprocess.check_output(command, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as err:
             error=err.output
-            stdout="error"
+            stdout=error or "error"
             
         timeout_error=False
         if error and "error" in error and "Socket timed out on send/recv operation" in error:
@@ -383,7 +383,7 @@ class GridQueue(object):
         
         # check the jobid for a submission failed
         if self.job_submission_failed(jobid):
-            logging.error("Unable to submit job to queue")
+            logging.error("Unable to submit job to queue: "+stdout)
         
         # pause for the scheduler
         time.sleep(self.submit_sleep)
