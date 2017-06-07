@@ -115,7 +115,7 @@ class PweaveDocument(Document):
         temp_directory = tempfile.mkdtemp(dir=os.path.dirname(self.targets[0]))
         temp_template_basename = os.path.join(temp_directory,os.path.basename(report_filename))
         # keep the extension of the template for pweave auto reader function
-        temp_template = temp_template_basename + "." + template_extension
+        temp_template = temp_template_basename + template_extension
         
         # merge the templates into the temp file
         with open(temp_template,"w") as handle:
