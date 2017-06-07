@@ -523,6 +523,7 @@ class LoggerReporter(BaseReporter):
         """ Read the data from the log file """
         
         # look for either commands or executable versions
+        format_output=lambda x: x
         if type == "commands":
             keyword = SHELL_COMMAND
             if remove_paths:
