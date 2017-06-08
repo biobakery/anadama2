@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>AnADAMA2 API Reference &#8212; anadama2 0.1.2 documentation</title>
+    <title>AnADAMA2 API Reference &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -49,7 +49,7 @@
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Release:</th><td class="field-body">0.1.2</td>
 </tr>
-<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Aug 27, 2016</td>
+<tr class="field-even field"><th class="field-name">Date:</th><td class="field-body">Jun 08, 2017</td>
 </tr>
 </tbody>
 </table>
@@ -58,7 +58,7 @@
 <p>For more information on AnADAMA2, please read the <a class="reference external" href="https://bitbucket.org/biobakery/anadama2/wiki/Home">User Manual</a>.</p>
 <span class="target" id="module-anadama2"></span><dl class="class">
 <dt id="anadama2.Task">
-<em class="property">class </em><code class="descclassname">anadama2.</code><code class="descname">Task</code><a class="reference internal" href="_modules/anadama2.html#Task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.Task" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">anadama2.</code><code class="descname">Task</code><span class="sig-paren">(</span><em>name</em>, <em>actions</em>, <em>depends</em>, <em>targets</em>, <em>task_no</em>, <em>visible</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2.html#Task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.Task" title="Permalink to this definition">¶</a></dt>
 <dd><p>A unit of work.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -72,6 +72,8 @@
 these to be a successfully complete task.</li>
 <li><strong>task_no</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The unique task number. Ordered by declaration,
 not execution.</li>
+<li><strong>visible</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#bool" title="(in Python v2.7)"><em>bool</em></a>) &#8211; Whether the task should appear in the console or
+not.</li>
 </ul>
 </td>
 </tr>
@@ -87,6 +89,8 @@ not execution.</li>
 <li class="toctree-l1"><a class="reference internal" href="reporters.html">reporters</a></li>
 <li class="toctree-l1"><a class="reference internal" href="runners.html">runners</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow.html">workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="document.html">document</a></li>
+<li class="toctree-l1"><a class="reference internal" href="grid.html">grid</a></li>
 <li class="toctree-l1"><a class="reference internal" href="slurm.html">slurm</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sge.html">sge</a></li>
 <li class="toctree-l1"><a class="reference internal" href="util.html">util</a></li>
@@ -132,7 +136,7 @@ not execution.</li>
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |

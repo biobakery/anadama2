@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>helpers &#8212; anadama2 0.1.2 documentation</title>
+    <title>helpers &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -69,33 +69,41 @@ breaks your brain.</p>
 </pre></div>
 </div>
 <dl class="function">
+<dt id="anadama2.helpers.apply_sh">
+<code class="descclassname">anadama2.helpers.</code><code class="descname">apply_sh</code><span class="sig-paren">(</span><em>actions</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#apply_sh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.apply_sh" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add the shell function to any actions that are strings</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama2.helpers.file_size">
+<code class="descclassname">anadama2.helpers.</code><code class="descname">file_size</code><span class="sig-paren">(</span><em>depends</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#file_size"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.file_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the size of the file in GB</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="anadama2.helpers.format_command">
+<code class="descclassname">anadama2.helpers.</code><code class="descname">format_command</code><span class="sig-paren">(</span><em>command</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#format_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.format_command" title="Permalink to this definition">¶</a></dt>
+<dd><p>Format the shell command to allow for special variables 
+Here&#8217;s a synopsis of
+common use cases:</p>
+<ul class="simple">
+<li><code class="docutils literal"><span class="pre">[targets[0]]</span></code> is formatted to the first target</li>
+<li><code class="docutils literal"><span class="pre">[depends[2]]</span></code> is formatted to the third dependency</li>
+</ul>
+<p>Extra keyword arguments are also added to the formatting keyword
+arguments. Thus, adding a keyword argument of <code class="docutils literal"><span class="pre">threads=1</span></code> makes
+<code class="docutils literal"><span class="pre">[threads]</span></code> be formatted to <code class="docutils literal"><span class="pre">1</span></code> in the shell command.
+:type s: str</p>
+</dd></dl>
+
+<dl class="function">
 <dt id="anadama2.helpers.parse_sh">
 <code class="descclassname">anadama2.helpers.</code><code class="descname">parse_sh</code><span class="sig-paren">(</span><em>s</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#parse_sh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.parse_sh" title="Permalink to this definition">¶</a></dt>
 <dd><p>Do the same thing as <a class="reference internal" href="#anadama2.helpers.sh" title="anadama2.helpers.sh"><code class="xref py py-func docutils literal"><span class="pre">anadama2.helpers.sh()</span></code></a>, but do some extra
 interpreting and formatting of the shell command before handing it
-over to the shell. For those familiar with python&#8217;s
-<a class="reference external" href="https://docs.python.org/2/library/stdtypes.html#str.format" title="(in Python v2.7)"><code class="xref py py-meth docutils literal"><span class="pre">str.format()</span></code></a> method, the list of dependencies and the list
-of targets are given to <code class="docutils literal"><span class="pre">.format</span></code> like so:
-<code class="docutils literal"><span class="pre">.format(targets=targets,</span> <span class="pre">depends=depends)</span></code>. Here&#8217;s a synopsis of
-common use cases:</p>
-<ul class="simple">
-<li><code class="docutils literal"><span class="pre">{targets[0]}</span></code> is formatted to the first target</li>
-<li><code class="docutils literal"><span class="pre">{depends[2]}</span></code> is formatted to the third dependency</li>
-</ul>
-<p>Extra keyword arguments are also added to the formatting keyword
-arguments. Thus, adding a keyword argument of <code class="docutils literal"><span class="pre">threads=1</span></code> makes
-<code class="docutils literal"><span class="pre">{threads}</span></code> be formatted to <code class="docutils literal"><span class="pre">1</span></code> in the shell command.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>s</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The command to execute. Passed directly to a shell, so
-be careful about doing things like 
-<code class="docutils literal"><span class="pre">sh('df</span> <span class="pre">-h</span> <span class="pre">&gt;</span> <span class="pre">data;</span> <span class="pre">rm</span> <span class="pre">-rf</span> <span class="pre">/')</span></code>; both commands are executed 
-and bad things will happen.</td>
-</tr>
-</tbody>
-</table>
+over to the shell. For formatting information, see 
+<a class="reference internal" href="#anadama2.helpers.format_command" title="anadama2.helpers.format_command"><code class="xref py py-func docutils literal"><span class="pre">anadama2.helpers.format_command()</span></code></a>.
+:type s: str</p>
 </dd></dl>
 
 <dl class="function">
@@ -139,7 +147,7 @@ don&#8217;t raise an exception</li>
 
 <dl class="function">
 <dt id="anadama2.helpers.sh">
-<code class="descclassname">anadama2.helpers.</code><code class="descname">sh</code><span class="sig-paren">(</span><em>s</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#sh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.sh" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">anadama2.helpers.</code><code class="descname">sh</code><span class="sig-paren">(</span><em>s</em>, <em>log_command=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/helpers.html#sh"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.helpers.sh" title="Permalink to this definition">¶</a></dt>
 <dd><p>Execute a shell command. All further keywords are passed to
 <a class="reference external" href="https://docs.python.org/2/library/subprocess.html#subprocess.Popen" title="(in Python v2.7)"><code class="xref py py-class docutils literal"><span class="pre">subprocess.Popen</span></code></a></p>
 <table class="docutils field-list" frame="void" rules="none">
@@ -164,7 +172,7 @@ are passed to <a class="reference external" href="https://docs.python.org/2/libr
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>args_list</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#list" title="(in Python v2.7)"><em>list</em></a>) &#8211; The argv to be passed to the system call.</li>
+<li><strong>args_list</strong> (<em>list</em>) &#8211; The argv to be passed to the system call.</li>
 <li><strong>stdin</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; If provided, the name of the file to open and send
 to the subprocess&#8217; standard input. By default no data is sent to
 the process.</li>
@@ -232,7 +240,7 @@ already exists, it will be truncated before it receives writes.</li>
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |

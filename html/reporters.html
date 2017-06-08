@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>reporters &#8212; anadama2 0.1.2 documentation</title>
+    <title>reporters &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -66,6 +66,25 @@ are task failures or not.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="anadama2.reporters.BaseReporter.task_command">
+<code class="descname">task_command</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#BaseReporter.task_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.BaseReporter.task_command" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>Executed when anadama is ready to run a task. Logs the command</dt>
+<dd>and version of any tracked executables.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>task</strong> &#8211; The task number of the task that is
+being started. To get the actual <a class="reference internal" href="index.html#anadama2.Task" title="anadama2.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama2.Task</span></code></a> object
+that&#8217;s being executed, do <code class="docutils literal"><span class="pre">self.run_context.tasks[task_no]</span></code>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="anadama2.reporters.BaseReporter.task_completed">
 <code class="descname">task_completed</code><span class="sig-paren">(</span><em>task_result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#BaseReporter.task_completed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.BaseReporter.task_completed" title="Permalink to this definition">¶</a></dt>
 <dd><p>Executed when a task completes with no errors.</p>
@@ -102,6 +121,66 @@ do``self.run_context.task_results[task_no]``</td>
 </dd></dl>
 
 <dl class="method">
+<dt id="anadama2.reporters.BaseReporter.task_grid_status">
+<code class="descname">task_grid_status</code><span class="sig-paren">(</span><em>task_no</em>, <em>grid_id</em>, <em>status_message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#BaseReporter.task_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.BaseReporter.task_grid_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executed when anadama has grid information for a task. These messages 
+are reported when the status for a grid task has changed.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>task_no</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The task number of the task that is
+being started. To get the actual <a class="reference internal" href="index.html#anadama2.Task" title="anadama2.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama2.Task</span></code></a> object
+that&#8217;s being executed, do <code class="docutils literal"><span class="pre">self.run_context.tasks[task_no]</span></code>.</li>
+<li><strong>grid_id</strong> &#8211; The id of the grid job.</li>
+<li><strong>status_message</strong> &#8211; The grid status message.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.BaseReporter.task_grid_status_polling">
+<code class="descname">task_grid_status_polling</code><span class="sig-paren">(</span><em>task_no</em>, <em>grid_id</em>, <em>status_message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#BaseReporter.task_grid_status_polling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.BaseReporter.task_grid_status_polling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executed when anadama has grid information for a task at set polling 
+intervals. Status may repeat at each interval.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>task_no</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The task number of the task that is
+being started. To get the actual <a class="reference internal" href="index.html#anadama2.Task" title="anadama2.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama2.Task</span></code></a> object
+that&#8217;s being executed, do <code class="docutils literal"><span class="pre">self.run_context.tasks[task_no]</span></code>.</li>
+<li><strong>grid_id</strong> &#8211; The id of the grid job.</li>
+<li><strong>status_message</strong> &#8211; The grid status message.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.BaseReporter.task_running">
+<code class="descname">task_running</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#BaseReporter.task_running"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.BaseReporter.task_running" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executed when anadama is ready to run a task.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>task_no</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The task number of the task that is
+being started. To get the actual <a class="reference internal" href="index.html#anadama2.Task" title="anadama2.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama2.Task</span></code></a> object
+that&#8217;s being executed, do <code class="docutils literal"><span class="pre">self.run_context.tasks[task_no]</span></code>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
 <dt id="anadama2.reporters.BaseReporter.task_skipped">
 <code class="descname">task_skipped</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#BaseReporter.task_skipped"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.BaseReporter.task_skipped" title="Permalink to this definition">¶</a></dt>
 <dd><p>Executed when anadama determines that a task needn&#8217;t be run.</p>
@@ -120,7 +199,8 @@ that&#8217;s being skipped, do <code class="docutils literal"><span class="pre">
 <dl class="method">
 <dt id="anadama2.reporters.BaseReporter.task_started">
 <code class="descname">task_started</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#BaseReporter.task_started"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.BaseReporter.task_started" title="Permalink to this definition">¶</a></dt>
-<dd><p>Executed when anadama is just about to execute a task.</p>
+<dd><p>Executed when anadama is just about to execute a task. These tasks
+are in the queue and waiting for available resources.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -176,7 +256,7 @@ the <code class="docutils literal"><span class="pre">name</span></code> option t
 
 <dl class="attribute">
 <dt id="anadama2.reporters.ConsoleReporter.msg_str">
-<code class="descname">msg_str</code><em class="property"> = '({:.1})[{:3}/{:3} - {:6.2f}%] {:.57}'</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.msg_str" title="Permalink to this definition">¶</a></dt>
+<code class="descname">msg_str</code><em class="property"> = u'({:.1})[{:3}/{:3} - {:6.2f}%] {:.57}'</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.msg_str" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -194,22 +274,22 @@ the <code class="docutils literal"><span class="pre">name</span></code> option t
 <em class="property">class </em><code class="descname">stats</code><a class="reference internal" href="_modules/anadama2/reporters.html#ConsoleReporter.stats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.stats" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="attribute">
 <dt id="anadama2.reporters.ConsoleReporter.stats.done">
-<code class="descname">done</code><em class="property"> = '+'</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.stats.done" title="Permalink to this definition">¶</a></dt>
+<code class="descname">done</code><em class="property"> = u'+'</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.stats.done" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="anadama2.reporters.ConsoleReporter.stats.fail">
-<code class="descname">fail</code><em class="property"> = '!'</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.stats.fail" title="Permalink to this definition">¶</a></dt>
+<code class="descname">fail</code><em class="property"> = u'!'</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.stats.fail" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="anadama2.reporters.ConsoleReporter.stats.skip">
-<code class="descname">skip</code><em class="property"> = 's'</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.stats.skip" title="Permalink to this definition">¶</a></dt>
+<code class="descname">skip</code><em class="property"> = u's'</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.stats.skip" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="attribute">
 <dt id="anadama2.reporters.ConsoleReporter.stats.start">
-<code class="descname">start</code><em class="property"> = ' '</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.stats.start" title="Permalink to this definition">¶</a></dt>
+<code class="descname">start</code><em class="property"> = u' '</em><a class="headerlink" href="#anadama2.reporters.ConsoleReporter.stats.start" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -238,7 +318,7 @@ the <code class="docutils literal"><span class="pre">name</span></code> option t
 
 <dl class="class">
 <dt id="anadama2.reporters.LoggerReporter">
-<em class="property">class </em><code class="descclassname">anadama2.reporters.</code><code class="descname">LoggerReporter</code><span class="sig-paren">(</span><em>loglevel_str=''</em>, <em>logfile=None</em>, <em>fmt_str=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">anadama2.reporters.</code><code class="descname">LoggerReporter</code><span class="sig-paren">(</span><em>loglevel_str=None</em>, <em>logfile=None</em>, <em>fmt_str=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter" title="Permalink to this definition">¶</a></dt>
 <dd><p>A reporter that uses <a class="reference external" href="https://docs.python.org/2/library/logging.html#module-logging" title="(in Python v2.7)"><code class="xref py py-mod docutils literal"><span class="pre">logging</span></code></a>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -266,8 +346,24 @@ information</li>
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="anadama2.reporters.LoggerReporter.log_event">
+<code class="descname">log_event</code><span class="sig-paren">(</span><em>msg</em>, <em>task_no</em>, <em>debug_msg=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter.log_event"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter.log_event" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="anadama2.reporters.LoggerReporter.read_log">
+<em class="property">classmethod </em><code class="descname">read_log</code><span class="sig-paren">(</span><em>file</em>, <em>type</em>, <em>remove_paths=True</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter.read_log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter.read_log" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read the data from the log file</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="anadama2.reporters.LoggerReporter.started">
 <code class="descname">started</code><span class="sig-paren">(</span><em>ctx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter.started"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter.started" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.LoggerReporter.task_command">
+<code class="descname">task_command</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter.task_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter.task_command" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -278,6 +374,21 @@ information</li>
 <dl class="method">
 <dt id="anadama2.reporters.LoggerReporter.task_failed">
 <code class="descname">task_failed</code><span class="sig-paren">(</span><em>task_result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter.task_failed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter.task_failed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.LoggerReporter.task_grid_status">
+<code class="descname">task_grid_status</code><span class="sig-paren">(</span><em>task_no</em>, <em>grid_id</em>, <em>status_message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter.task_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter.task_grid_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.LoggerReporter.task_grid_status_polling">
+<code class="descname">task_grid_status_polling</code><span class="sig-paren">(</span><em>task_no</em>, <em>grid_id</em>, <em>status_message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter.task_grid_status_polling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter.task_grid_status_polling" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.LoggerReporter.task_running">
+<code class="descname">task_running</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#LoggerReporter.task_running"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.LoggerReporter.task_running" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -316,6 +427,11 @@ ReporterGroup. Here&#8217;s an example usage:</p>
 <dd></dd></dl>
 
 <dl class="method">
+<dt id="anadama2.reporters.ReporterGroup.task_command">
+<code class="descname">task_command</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#ReporterGroup.task_command"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.ReporterGroup.task_command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
 <dt id="anadama2.reporters.ReporterGroup.task_completed">
 <code class="descname">task_completed</code><span class="sig-paren">(</span><em>task_result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#ReporterGroup.task_completed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.ReporterGroup.task_completed" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -323,6 +439,21 @@ ReporterGroup. Here&#8217;s an example usage:</p>
 <dl class="method">
 <dt id="anadama2.reporters.ReporterGroup.task_failed">
 <code class="descname">task_failed</code><span class="sig-paren">(</span><em>task_result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#ReporterGroup.task_failed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.ReporterGroup.task_failed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.ReporterGroup.task_grid_status">
+<code class="descname">task_grid_status</code><span class="sig-paren">(</span><em>task_no</em>, <em>grid_id</em>, <em>status_message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#ReporterGroup.task_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.ReporterGroup.task_grid_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.ReporterGroup.task_grid_status_polling">
+<code class="descname">task_grid_status_polling</code><span class="sig-paren">(</span><em>task_no</em>, <em>grid_id</em>, <em>status_message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#ReporterGroup.task_grid_status_polling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.ReporterGroup.task_grid_status_polling" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.ReporterGroup.task_running">
+<code class="descname">task_running</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#ReporterGroup.task_running"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.ReporterGroup.task_running" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="method">
@@ -338,6 +469,134 @@ ReporterGroup. Here&#8217;s an example usage:</p>
 </dd></dl>
 
 <dl class="class">
+<dt id="anadama2.reporters.VerboseConsoleReporter">
+<em class="property">class </em><code class="descclassname">anadama2.reporters.</code><code class="descname">VerboseConsoleReporter</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints out verbose run progress to stdout.
+An example readout is as follows:</p>
+<p>DATE/TIME [ 0/18 -   0.00%] <strong>Started  ** Task  2: kneaddata
+DATE/TIME [ 0/18 -   0.00%] **Started  ** Task  0: kneaddata
+DATE/TIME [ 1/18 -   5.56%] **Completed</strong> Task  0: kneaddata
+DATE/TIME [ 1/18 -   5.56%] <strong>Started  ** Task  4: metaphlan2.py
+DATE/TIME [ 2/18 -  11.11%] **Completed</strong> Task  2: kneaddata</p>
+<p>The readout is composed of five pieces of information:</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first">The date/time for the status message.</p>
+</li>
+<li><dl class="first docutils">
+<dt>The status of all tasks. For example, [1/4 - 25%] indicates that </dt>
+<dd><p class="first last">one task of the four total tasks have finished running. The
+workflow is 25% complete.</p>
+</dd>
+</dl>
+</li>
+<li><p class="first">The step the task has completed. Examples are &#8220;Started&#8221; and &#8220;Completed&#8221;.</p>
+</li>
+<li><p class="first">The task number.</p>
+</li>
+<li><dl class="first docutils">
+<dt>The task description. This is the task name if set. If the task name is</dt>
+<dd><p class="first last">the default then it is the first task action. This is the first command
+and it is limited to the executable name. If it is a function, it will be the 
+name of the function.</p>
+</dd>
+</dl>
+</li>
+</ol>
+</div></blockquote>
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.finished">
+<code class="descname">finished</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.finished"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.finished" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.reset">
+<code class="descname">reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.started">
+<code class="descname">started</code><span class="sig-paren">(</span><em>ctx</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.started"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.started" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="anadama2.reporters.VerboseConsoleReporter.stats">
+<em class="property">class </em><code class="descname">stats</code><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.stats"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.stats" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attribute">
+<dt id="anadama2.reporters.VerboseConsoleReporter.stats.done">
+<code class="descname">done</code><em class="property"> = u'Completed'</em><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.stats.done" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="anadama2.reporters.VerboseConsoleReporter.stats.fail">
+<code class="descname">fail</code><em class="property"> = u'Failed'</em><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.stats.fail" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="anadama2.reporters.VerboseConsoleReporter.stats.grid_run">
+<code class="descname">grid_run</code><em class="property"> = u'GridJob'</em><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.stats.grid_run" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="anadama2.reporters.VerboseConsoleReporter.stats.max_message_length">
+<code class="descname">max_message_length</code><em class="property"> = 9</em><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.stats.max_message_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="anadama2.reporters.VerboseConsoleReporter.stats.ready">
+<code class="descname">ready</code><em class="property"> = u'Ready'</em><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.stats.ready" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="anadama2.reporters.VerboseConsoleReporter.stats.skip">
+<code class="descname">skip</code><em class="property"> = u'Skipped'</em><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.stats.skip" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="anadama2.reporters.VerboseConsoleReporter.stats.start">
+<code class="descname">start</code><em class="property"> = u'Started'</em><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.stats.start" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.task_completed">
+<code class="descclassname">VerboseConsoleReporter.</code><code class="descname">task_completed</code><span class="sig-paren">(</span><em>task_result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.task_completed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.task_completed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.task_failed">
+<code class="descclassname">VerboseConsoleReporter.</code><code class="descname">task_failed</code><span class="sig-paren">(</span><em>task_result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.task_failed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.task_failed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.task_grid_status">
+<code class="descclassname">VerboseConsoleReporter.</code><code class="descname">task_grid_status</code><span class="sig-paren">(</span><em>task_no</em>, <em>grid_id</em>, <em>status_message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.task_grid_status"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.task_grid_status" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.task_grid_status_polling">
+<code class="descclassname">VerboseConsoleReporter.</code><code class="descname">task_grid_status_polling</code><span class="sig-paren">(</span><em>task_no</em>, <em>grid_id</em>, <em>status_message</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.task_grid_status_polling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.task_grid_status_polling" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.task_running">
+<code class="descclassname">VerboseConsoleReporter.</code><code class="descname">task_running</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.task_running"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.task_running" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.task_skipped">
+<code class="descclassname">VerboseConsoleReporter.</code><code class="descname">task_skipped</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.task_skipped"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.task_skipped" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.reporters.VerboseConsoleReporter.task_started">
+<code class="descclassname">VerboseConsoleReporter.</code><code class="descname">task_started</code><span class="sig-paren">(</span><em>task_no</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#VerboseConsoleReporter.task_started"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.VerboseConsoleReporter.task_started" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
 <dt id="anadama2.reporters.WebhookReporter">
 <em class="property">class </em><code class="descclassname">anadama2.reporters.</code><code class="descname">WebhookReporter</code><a class="reference internal" href="_modules/anadama2/reporters.html#WebhookReporter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.WebhookReporter" title="Permalink to this definition">¶</a></dt>
 <dd><p>TODO</p>
@@ -345,7 +604,7 @@ ReporterGroup. Here&#8217;s an example usage:</p>
 
 <dl class="function">
 <dt id="anadama2.reporters.default">
-<code class="descclassname">anadama2.reporters.</code><code class="descname">default</code><span class="sig-paren">(</span><em>output_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#default"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.default" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">anadama2.reporters.</code><code class="descname">default</code><span class="sig-paren">(</span><em>output_dir=None</em>, <em>log_level=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/reporters.html#default"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.reporters.default" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
@@ -389,7 +648,7 @@ ReporterGroup. Here&#8217;s an example usage:</p>
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |

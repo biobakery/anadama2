@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>anadama2 &#8212; anadama2 0.1.2 documentation</title>
+    <title>anadama2 &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
@@ -42,11 +42,10 @@
           <div class="body" role="main">
             
   <h1>Source code for anadama2</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">six</span>
 
-
-<div class="viewcode-block" id="Task"><a class="viewcode-back" href="../index.html#anadama2.Task">[docs]</a><span class="k">class</span> <span class="nc">Task</span><span class="p">(</span><span class="n">namedtuple</span><span class="p">(</span><span class="s2">&quot;Task&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;actions&quot;</span><span class="p">,</span> <span class="s2">&quot;depends&quot;</span><span class="p">,</span> <span class="s2">&quot;targets&quot;</span><span class="p">,</span>
-                               <span class="s2">&quot;task_no&quot;</span><span class="p">])):</span>
+<div class="viewcode-block" id="Task"><a class="viewcode-back" href="../index.html#anadama2.Task">[docs]</a><span class="k">class</span> <span class="nc">Task</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;A unit of work. </span>
 <span class="sd">    </span>
 <span class="sd">    :param name: The task name; must be unique to all tasks within a workflow.</span>
@@ -65,12 +64,48 @@
 <span class="sd">    :param task_no: The unique task number. Ordered by declaration,</span>
 <span class="sd">      not execution.</span>
 <span class="sd">    :type task_no: int</span>
-<span class="sd">    </span>
+
+<span class="sd">    :param visible: Whether the task should appear in the console or</span>
+<span class="sd">      not.</span>
+<span class="sd">    :type visible: bool</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">pass</span> <span class="c1"># the class definition is just for the docstring</span></div>
-
-
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">actions</span><span class="p">,</span> <span class="n">depends</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">task_no</span><span class="p">,</span> <span class="n">visible</span><span class="p">):</span>
+        <span class="c1"># Set a default task number</span>
+        <span class="k">if</span> <span class="n">task_no</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">task_no</span><span class="o">=</span><span class="s2">&quot;NA&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">task_no</span><span class="o">=</span><span class="n">task_no</span>
+            
+        <span class="c1"># Set a default task name if not provided</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Task&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">task_no</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="o">=</span><span class="n">name</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">actions</span><span class="o">=</span><span class="n">actions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">depends</span><span class="o">=</span><span class="n">depends</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="o">=</span><span class="n">targets</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">visible</span><span class="o">=</span><span class="n">visible</span>
+        
+        <span class="c1"># get a task description based on the actions or name</span>
+        <span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">callable</span><span class="p">(</span><span class="n">actions</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="c1"># if the first action is a function, use the function name</span>
+            <span class="n">command</span><span class="o">=</span><span class="n">actions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">__name__</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># if the first action is a command, use the executable name</span>
+            <span class="n">command</span><span class="o">=</span><span class="n">six</span><span class="o">.</span><span class="n">u</span><span class="p">(</span><span class="n">actions</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+            
+        <span class="c1"># if the task name is not set, then use the command name for the description</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">=</span><span class="n">command</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="o">=</span><span class="n">six</span><span class="o">.</span><span class="n">u</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+            
+            
 <span class="kn">from</span> <span class="nn">.workflow</span> <span class="k">import</span> <span class="n">Workflow</span>
+<span class="kn">from</span> <span class="nn">.document</span> <span class="k">import</span> <span class="n">PweaveDocument</span>
 
 <span class="n">Workflow</span> <span class="c1"># pyflakes</span>
 </pre></div>
@@ -106,7 +141,7 @@
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
     </div>

@@ -1,0 +1,740 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>anadama2.grid.grid &mdash; anadama2 0.1.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="anadama2 0.1.2 documentation" href="../../../index.html" />
+    <link rel="up" title="anadama2" href="../../anadama2.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for anadama2.grid.grid</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">Queue</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">queue</span> <span class="k">as</span> <span class="nn">Queue</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">string</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="kn">import</span> <span class="nn">six</span>
+
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">runners</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">picklerunner</span>
+
+<span class="kn">from</span> <span class="nn">..helpers</span> <span class="k">import</span> <span class="n">format_command</span>
+<span class="kn">from</span> <span class="nn">..helpers</span> <span class="k">import</span> <span class="n">file_size</span>
+
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;posix&#39;</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">subprocess32</span> <span class="k">as</span> <span class="nn">subprocess</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">subprocess</span>
+
+<div class="viewcode-block" id="GridJobRequires"><a class="viewcode-back" href="../../../grid.html#anadama2.grid.grid.GridJobRequires">[docs]</a><span class="k">class</span> <span class="nc">GridJobRequires</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Defines the resources required for a task on the grid.</span>
+
+<span class="sd">    :param time: Wall clock time in minutes.</span>
+<span class="sd">    :type time: int</span>
+
+<span class="sd">    :param mem: RAM Usage in MB (8*1024*1024 bits).</span>
+<span class="sd">    :type mem: int</span>
+
+<span class="sd">    :param cores: CPU cores.</span>
+<span class="sd">    :type cores: int</span>
+<span class="sd">    </span>
+<span class="sd">    :param partition: grid partition.</span>
+<span class="sd">    :type partition: string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">mem</span><span class="p">,</span> <span class="n">cores</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">depends</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># if time is not an int, try to format the equation</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">format_command</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">depends</span><span class="o">=</span><span class="n">depends</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="n">cores</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+        
+        <span class="c1"># if memory is not an int, try to format the equation</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">mem</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="n">format_command</span><span class="p">(</span><span class="n">mem</span><span class="p">,</span> <span class="n">depends</span><span class="o">=</span><span class="n">depends</span><span class="p">,</span> <span class="n">cores</span><span class="o">=</span><span class="n">cores</span><span class="p">)</span> 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mem</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">mem</span><span class="p">)</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">cores</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cores</span><span class="p">)</span> 
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">partition</span> <span class="o">=</span> <span class="n">partition</span></div>
+    
+<div class="viewcode-block" id="Grid"><a class="viewcode-back" href="../../../grid.html#anadama2.grid.grid.Grid">[docs]</a><span class="k">class</span> <span class="nc">Grid</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Base Grid Workflow manager class &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">worker</span><span class="p">,</span> <span class="n">queue</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">worker</span> <span class="o">=</span> <span class="n">worker</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">queue</span> <span class="o">=</span> <span class="n">queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tmpdir</span> <span class="o">=</span> <span class="n">tmpdir</span>
+        
+        <span class="c1"># create the folder if it does not already exist for temp directory</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tmpdir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tmpdir</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_get_grid_task_settings</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">,</span> <span class="n">depends</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get the resources required to run this task on the grid &quot;&quot;&quot;</span>
+        <span class="c1"># check for the required keywords</span>
+        <span class="n">requires</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">,</span><span class="s2">&quot;mem&quot;</span><span class="p">,</span><span class="s2">&quot;cores&quot;</span><span class="p">]:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">requires</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">key</span><span class="o">+</span><span class="s2">&quot; is a required keyword argument for a grid task&quot;</span><span class="p">)</span>
+
+        <span class="c1"># check for optional keyword</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">requires</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;partition&quot;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">requires</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>    
+        
+        <span class="n">requires</span><span class="o">+=</span><span class="p">[</span><span class="n">depends</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="p">(</span><span class="n">GridJobRequires</span><span class="p">(</span><span class="o">*</span><span class="n">requires</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmpdir</span><span class="p">)</span>
+        
+<div class="viewcode-block" id="Grid.do"><a class="viewcode-back" href="../../../grid.html#anadama2.grid.grid.Grid.do">[docs]</a>    <span class="k">def</span> <span class="nf">do</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Accepts the following extra arguments:</span>
+<span class="sd">        </span>
+<span class="sd">        :param time: The maximum time in minutes allotted to run the</span>
+<span class="sd">          command</span>
+<span class="sd">        :type time: int</span>
+
+<span class="sd">        :param mem: The maximum memory in megabytes allocated to run</span>
+<span class="sd">          the command</span>
+<span class="sd">        :type mem: int</span>
+
+<span class="sd">        :param cores: The number of CPU cores allocated to the job</span>
+<span class="sd">        :type cores: int</span>
+
+<span class="sd">        :param partition: The grid partition to send this job to</span>
+<span class="sd">        :type partition: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Grid.add_task"><a class="viewcode-back" href="../../../grid.html#anadama2.grid.grid.Grid.add_task">[docs]</a>    <span class="k">def</span> <span class="nf">add_task</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Accepts the following extra arguments:</span>
+<span class="sd">        </span>
+<span class="sd">        :keyword time: The maximum time in minutes allotted to run the</span>
+<span class="sd">          command</span>
+<span class="sd">        :type time: int</span>
+
+<span class="sd">        :keyword mem: The maximum memory in megabytes allocated to run</span>
+<span class="sd">          the command</span>
+<span class="sd">        :type mem: int</span>
+
+<span class="sd">        :keyword cores: The number of CPU cores allocated to the job</span>
+<span class="sd">        :type cores: int</span>
+
+<span class="sd">        :keyword partition: The grid partition to send this job to</span>
+<span class="sd">        :type partition: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_data</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_grid_task_settings</span><span class="p">(</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">depends</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span> <span class="nf">runner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">workflow</span><span class="p">,</span> <span class="n">jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">grid_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">runner</span> <span class="o">=</span> <span class="n">runners</span><span class="o">.</span><span class="n">GridRunner</span><span class="p">(</span><span class="n">workflow</span><span class="p">)</span>
+        <span class="n">runner</span><span class="o">.</span><span class="n">add_worker</span><span class="p">(</span><span class="n">runners</span><span class="o">.</span><span class="n">ParallelLocalWorker</span><span class="p">,</span>
+                          <span class="n">name</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">jobs</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">runner</span><span class="o">.</span><span class="n">add_worker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">worker</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">rate</span><span class="o">=</span><span class="n">grid_jobs</span><span class="p">)</span>
+        <span class="n">runner</span><span class="o">.</span><span class="n">routes</span><span class="o">.</span><span class="n">update</span><span class="p">((</span>
+            <span class="p">(</span> <span class="n">task_no</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">extra</span><span class="p">)</span><span class="o">+</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">queue</span><span class="p">,</span> <span class="n">workflow</span><span class="o">.</span><span class="n">_reporter</span><span class="p">])</span> <span class="p">)</span>
+            <span class="k">for</span> <span class="n">task_no</span><span class="p">,</span> <span class="n">extra</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">task_data</span><span class="p">)</span>
+        <span class="p">))</span>
+        <span class="k">return</span> <span class="n">runner</span>   </div>
+
+<span class="k">class</span> <span class="nc">GridQueue</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># check for short/long partitions</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">partition</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">partition</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">partition</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)]</span> 
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">partition_short</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">partition_long</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">partition_cutoff</span> <span class="o">=</span> <span class="n">partition</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">partition_cutoff</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">partition_cutoff</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">partition_short</span> <span class="o">=</span> <span class="n">partition</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">partition_long</span> <span class="o">=</span> <span class="n">partition</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">partition_cutoff</span> <span class="o">=</span> <span class="mi">0</span>
+            
+        <span class="c1"># this is the refresh rate for checking the queue, in seconds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_rate</span> <span class="o">=</span> <span class="mi">10</span><span class="o">*</span><span class="mi">60</span>
+
+        <span class="c1"># this is the rate for checking the job status, in seconds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_job_rate</span> <span class="o">=</span> <span class="mi">60</span>
+        
+        <span class="c1"># this is the number of minutes to wait if there is an time out</span>
+        <span class="c1"># socket error returned from the scheduler when running a command</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout_sleep</span> <span class="o">=</span> <span class="mi">5</span><span class="o">*</span><span class="mi">60</span>
+        
+        <span class="c1"># this is the number of times to retry after a timeout error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout_retry_max</span> <span class="o">=</span> <span class="mi">3</span>
+        
+        <span class="c1"># this is the number of seconds to wait after job submission</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">submit_sleep</span> <span class="o">=</span> <span class="mi">5</span>
+        
+        <span class="c1"># this is the last time the queue was checked</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_check</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sacct</span> <span class="o">=</span> <span class="kc">None</span>
+        
+        <span class="c1"># create a lock for jobs in queue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock_status</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock_submit</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        
+        <span class="c1"># set if benchmarking should be run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_on</span> <span class="o">=</span> <span class="n">benchmark_on</span>
+        
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">submit_command</span><span class="p">(</span><span class="n">grid_script</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    
+    <span class="k">def</span> <span class="nf">submit_template</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    
+    <span class="k">def</span> <span class="nf">job_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">status</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    
+    <span class="k">def</span> <span class="nf">job_stopped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">status</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    
+    <span class="k">def</span> <span class="nf">refresh_queue_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+    
+    <span class="k">def</span> <span class="nf">job_memkill</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">memory</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+        
+    <span class="k">def</span> <span class="nf">job_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    
+    <span class="k">def</span> <span class="nf">get_job_status_from_stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">grid_job_status</span><span class="p">,</span> <span class="n">grid_jobid</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">grid_job_status</span>
+    
+    <span class="k">def</span> <span class="nf">get_partition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">partition</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get the partition for the task based on the time requested &quot;&quot;&quot;</span>
+        
+        <span class="c1"># if a partition is already set for the task, use that partition</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">partition</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">partition</span>
+        
+        <span class="k">if</span> <span class="n">time</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">partition_cutoff</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">partition_long</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">partition_short</span>
+    
+    <span class="k">def</span> <span class="nf">get_queue_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">refresh</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get the queue accounting stats &quot;&quot;&quot;</span>
+        
+        <span class="c1"># lock to prevent race conditions with status update</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock_status</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+        
+        <span class="c1"># check the last time the queue was captured and refresh if set</span>
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="n">current_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_check</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">refresh_rate</span> <span class="p">)</span> <span class="ow">or</span> <span class="n">refresh</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sacct</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_check</span> <span class="o">=</span> <span class="n">current_time</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Getting latest queue info to refresh job status&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sacct</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">refresh_queue_status</span><span class="p">()</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock_status</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+        
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sacct</span>
+    
+    <span class="k">def</span> <span class="nf">get_all_stats_for_jobid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">jobid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get all the stats for a specific job id &quot;&quot;&quot;</span>
+        
+        <span class="c1"># use the existing stats, to get the information for the jobid</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">job_stats</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">jobid</span><span class="p">),</span><span class="bp">self</span><span class="o">.</span><span class="n">get_queue_status</span><span class="p">()))</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">job_stats</span><span class="o">=</span><span class="p">[]</span>
+       
+        <span class="c1"># if the job stats are not found for the job, return an NA state</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">job_stats</span><span class="p">:</span>
+            <span class="n">job_stats</span><span class="o">=</span><span class="p">[[</span><span class="n">jobid</span><span class="p">,</span><span class="s2">&quot;Pending&quot;</span><span class="p">,</span><span class="s2">&quot;NA&quot;</span><span class="p">,</span><span class="s2">&quot;NA&quot;</span><span class="p">,</span><span class="s2">&quot;NA&quot;</span><span class="p">]]</span> 
+
+        <span class="k">return</span> <span class="n">job_stats</span>
+    
+    <span class="k">def</span> <span class="nf">get_job_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Check the status of the job &quot;&quot;&quot;</span>
+        
+        <span class="n">info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_all_stats_for_jobid</span><span class="p">(</span><span class="n">jobid</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">record_benchmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">task_number</span><span class="p">,</span> <span class="n">reporter</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Check the benchmarking stats of the grid id &quot;&quot;&quot;</span>
+        
+        <span class="c1"># check if benchmarking is set to off</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">benchmark_on</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Benchmarking is set to off&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        
+        <span class="n">reporter</span><span class="o">.</span><span class="n">task_grid_status</span><span class="p">(</span><span class="n">task_number</span><span class="p">,</span><span class="n">jobid</span><span class="p">,</span><span class="s2">&quot;Getting benchmarking data&quot;</span><span class="p">)</span>
+        <span class="n">status</span><span class="p">,</span> <span class="n">cpus</span><span class="p">,</span> <span class="n">elapsed</span><span class="p">,</span> <span class="n">memory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_benchmark</span><span class="p">(</span><span class="n">jobid</span><span class="p">)</span>
+            
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Benchmark information for job id </span><span class="si">%s</span><span class="s2">:</span><span class="se">\n</span><span class="s2">Elapsed Time: </span><span class="si">%s</span><span class="s2"> </span><span class="se">\n</span><span class="s2">Cores: </span><span class="si">%s</span><span class="se">\n</span><span class="s2">Memory: </span><span class="si">%s</span><span class="s2"> MB&quot;</span><span class="p">,</span>
+            <span class="n">task_number</span><span class="p">,</span> <span class="n">elapsed</span><span class="p">,</span> <span class="n">cpus</span><span class="p">,</span> <span class="n">memory</span><span class="p">)</span>   
+        
+        <span class="n">reporter</span><span class="o">.</span><span class="n">task_grid_status</span><span class="p">(</span><span class="n">task_number</span><span class="p">,</span><span class="n">jobid</span><span class="p">,</span><span class="s2">&quot;Final status of &quot;</span><span class="o">+</span><span class="n">status</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">get_benchmark</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get the benchmarking data for the jobid &quot;&quot;&quot;</span>
+        
+        <span class="c1"># if the job is not shown to have finished running then</span>
+        <span class="c1"># wait for the next queue refresh</span>
+        <span class="n">status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_job_status</span><span class="p">(</span><span class="n">jobid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">wait</span> <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job_stopped</span><span class="p">(</span><span class="n">status</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_failed</span><span class="p">(</span><span class="n">status</span><span class="p">)):</span>
+            <span class="n">wait_time</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">refresh_rate</span> <span class="o">-</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_check</span><span class="p">))</span> <span class="o">+</span> <span class="mi">10</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait_time</span><span class="p">)</span>
+
+        <span class="n">info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_all_stats_for_jobid</span><span class="p">(</span><span class="n">jobid</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">cpus</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">cpus</span><span class="o">=</span><span class="s2">&quot;NA&quot;</span>
+    
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">elapsed</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">elapsed</span><span class="o">=</span><span class="s2">&quot;NA&quot;</span>
+
+        <span class="c1"># get the memory max from the batch line which is the second line of output</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">memory</span><span class="o">=</span><span class="n">info</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">memory</span><span class="o">=</span><span class="s2">&quot;NA&quot;</span>
+        
+        <span class="k">if</span> <span class="s2">&quot;K&quot;</span> <span class="ow">in</span> <span class="n">memory</span><span class="p">:</span>    
+            <span class="c1"># if memory is in KB, convert to MB</span>
+            <span class="n">memory</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{:.1f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">memory</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;K&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">/</span><span class="mf">1024.0</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s2">&quot;M&quot;</span> <span class="ow">in</span> <span class="n">memory</span><span class="p">:</span>
+            <span class="n">memory</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{:.1f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">memory</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;M&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)))</span>
+        <span class="k">elif</span> <span class="s2">&quot;G&quot;</span> <span class="ow">in</span> <span class="n">memory</span><span class="p">:</span>
+            <span class="c1"># if memory is in GB, convert to MB</span>
+            <span class="n">memory</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{:.1f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">memory</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;G&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">))</span><span class="o">*</span><span class="mf">1024.0</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">status</span><span class="p">,</span> <span class="n">cpus</span><span class="p">,</span> <span class="n">elapsed</span><span class="p">,</span> <span class="n">memory</span>
+    
+    <span class="k">def</span> <span class="nf">run_grid_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">command</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Run the grid command and check for errors &quot;&quot;&quot;</span>
+        
+        <span class="n">error</span><span class="o">=</span><span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Running grid command: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">command</span><span class="p">))</span>
+            <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">error</span><span class="o">=</span><span class="n">err</span><span class="o">.</span><span class="n">output</span>
+            <span class="n">stdout</span><span class="o">=</span><span class="n">error</span> <span class="ow">or</span> <span class="s2">&quot;error&quot;</span>
+            
+        <span class="n">timeout_error</span><span class="o">=</span><span class="kc">False</span>
+        <span class="k">if</span> <span class="n">error</span> <span class="ow">and</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">error</span> <span class="ow">and</span> <span class="s2">&quot;Socket timed out on send/recv operation&quot;</span> <span class="ow">in</span> <span class="n">error</span><span class="p">:</span>
+            <span class="c1"># check for a socket timeout error</span>
+            <span class="n">timeout_error</span><span class="o">=</span><span class="kc">True</span>
+            
+        <span class="k">return</span> <span class="n">stdout</span><span class="p">,</span> <span class="n">timeout_error</span>
+    
+    <span class="k">def</span> <span class="nf">run_grid_command_resubmit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">command</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Run this grid command, check for error, resubmit if needed &quot;&quot;&quot;</span>
+        
+        <span class="c1"># run the grid command</span>
+        <span class="n">stdout</span><span class="p">,</span> <span class="n">timeout_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_grid_command</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        
+        <span class="c1"># retry if timeout error present after wait</span>
+        <span class="n">resubmissions</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">timeout_error</span> <span class="ow">and</span> <span class="n">resubmissions</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">timeout_retry_max</span><span class="p">:</span>
+            <span class="n">resubmissions</span><span class="o">+=</span><span class="mi">1</span>
+            <span class="c1"># wait before retrying</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Unable to run grid command, waiting and retrying&quot;</span><span class="p">)</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timeout_sleep</span><span class="p">)</span>
+            <span class="n">stdout</span><span class="p">,</span> <span class="n">timeout_error</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_grid_command</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">stdout</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">job_submission_failed</span><span class="p">(</span><span class="n">jobid</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Check if the job failed in submission and did not get an id &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">jobid</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="k">else</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">submit_job</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">grid_script</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Submit the grid jobs and return the grid job id &quot;&quot;&quot;</span>
+        
+        <span class="c1"># lock so only one task submits jobs to the queue at a time</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock_submit</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+
+        <span class="c1"># submit the job and get the grid id</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Submitting job to grid&quot;</span><span class="p">)</span>
+        <span class="n">stdout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run_grid_command_resubmit</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">submit_command</span><span class="p">(</span><span class="n">grid_script</span><span class="p">))</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># search for the decimal job id at any location in stdout</span>
+            <span class="n">jobid</span><span class="o">=</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="s1">r&#39;\d+&#39;</span><span class="p">,</span><span class="n">stdout</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">jobid</span><span class="o">=</span><span class="s2">&quot;error&quot;</span>
+        
+        <span class="c1"># check the jobid for a submission failed</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_submission_failed</span><span class="p">(</span><span class="n">jobid</span><span class="p">):</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unable to submit job to queue: &quot;</span><span class="o">+</span><span class="n">stdout</span><span class="p">)</span>
+        
+        <span class="c1"># pause for the scheduler</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">submit_sleep</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock_submit</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+    
+        <span class="k">return</span> <span class="n">jobid</span>
+    
+    <span class="k">def</span> <span class="nf">create_grid_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">partition</span><span class="p">,</span><span class="n">cpus</span><span class="p">,</span><span class="n">minutes</span><span class="p">,</span><span class="n">memory</span><span class="p">,</span><span class="n">command</span><span class="p">,</span><span class="n">taskid</span><span class="p">,</span><span class="nb">dir</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Create a grid script from the template also creating temp stdout and stderr files &quot;&quot;&quot;</span>
+    
+        <span class="c1"># create temp files for stdout, stderr, and return code    </span>
+        <span class="n">handle_out</span><span class="p">,</span> <span class="n">out_file</span><span class="o">=</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.out&quot;</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;task_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">taskid</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_&quot;</span><span class="p">,</span><span class="nb">dir</span><span class="o">=</span><span class="nb">dir</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">handle_out</span><span class="p">)</span>
+        <span class="n">handle_err</span><span class="p">,</span> <span class="n">error_file</span><span class="o">=</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.err&quot;</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;task_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">taskid</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_&quot;</span><span class="p">,</span><span class="nb">dir</span><span class="o">=</span><span class="nb">dir</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">handle_err</span><span class="p">)</span>
+        <span class="n">handle_rc</span><span class="p">,</span> <span class="n">rc_file</span><span class="o">=</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.rc&quot;</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;task_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">taskid</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_&quot;</span><span class="p">,</span><span class="nb">dir</span><span class="o">=</span><span class="nb">dir</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">handle_rc</span><span class="p">)</span>
+        
+        <span class="c1"># add the remaining sections to the bash template</span>
+        <span class="n">bash_template</span> <span class="o">=</span> <span class="n">string</span><span class="o">.</span><span class="n">Template</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="s2">&quot;#!/bin/bash &quot;</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">submit_template</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;$</span><span class="si">{command}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;$</span><span class="si">{rc_command}</span><span class="s2">&quot;</span><span class="p">]))</span>
+    
+        <span class="c1"># convert the minutes to the time string &quot;HH:MM:00&quot;</span>
+        <span class="n">hours</span><span class="p">,</span> <span class="n">remaining_minutes</span> <span class="o">=</span> <span class="nb">divmod</span><span class="p">(</span><span class="n">minutes</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{:02d}</span><span class="s2">:</span><span class="si">{:02d}</span><span class="s2">:00&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hours</span><span class="p">,</span> <span class="n">remaining_minutes</span><span class="p">)</span>
+    
+        <span class="n">bash</span><span class="o">=</span><span class="n">bash_template</span><span class="o">.</span><span class="n">substitute</span><span class="p">(</span><span class="n">partition</span><span class="o">=</span><span class="n">partition</span><span class="p">,</span><span class="n">cpus</span><span class="o">=</span><span class="n">cpus</span><span class="p">,</span><span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span>
+            <span class="n">memory</span><span class="o">=</span><span class="n">memory</span><span class="p">,</span><span class="n">command</span><span class="o">=</span><span class="n">command</span><span class="p">,</span><span class="n">output</span><span class="o">=</span><span class="n">out_file</span><span class="p">,</span><span class="n">error</span><span class="o">=</span><span class="n">error_file</span><span class="p">,</span><span class="n">rc_command</span><span class="o">=</span><span class="s2">&quot;export RC=$? ; echo $RC &gt; &quot;</span><span class="o">+</span><span class="n">rc_file</span><span class="o">+</span><span class="s2">&quot; ; bash -c &#39;exit $RC&#39;&quot;</span><span class="p">)</span>
+        <span class="n">file_handle</span><span class="p">,</span> <span class="n">new_file</span><span class="o">=</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.bash&quot;</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;task_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">taskid</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_&quot;</span><span class="p">,</span><span class="nb">dir</span><span class="o">=</span><span class="nb">dir</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">file_handle</span><span class="p">,</span><span class="n">bash</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">file_handle</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">new_file</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span>
+
+
+<div class="viewcode-block" id="GridWorker"><a class="viewcode-back" href="../../../grid.html#anadama2.grid.grid.GridWorker">[docs]</a><span class="k">class</span> <span class="nc">GridWorker</span><span class="p">(</span><span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Base Grid Worker class &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_q</span><span class="p">,</span> <span class="n">result_q</span><span class="p">,</span> <span class="n">lock</span><span class="p">,</span> <span class="n">reporter</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GridWorker</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">runners</span><span class="o">.</span><span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">work_q</span> <span class="o">=</span> <span class="n">work_q</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span> <span class="o">=</span> <span class="n">result_q</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">lock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span> <span class="o">=</span> <span class="n">reporter</span>    
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">appropriate_q_class</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">six</span><span class="o">.</span><span class="n">moves</span><span class="o">.</span><span class="n">queue</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>    
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">appropriate_lock</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span> 
+    
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">runners</span><span class="o">.</span><span class="n">worker_run_loop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_task_by_type</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">)</span>
+   
+    <span class="nd">@classmethod</span> 
+    <span class="k">def</span> <span class="nf">run_task_by_type</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">extra</span><span class="p">):</span>
+        <span class="c1"># if any of the tasks are a function, then use pickle interface</span>
+        <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">callable</span><span class="p">,</span><span class="n">task</span><span class="o">.</span><span class="n">actions</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">run_task_function</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">extra</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">run_task_command</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">extra</span><span class="p">)</span>   
+        
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">run_task_function</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">extra</span><span class="p">):</span>
+        <span class="p">(</span><span class="n">perf</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">grid_queue</span><span class="p">,</span> <span class="n">reporter</span><span class="p">)</span> <span class="o">=</span> <span class="n">extra</span>
+        
+        <span class="c1"># create a script to run the python function</span>
+        <span class="n">pickle_script</span> <span class="o">=</span> <span class="n">picklerunner</span><span class="o">.</span><span class="n">PickleScript</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="s2">&quot;task_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">))</span>
+        <span class="n">pickle_task</span> <span class="o">=</span> <span class="n">pickle_script</span><span class="o">.</span><span class="n">create_task</span><span class="p">()</span>
+        
+        <span class="c1"># run the task as a command</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">run_task_command</span><span class="p">(</span><span class="n">pickle_task</span><span class="p">,</span> <span class="n">extra</span><span class="p">)</span>
+        
+        <span class="c1"># decode the result</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">pickle_script</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+        
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">run_task_command</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">extra</span><span class="p">):</span>
+        <span class="p">(</span><span class="n">perf</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">grid_queue</span><span class="p">,</span> <span class="n">reporter</span><span class="p">)</span> <span class="o">=</span> <span class="n">extra</span>
+        <span class="c1"># report the task has started</span>
+        <span class="n">reporter</span><span class="o">.</span><span class="n">task_running</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">)</span>
+        
+        <span class="c1"># create a script and stdout/stderr files for this task</span>
+        <span class="n">commands</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">actions</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Running commands for task id </span><span class="si">%s</span><span class="s2">:</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">commands</span><span class="p">)</span>
+    
+        <span class="n">resubmission</span> <span class="o">=</span> <span class="mi">0</span>    
+        <span class="n">cores</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span> <span class="n">partition</span> <span class="o">=</span> <span class="n">perf</span><span class="o">.</span><span class="n">cores</span><span class="p">,</span> <span class="n">perf</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">perf</span><span class="o">.</span><span class="n">mem</span><span class="p">,</span> <span class="n">perf</span><span class="o">.</span><span class="n">partition</span>
+    
+        <span class="n">jobid</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">submit_grid_job</span><span class="p">(</span><span class="n">cores</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span> 
+            <span class="n">partition</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">commands</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">grid_queue</span><span class="p">,</span> <span class="n">reporter</span><span class="p">)</span>
+    
+        <span class="c1"># monitor job if submission was successful</span>
+        <span class="n">result</span><span class="p">,</span> <span class="n">job_final_status</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">check_submission_then_monitor_grid_job</span><span class="p">(</span><span class="n">grid_queue</span><span class="p">,</span> 
+            <span class="n">task</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span><span class="p">,</span> <span class="n">reporter</span><span class="p">)</span>
+    
+        <span class="c1"># if a timeout or memory max, resubmit at most three times</span>
+        <span class="k">while</span> <span class="p">(</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">job_timeout</span><span class="p">(</span><span class="n">job_final_status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span> <span class="ow">or</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">job_memkill</span><span class="p">(</span><span class="n">job_final_status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">memory</span><span class="p">)</span> <span class="p">)</span> <span class="ow">and</span> <span class="n">resubmission</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="n">resubmission</span><span class="o">+=</span><span class="mi">1</span>
+            <span class="c1"># increase the memory or the time</span>
+            <span class="k">if</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">job_timeout</span><span class="p">(</span><span class="n">job_final_status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+                <span class="n">time</span> <span class="o">=</span> <span class="s2">&quot;(</span><span class="si">{}</span><span class="s2">)*2&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">basestring</span><span class="p">)</span> <span class="k">else</span> <span class="n">time</span><span class="o">*</span><span class="mi">2</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Resubmission number </span><span class="si">%s</span><span class="s2"> of grid job for task id </span><span class="si">%s</span><span class="s2"> with 2x more time: </span><span class="si">%s</span><span class="s2"> minutes&quot;</span><span class="p">,</span> 
+                    <span class="n">resubmission</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+                <span class="n">reporter</span><span class="o">.</span><span class="n">task_grid_status</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span><span class="n">jobid</span><span class="p">,</span><span class="s2">&quot;Resubmitting due to time out&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">job_memkill</span><span class="p">(</span><span class="n">job_final_status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">memory</span><span class="p">):</span>
+                <span class="n">memory</span> <span class="o">=</span> <span class="s2">&quot;(</span><span class="si">{}</span><span class="s2">)*2&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">memory</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">memory</span><span class="p">,</span><span class="n">basestring</span><span class="p">)</span> <span class="k">else</span> <span class="n">memory</span><span class="o">*</span><span class="mi">2</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Resubmission number </span><span class="si">%s</span><span class="s2"> of grid job for task id </span><span class="si">%s</span><span class="s2"> with 2x more memory: </span><span class="si">%s</span><span class="s2"> MB&quot;</span><span class="p">,</span>
+                    <span class="n">resubmission</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">memory</span><span class="p">)</span>
+                <span class="n">reporter</span><span class="o">.</span><span class="n">task_grid_status</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span><span class="n">jobid</span><span class="p">,</span><span class="s2">&quot;Resubmitting due to max memory&quot;</span><span class="p">)</span>
+            
+            <span class="n">jobid</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">submit_grid_job</span><span class="p">(</span><span class="n">cores</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span>
+                <span class="n">partition</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">commands</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">grid_queue</span><span class="p">,</span> <span class="n">reporter</span><span class="p">)</span>
+    
+            <span class="c1"># monitor job if submission was successful</span>
+            <span class="n">result</span><span class="p">,</span> <span class="n">job_final_status</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">check_submission_then_monitor_grid_job</span><span class="p">(</span><span class="n">grid_queue</span><span class="p">,</span> 
+                <span class="n">task</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span><span class="p">,</span> <span class="n">reporter</span><span class="p">)</span>
+                
+        <span class="c1"># get the benchmarking data if the job was submitted</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">job_submission_failed</span><span class="p">(</span><span class="n">jobid</span><span class="p">):</span>
+            <span class="n">grid_queue</span><span class="o">.</span><span class="n">record_benchmark</span><span class="p">(</span><span class="n">jobid</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">reporter</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">result</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">submit_grid_job</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">cores</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">commands</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">grid_queue</span><span class="p">,</span> <span class="n">reporter</span><span class="p">):</span>
+        
+        <span class="c1"># evaluate the time/memory requests for the job</span>
+        <span class="n">time</span><span class="p">,</span> <span class="n">memory</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">evaluate_resource_requests</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">memory</span><span class="p">)</span>
+        
+        <span class="c1"># get the partition for the task</span>
+        <span class="n">current_partition</span> <span class="o">=</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">get_partition</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">partition</span><span class="p">)</span>
+        
+        <span class="c1"># create the grid bash script</span>
+        <span class="n">grid_script</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span> <span class="o">=</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">create_grid_script</span><span class="p">(</span><span class="n">current_partition</span><span class="p">,</span>
+            <span class="n">cores</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">memory</span><span class="p">,</span> <span class="n">commands</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">)</span>
+    
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Created grid files for task id </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">grid_script</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span><span class="p">)</span>
+    
+        <span class="c1"># submit the job</span>
+        <span class="n">jobid</span> <span class="o">=</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">submit_job</span><span class="p">(</span><span class="n">grid_script</span><span class="p">)</span>
+        
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Submitted job for task id </span><span class="si">%s</span><span class="s2">: grid id </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span>
+            <span class="n">jobid</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">job_submission_failed</span><span class="p">(</span><span class="n">jobid</span><span class="p">):</span>
+            <span class="n">reporter</span><span class="o">.</span><span class="n">task_grid_status</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span><span class="n">jobid</span><span class="p">,</span><span class="s2">&quot;Submitted&quot;</span><span class="p">)</span>
+       
+        <span class="k">return</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="GridWorker.log_grid_output"><a class="viewcode-back" href="../../../grid.html#anadama2.grid.grid.GridWorker.log_grid_output">[docs]</a>    <span class="k">def</span> <span class="nf">log_grid_output</span><span class="p">(</span><span class="n">taskid</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="n">file_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Write the grid stdout/stderr files to the log &quot;&quot;&quot;</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">EnvironmentError</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">=</span><span class="p">[]</span>
+            
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Grid </span><span class="si">%s</span><span class="s2"> from task id </span><span class="si">%s</span><span class="s2">:</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span><span class="n">taskid</span><span class="p">,</span> <span class="n">file_type</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">))</span></div>
+        
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="GridWorker.get_return_code"><a class="viewcode-back" href="../../../grid.html#anadama2.grid.grid.GridWorker.get_return_code">[docs]</a>    <span class="k">def</span> <span class="nf">get_return_code</span><span class="p">(</span><span class="n">file</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Read the return code from the file &quot;&quot;&quot;</span>
+    
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">line</span><span class="o">=</span><span class="nb">open</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">EnvironmentError</span><span class="p">:</span>
+            <span class="n">line</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+    
+        <span class="k">return</span> <span class="n">line</span></div>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="GridWorker.evaluate_resource_requests"><a class="viewcode-back" href="../../../grid.html#anadama2.grid.grid.GridWorker.evaluate_resource_requests">[docs]</a>    <span class="k">def</span> <span class="nf">evaluate_resource_requests</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">mem</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Evaluate the time/memory requests for the grid job, allowing for ints or formulas &quot;&quot;&quot;</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">time</span><span class="o">=</span><span class="nb">eval</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">time</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unable to evaluate time request for task: &quot;</span><span class="o">+</span> <span class="n">time</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">mem</span><span class="o">=</span><span class="nb">eval</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">mem</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Unable to evaluate memory request for task: &quot;</span><span class="o">+</span> <span class="n">mem</span><span class="p">)</span>
+        
+        <span class="k">return</span> <span class="n">time</span><span class="p">,</span> <span class="n">mem</span>  </div>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">check_submission_then_monitor_grid_job</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">grid_queue</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">grid_jobid</span><span class="p">,</span> 
+        <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span><span class="p">,</span> <span class="n">reporter</span><span class="p">):</span>
+        
+        <span class="c1"># monitor job if submission was successful</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">job_submission_failed</span><span class="p">(</span><span class="n">grid_jobid</span><span class="p">):</span>
+            <span class="n">result</span><span class="p">,</span> <span class="n">job_final_status</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">monitor_grid_job</span><span class="p">(</span><span class="n">grid_queue</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">grid_jobid</span><span class="p">,</span>
+                <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span><span class="p">,</span> <span class="n">reporter</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">job_final_status</span> <span class="o">=</span> <span class="s2">&quot;SUBMIT FAILED&quot;</span>
+            <span class="c1"># get the anadama task result</span>
+            <span class="n">result</span><span class="o">=</span><span class="n">runners</span><span class="o">.</span><span class="n">_get_task_result</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+            <span class="c1"># add the extra error</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">error</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">error</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;Unable to submit job to queue.&quot;</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">result</span><span class="p">,</span> <span class="n">job_final_status</span>
+   
+    <span class="nd">@classmethod</span> 
+    <span class="k">def</span> <span class="nf">monitor_grid_job</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">grid_queue</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">grid_jobid</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">rc_file</span><span class="p">,</span> <span class="n">reporter</span><span class="p">):</span> 
+        <span class="c1"># poll to check for status</span>
+        <span class="n">grid_job_status</span><span class="o">=</span><span class="kc">None</span>
+        <span class="k">for</span> <span class="n">tries</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># only check status at intervals</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">grid_queue</span><span class="o">.</span><span class="n">check_job_rate</span><span class="p">)</span>
+            
+            <span class="c1"># check the queue stats</span>
+            <span class="n">grid_job_status</span> <span class="o">=</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">get_job_status</span><span class="p">(</span><span class="n">grid_jobid</span><span class="p">)</span>
+            <span class="n">reporter</span><span class="o">.</span><span class="n">task_grid_status_polling</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span><span class="n">grid_jobid</span><span class="p">,</span><span class="n">grid_job_status</span><span class="p">)</span>
+            
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Status for job id </span><span class="si">%s</span><span class="s2"> with grid id </span><span class="si">%s</span><span class="s2"> is </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span>
+                <span class="n">grid_jobid</span><span class="p">,</span><span class="n">grid_job_status</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">job_stopped</span><span class="p">(</span><span class="n">grid_job_status</span><span class="p">):</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Grid status for job id </span><span class="si">%s</span><span class="s2"> shows it has stopped&quot;</span><span class="p">,</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">)</span>
+                <span class="k">break</span>
+            
+            <span class="c1"># check if the return code file is written</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">rc_file</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Return code file for job id </span><span class="si">%s</span><span class="s2"> shows it has stopped&quot;</span><span class="p">,</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">)</span>
+                <span class="k">break</span>
+            
+        <span class="c1"># check if a grid error is written to the output file</span>
+        <span class="n">grid_job_status</span> <span class="o">=</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">get_job_status_from_stderr</span><span class="p">(</span><span class="n">error_file</span><span class="p">,</span> <span class="n">grid_job_status</span><span class="p">,</span> <span class="n">grid_jobid</span><span class="p">)</span>
+        
+        <span class="c1"># write the stdout and stderr to the log</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">log_grid_output</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">out_file</span><span class="p">,</span> <span class="s2">&quot;standard output&quot;</span><span class="p">)</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">log_grid_output</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="s2">&quot;standard error&quot;</span><span class="p">)</span>
+        <span class="n">cls</span><span class="o">.</span><span class="n">log_grid_output</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">rc_file</span><span class="p">,</span> <span class="s2">&quot;return code&quot;</span><span class="p">)</span>
+        
+        <span class="c1"># check the return code</span>
+        <span class="n">extra_error</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+        <span class="n">return_code</span><span class="o">=</span><span class="n">cls</span><span class="o">.</span><span class="n">get_return_code</span><span class="p">(</span><span class="n">rc_file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_code</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">return_code</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
+            <span class="n">extra_error</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Return Code Error: &quot;</span> <span class="o">+</span> <span class="n">return_code</span>
+          
+        <span class="c1"># check the queue status</span>
+        <span class="k">if</span> <span class="n">grid_queue</span><span class="o">.</span><span class="n">job_failed</span><span class="p">(</span><span class="n">grid_job_status</span><span class="p">):</span>
+            <span class="n">extra_error</span><span class="o">+=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Grid Status Error: &quot;</span> <span class="o">+</span> <span class="n">grid_job_status</span>
+     
+        <span class="c1"># get the anadama task result</span>
+        <span class="n">result</span><span class="o">=</span><span class="n">runners</span><span class="o">.</span><span class="n">_get_task_result</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+    
+        <span class="c1"># add the extra error if found</span>
+        <span class="k">if</span> <span class="n">extra_error</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">_replace</span><span class="p">(</span><span class="n">error</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">error</span><span class="p">)</span><span class="o">+</span><span class="n">extra_error</span><span class="p">)</span>
+     
+        <span class="k">return</span> <span class="n">result</span><span class="p">,</span> <span class="n">grid_job_status</span></div>
+    
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../../anadama2.html">anadama2</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Randall Schwager and the Huttenhower Lab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

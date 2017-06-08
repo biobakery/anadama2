@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>tracked &#8212; anadama2 0.1.2 documentation</title>
+    <title>tracked &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -272,7 +272,7 @@ have changed size or modify times.</p>
 
 <dl class="method">
 <dt id="anadama2.tracked.TrackedExecutable.init">
-<code class="descname">init</code><span class="sig-paren">(</span><em>name</em>, <em>version_cmd=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/tracked.html#TrackedExecutable.init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.tracked.TrackedExecutable.init" title="Permalink to this definition">¶</a></dt>
+<code class="descname">init</code><span class="sig-paren">(</span><em>name</em>, <em>version_command='{} --version'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/tracked.html#TrackedExecutable.init"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.tracked.TrackedExecutable.init" title="Permalink to this definition">¶</a></dt>
 <dd><p>Initialize the dependency.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -281,8 +281,7 @@ have changed size or modify times.</p>
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
 <li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Name of a script on the shell $PATH or name of
 the file to track</li>
-<li><strong>version_cmd</strong> &#8211; Shell string to execute to get the
-binary or script&#8217;s version</li>
+<li><strong>version</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Command to get the executables version</li>
 </ul>
 </td>
 </tr>
@@ -293,6 +292,11 @@ binary or script&#8217;s version</li>
 <dl class="staticmethod">
 <dt id="anadama2.tracked.TrackedExecutable.key">
 <em class="property">static </em><code class="descname">key</code><span class="sig-paren">(</span><em>name</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/tracked.html#TrackedExecutable.key"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.tracked.TrackedExecutable.key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="anadama2.tracked.TrackedExecutable.version">
+<code class="descname">version</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/tracked.html#TrackedExecutable.version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.tracked.TrackedExecutable.version" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -464,12 +468,12 @@ of <a class="reference internal" href="#anadama2.tracked.Base" title="anadama2.t
 variables are expanded using <a class="reference external" href="https://docs.python.org/2/library/os.path.html#os.path.expanduser" title="(in Python v2.7)"><code class="xref py py-func docutils literal"><span class="pre">os.path.expanduser()</span></code></a> and
 <a class="reference external" href="https://docs.python.org/2/library/os.path.html#os.path.expandvars" title="(in Python v2.7)"><code class="xref py py-func docutils literal"><span class="pre">os.path.expandvars()</span></code></a>. If that&#8217;s not your game, use
 <a class="reference internal" href="#anadama2.tracked.TrackedDirectory" title="anadama2.tracked.TrackedDirectory"><code class="xref py py-class docutils literal"><span class="pre">anadama2.tracked.TrackedDirectory</span></code></a> or
-<a class="reference internal" href="#anadama2.tracked.TrackedFile" title="anadama2.tracked.TrackedFile"><code class="xref py py-class docutils literal"><span class="pre">anadama2.tracked.TrackedFile</span></code></a> as appropriate. The current
-mapping is as follows:</p>
+<a class="reference internal" href="#anadama2.tracked.HugeTrackedFile" title="anadama2.tracked.HugeTrackedFile"><code class="xref py py-class docutils literal"><span class="pre">anadama2.tracked.HugeTrackedFile</span></code></a>
+as appropriate. The current mapping is as follows:</p>
 <ul class="simple">
 <li>Subclasses of <a class="reference internal" href="#anadama2.tracked.Base" title="anadama2.tracked.Base"><code class="xref py py-class docutils literal"><span class="pre">anadama2.tracked.Base</span></code></a> are returned as is</li>
 <li>Strings ending in &#8216;/&#8217; <code class="docutils literal"><span class="pre">-&gt;</span></code> <a class="reference internal" href="#anadama2.tracked.TrackedDirectory" title="anadama2.tracked.TrackedDirectory"><code class="xref py py-class docutils literal"><span class="pre">anadama2.tracked.TrackedDirectory</span></code></a></li>
-<li>Strings not ending in &#8216;/&#8217; <code class="docutils literal"><span class="pre">-&gt;</span></code> <a class="reference internal" href="#anadama2.tracked.TrackedFile" title="anadama2.tracked.TrackedFile"><code class="xref py py-class docutils literal"><span class="pre">anadama2.tracked.TrackedFile</span></code></a></li>
+<li>Strings not ending in &#8216;/&#8217; <code class="docutils literal"><span class="pre">-&gt;</span></code> <a class="reference internal" href="#anadama2.tracked.HugeTrackedFile" title="anadama2.tracked.HugeTrackedFile"><code class="xref py py-class docutils literal"><span class="pre">anadama2.tracked.HugeTrackedFile</span></code></a></li>
 <li>Instances of subclasses of <a class="reference internal" href="index.html#anadama2.Task" title="anadama2.Task"><code class="xref py py-class docutils literal"><span class="pre">anadama2.Task</span></code></a> are handled
 specially by <a class="reference internal" href="workflow.html#anadama2.workflow.Workflow.add_task" title="anadama2.workflow.Workflow.add_task"><code class="xref py py-meth docutils literal"><span class="pre">anadama2.workflow.Workflow.add_task()</span></code></a> and
 are returned as is</li>
@@ -526,7 +530,7 @@ are returned as is</li>
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |
