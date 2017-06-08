@@ -34,7 +34,24 @@ class Document(object):
         raise NotImplementedError()
 
 class PweaveDocument(Document):
-    """ A document using the pweave autogen tool """
+    """A document that is auto generated from a template using Pweave and Pandoc 
+    
+    :keyword templates: The document template files (or file)
+    :type templates: str or list
+    
+    :keyword depends: The list of dependencies. 
+    :type depends: list of :class:`anadama2.tracked.Base` or strings
+    
+    :keyword targets: The target(s). The document(s) to be generated.
+    :type targets: :class:`anadama2.tracked.Base` or string
+    
+    :keyword vars: A dictionary of variables used by the template.
+    :type vars: dict
+    
+    :keyword table_of_contents: If set add table of contents to reports
+    :type table_of_contents: bool
+
+    """
     
     def __init__(self, templates=None, depends=None, targets=None, vars=None, table_of_contents=None):
         # allow for a single template or multiple templates
@@ -213,7 +230,24 @@ class PweaveDocument(Document):
     
     def read_table(self, file, invert=None, delimiter="\t", only_data_columns=None, format_data=None):
         """ Read the table from a text file with the first line the column
-        names and the first column the row names. """
+        names and the first column the row names. 
+        
+        :param file: The file to read
+        :type file: str
+            
+        :keyword invert: Invert the table rows/columns after reading
+        :type invert: bool
+        
+        :keyword delimiter: The delimiter present in the file
+        :type delimiter: str
+        
+        :keyword only_data_columns: Remove the header and row names
+        :type only_data_columns: bool
+        
+        :keyword format_data: A function to use to format the data
+        :type format_data: function
+        
+        """
         
         def try_format_data(function, data):
             """ Try to format the data, except use zero """
@@ -251,7 +285,33 @@ class PweaveDocument(Document):
 
     def plot_grouped_barchart(self, data, row_labels, column_labels, title, 
         xlabel=None, ylabel=None, legend_title=None, yaxis_in_millions=None):
-        """ Plot a grouped barchart """
+        """ Plot a grouped barchart 
+        
+        :param data: A list of lists containing the data
+        :type data: list
+        
+        :param row_labels: The labels for the data rows
+        :type row_labels: list
+        
+        :param column_labels: The labels for the columns
+        :type column_labels: list
+        
+        :param title: The title for the plot
+        :type title: str
+        
+        :keyword xlabel: The x-axis label
+        :type xlabel: str
+        
+        :keyword ylabel: The y-axis label
+        :type ylabel: str
+        
+        :keyword legend_title: The title for the legend
+        :type legend_title: str
+        
+        :keyword yaxis_in_millions: Show the y-axis in millions
+        :type yaxis_in_millions: bool
+        
+        """
         
         import numpy
         import matplotlib.pyplot as pyplot
@@ -313,7 +373,27 @@ class PweaveDocument(Document):
         pyplot.show()  
         
     def plot_scatter(self, data, title, row_labels, xlabel=None, ylabel=None, trendline=None):
-        """ Plot a scatter plot """
+        """ Plot a scatter plot 
+
+        :param data: A list of lists containing the data
+        :type data: list
+        
+        :param title: The title for the plot
+        :type title: str
+        
+        :param row_labels: The labels for the data rows
+        :type row_labels: list
+        
+        :keyword xlabel: The x-axis label
+        :type xlabel: str
+        
+        :keyword ylabel: The y-axis label
+        :type ylabel: str
+        
+        :keyword trendline: Add a trendline to the plot
+        :type trendline: bool
+        
+        """
         
         import numpy
         import matplotlib.pyplot as pyplot
@@ -351,7 +431,24 @@ class PweaveDocument(Document):
         pyplot.show()        
         
     def plot_barchart(self, data, labels, title, xlabel=None, ylabel=None):
-        """ Plot a barchart """
+        """ Plot a barchart 
+        
+        :param data: A list of lists containing the data
+        :type data: list
+
+        :param labels: The labels for the data rows
+        :type labels: list
+
+        :param title: The title for the plot
+        :type title: str
+        
+        :keyword xlabel: The x-axis label
+        :type xlabel: str
+        
+        :keyword ylabel: The y-axis label
+        :type ylabel: str
+        
+        """
         
         import numpy
         import matplotlib.pyplot as pyplot
@@ -413,7 +510,33 @@ class PweaveDocument(Document):
         
     def plot_stacked_barchart(self, data, row_labels, column_labels, title, 
         xlabel=None, ylabel=None, legend_title=None, legend_style="normal"):
-        """ Plot a stacked barchart """
+        """ Plot a stacked barchart
+        
+        :param data: A list of lists containing the data
+        :type data: list
+        
+        :param row_labels: The labels for the data rows
+        :type row_labels: list
+        
+        :param column_labels: The labels for the columns
+        :type column_labels: list
+        
+        :param title: The title for the plot
+        :type title: str
+        
+        :keyword xlabel: The x-axis label
+        :type xlabel: str
+        
+        :keyword ylabel: The y-axis label
+        :type ylabel: str
+        
+        :keyword legend_title: The title for the legend
+        :type legend_title: str
+        
+        :keyword legend_style: The font style for the legend
+        :type legend_style: str
+        
+        """
         
         import numpy
         import matplotlib.pyplot as pyplot
@@ -465,7 +588,30 @@ class PweaveDocument(Document):
         
     def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
                    location="center", font=None):
-        """ Plot the data as a table """
+        """ Plot the data as a table 
+        
+        :param data: A list of lists containing the data
+        :type data: list
+        
+        :param row_labels: The labels for the data rows
+        :type row_labels: list
+        
+        :param column_labels: The labels for the columns
+        :type column_labels: list
+        
+        :param title: The title for the plot
+        :type title: str
+        
+        :keyword format_data_comma: Format the data as comma delimited
+        :type format_data_comma: bool
+        
+        :keyword location: The location for the text in the cell
+        :type location: str
+        
+        :keyword font: The size of the font
+        :type font: int
+        
+        """
         
         import numpy
         import matplotlib.pyplot as pyplot
@@ -536,7 +682,21 @@ class PweaveDocument(Document):
         pyplot.show() 
         
     def write_table(self, column_labels, row_labels, data, file):
-        """ Write a table of data to a file """
+        """ Write a table of data to a file 
+        
+        :param column_labels: The labels for the columns
+        :type column_labels: list
+        
+        :param row_labels: The labels for the data rows
+        :type row_labels: list
+
+        :param data: A list of lists containing the data
+        :type data: list        
+
+        :param file: The file to write the table to
+        :type file: str
+        
+        """
         
         # if the folder for the table does not exist, then create
         if not os.path.isdir(os.path.dirname(file)):
@@ -548,7 +708,27 @@ class PweaveDocument(Document):
                 file_handle.write("\t".join([name]+[str(i) for i in row])+"\n")
         
     def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False):
-        """ Create a hclust2 heatmap with dendrogram and show it in the document """
+        """ Create a hclust2 heatmap with dendrogram and show it in the document
+        
+        :param sample_names: The names of the samples
+        :type sample_names: list
+        
+        :param feature_names: The names of the features
+        :type feature_names: list 
+        
+        :param data: A list of lists containing the data
+        :type data: list         
+        
+        :param title: The title for the plot
+        :type title: str
+        
+        :keyword log_scale: Show the heatmap with the log scale
+        :type log_scale: bool
+        
+        :keyword zscore: Apply the zscore to the data prior to clustering
+        :type zscore: bool
+        
+        """
         
         from matplotlib._png import read_png
         import matplotlib.pyplot as pyplot
@@ -614,7 +794,15 @@ class PweaveDocument(Document):
         out, err = proc.communicate(input="\n".join(commands))
         
     def filter_zero_rows(self, row_names, data):
-        """ Filter the rows from the data set that sum to zero """
+        """ Filter the rows from the data set that sum to zero 
+        
+        :param row_names: The names of the rows
+        :type row_names: list
+        
+        :param data: A list of lists containing the data
+        :type data: list    
+        
+        """
          
         new_names=[]
         new_data=[]
@@ -626,7 +814,15 @@ class PweaveDocument(Document):
         return new_names, new_data
     
     def filter_zero_columns(self, column_names, data):
-        """ Filter the columns from the data set that sum to zero """
+        """ Filter the columns from the data set that sum to zero 
+        
+        :param column_names: The names of the columns
+        :type column_names: list
+        
+        :param data: A list of lists containing the data
+        :type data: list    
+        
+        """
 
         import numpy
          
@@ -640,9 +836,29 @@ class PweaveDocument(Document):
         return new_names, new_data
         
     def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species"):
-        """ Use the vegan package in R plus matplotlib to plot a PCoA 
-        Input data should be organized with samples as columns and features as rows 
-        Data should be scaled to [0-1] """
+        """ Use the vegan package in R plus matplotlib to plot a PCoA. 
+        Input data should be organized with samples as columns and features as rows. 
+        Data should be scaled to [0-1].
+        
+        :param sample_names: The labels for the columns
+        :type sample_names: list
+
+        :param feature_names: The labels for the data rows
+        :type feature_names: list
+
+        :param data: A list of lists containing the data
+        :type data: list
+        
+        :param title: The title for the plot
+        :type title: str
+        
+        :keyword sample_types: What type of data are the columns
+        :type sample_types: str
+        
+        :keyword feature_types: What type of data are the rows
+        :type feature_types: str
+        
+        """
         
         import matplotlib.pyplot as pyplot
         
