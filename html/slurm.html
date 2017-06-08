@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>slurm &#8212; anadama2 0.1.2 documentation</title>
+    <title>slurm &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -26,7 +26,7 @@
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
     <link rel="top" title="anadama2 0.1.2 documentation" href="index.html" />
     <link rel="next" title="sge" href="sge.html" />
-    <link rel="prev" title="workflow" href="workflow.html" />
+    <link rel="prev" title="grid" href="grid.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -44,36 +44,16 @@
             
   <div class="section" id="slurm">
 <h1>slurm<a class="headerlink" href="#slurm" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-anadama2.slurm"></span><dl class="class">
-<dt id="anadama2.slurm.PerformanceData">
-<em class="property">class </em><code class="descclassname">anadama2.slurm.</code><code class="descname">PerformanceData</code><a class="reference internal" href="_modules/anadama2/slurm.html#PerformanceData"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.slurm.PerformanceData" title="Permalink to this definition">¶</a></dt>
-<dd><p>Performance Data. Defines the resources or performance a task used,
-is limited to use, or is expected to use.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>time</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; Wall clock time in minutes.</li>
-<li><strong>mem</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; RAM Usage in MB (8*1024*1024 bits).</li>
-<li><strong>cores</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; CPU cores.</li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="class">
-<dt id="anadama2.slurm.SlurmPowerup">
-<em class="property">class </em><code class="descclassname">anadama2.slurm.</code><code class="descname">SlurmPowerup</code><span class="sig-paren">(</span><em>partition</em>, <em>tmpdir</em>, <em>extra_srun_flags=[]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/slurm.html#SlurmPowerup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.slurm.SlurmPowerup" title="Permalink to this definition">¶</a></dt>
-<dd><p>This powerup enables the Workflow class to dispatch tasks to
+<span class="target" id="module-anadama2.grid.slurm"></span><dl class="class">
+<dt id="anadama2.grid.slurm.Slurm">
+<em class="property">class </em><code class="descclassname">anadama2.grid.slurm.</code><code class="descname">Slurm</code><span class="sig-paren">(</span><em>partition</em>, <em>tmpdir</em>, <em>benchmark_on=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/grid/slurm.html#Slurm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.grid.slurm.Slurm" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class enables the Workflow class to dispatch tasks to
 SLURM. Use it like so:</p>
 <div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama2</span> <span class="k">import</span> <span class="n">Workflow</span>
-<span class="kn">from</span> <span class="nn">anadama2.slurm</span> <span class="k">import</span> <span class="n">SlurmPowerup</span>
+<span class="kn">from</span> <span class="nn">anadama2.slurm</span> <span class="k">import</span> <span class="n">Slurm</span>
 
-<span class="n">powerup</span> <span class="o">=</span> <span class="n">Slurmpowerup</span><span class="p">(</span><span class="n">partition</span><span class="o">=</span><span class="s2">&quot;general&quot;</span><span class="p">)</span>
-<span class="n">ctx</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">grid_powerup</span><span class="o">=</span><span class="n">powerup</span><span class="p">)</span>
+<span class="n">powerup</span> <span class="o">=</span> <span class="n">Slurm</span><span class="p">(</span><span class="n">partition</span><span class="o">=</span><span class="s2">&quot;general&quot;</span><span class="p">)</span>
+<span class="n">ctx</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">grid</span><span class="o">=</span><span class="n">powerup</span><span class="p">)</span>
 <span class="n">ctx</span><span class="o">.</span><span class="n">do</span><span class="p">(</span><span class="s2">&quot;wget &quot;</span>
        <span class="s2">&quot;ftp://public-ftp.hmpdacc.org/&quot;</span>
        <span class="s2">&quot;HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 &quot;</span>
@@ -104,61 +84,21 @@ machines in the cluster must be able to read the contents of
 this directory; uses <code class="xref py py-mod docutils literal"><span class="pre">anadama2.picklerunner</span></code> to create
 self-contained scripts to run individual tasks and calls
 <code class="docutils literal"><span class="pre">srun</span></code> to run the script on the cluster.</li>
+<li><strong>benchmark_on</strong> &#8211; Option to turn on/off benchmarking</li>
 </ul>
 </td>
 </tr>
 </tbody>
 </table>
-<dl class="method">
-<dt id="anadama2.slurm.SlurmPowerup.add_task">
-<code class="descname">add_task</code><span class="sig-paren">(</span><em>task</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/slurm.html#SlurmPowerup.add_task"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.slurm.SlurmPowerup.add_task" title="Permalink to this definition">¶</a></dt>
-<dd><p>Accepts the following extra arguments:</p>
+<p>: type benchmark_on: bool</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>time</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The maximum time in minutes allotted to run the
-command</li>
-<li><strong>mem</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The maximum memory in megabytes allocated to run
-the command</li>
-<li><strong>cores</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of CPU cores allocated to the job</li>
-<li><strong>partition</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The SLURM partiton to send this job to</li>
-<li><strong>extra_srun_flags</strong> (<em>list of str</em>) &#8211; Any command-line flags to augment
-<code class="docutils literal"><span class="pre">srun</span></code> behavior formatted like <code class="docutils literal"><span class="pre">--begin=22:00</span></code>,
-<code class="docutils literal"><span class="pre">--exclusive</span></code>, or <code class="docutils literal"><span class="pre">-k</span></code></li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>options</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Grid specific options to apply to each job</td>
 </tr>
 </tbody>
 </table>
-</dd></dl>
-
-<dl class="method">
-<dt id="anadama2.slurm.SlurmPowerup.do">
-<code class="descname">do</code><span class="sig-paren">(</span><em>task</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/slurm.html#SlurmPowerup.do"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.slurm.SlurmPowerup.do" title="Permalink to this definition">¶</a></dt>
-<dd><p>Accepts the following extra arguments:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>time</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The maximum time in minutes allotted to run the
-command</li>
-<li><strong>mem</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The maximum memory in megabytes allocated to run
-the command</li>
-<li><strong>cores</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#int" title="(in Python v2.7)"><em>int</em></a>) &#8211; The number of CPU cores allocated to the job</li>
-<li><strong>partition</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The SLURM partiton to send this job to</li>
-<li><strong>extra_srun_flags</strong> (<em>list of str</em>) &#8211; Any command-line flags to augment
-<code class="docutils literal"><span class="pre">srun</span></code> behavior formatted like <code class="docutils literal"><span class="pre">--begin=22:00</span></code>,
-<code class="docutils literal"><span class="pre">--exclusive</span></code>, or <code class="docutils literal"><span class="pre">-k</span></code></li>
-</ul>
-</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 </dd></dl>
 
 </div>
@@ -172,7 +112,7 @@ the command</li>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="workflow.html" title="previous chapter">workflow</a></li>
+      <li>Previous: <a href="grid.html" title="previous chapter">grid</a></li>
       <li>Next: <a href="sge.html" title="next chapter">sge</a></li>
   </ul></li>
 </ul>
@@ -202,7 +142,7 @@ the command</li>
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |

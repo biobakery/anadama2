@@ -1,0 +1,248 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>anadama2.grid.slurm &mdash; anadama2 0.1.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="anadama2 0.1.2 documentation" href="../../../index.html" />
+    <link rel="up" title="anadama2" href="../../anadama2.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for anadama2.grid.slurm</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">six</span>
+
+<span class="kn">from</span> <span class="nn">.grid</span> <span class="k">import</span> <span class="n">Grid</span>
+<span class="kn">from</span> <span class="nn">.grid</span> <span class="k">import</span> <span class="n">GridWorker</span>
+<span class="kn">from</span> <span class="nn">.grid</span> <span class="k">import</span> <span class="n">GridQueue</span>
+
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;posix&#39;</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">subprocess32</span> <span class="k">as</span> <span class="nn">subprocess</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">subprocess</span>
+
+<div class="viewcode-block" id="Slurm"><a class="viewcode-back" href="../../../slurm.html#anadama2.grid.slurm.Slurm">[docs]</a><span class="k">class</span> <span class="nc">Slurm</span><span class="p">(</span><span class="n">Grid</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class enables the Workflow class to dispatch tasks to</span>
+<span class="sd">    SLURM. Use it like so:</span>
+
+<span class="sd">    .. code:: python</span>
+
+<span class="sd">      from anadama2 import Workflow</span>
+<span class="sd">      from anadama2.slurm import Slurm</span>
+
+<span class="sd">      powerup = Slurm(partition=&quot;general&quot;)</span>
+<span class="sd">      ctx = Workflow(grid=powerup)</span>
+<span class="sd">      ctx.do(&quot;wget &quot;</span>
+<span class="sd">             &quot;ftp://public-ftp.hmpdacc.org/&quot;</span>
+<span class="sd">             &quot;HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 &quot;</span>
+<span class="sd">             &quot;-O @{input/hmp1.v35.hq.otu.counts.bz2}&quot;)</span>
+
+<span class="sd">      # run on slurm with 200 MB of memory, 4 cores, and 60 minutes</span>
+<span class="sd">      t1 = ctx.grid_do(&quot;pbzip2 -d -p 4 &lt; #{input/hmp1.v35.hq.otu.counts.bz2} &quot;</span>
+<span class="sd">                       &quot;&gt; @{input/hmp1.v35.hq.otu.counts}&quot;,</span>
+<span class="sd">                       mem=200, cores=4, time=60)</span>
+
+<span class="sd">      # run on slurm on the serial_requeue partition</span>
+<span class="sd">      ctx.grid_add_task(&quot;some_huge_analysis {depends[0]} {targets[0]}&quot;,</span>
+<span class="sd">                        depends=t1.targets, targets=&quot;output.txt&quot;,</span>
+<span class="sd">                        mem=4000, cores=1, time=300, partition=&quot;serial_requeue&quot;)</span>
+
+
+<span class="sd">      ctx.go()</span>
+
+
+<span class="sd">    :param partition: The name of the SLURM partition to submit tasks to</span>
+<span class="sd">    :type partition: str</span>
+
+<span class="sd">    :param tmpdir: A directory to store temporary files in. All</span>
+<span class="sd">      machines in the cluster must be able to read the contents of</span>
+<span class="sd">      this directory; uses :mod:`anadama2.picklerunner` to create</span>
+<span class="sd">      self-contained scripts to run individual tasks and calls</span>
+<span class="sd">      ``srun`` to run the script on the cluster.</span>
+<span class="sd">    :type tmpdir: str</span>
+<span class="sd">    </span>
+<span class="sd">    :keyword benchmark_on: Option to turn on/off benchmarking</span>
+<span class="sd">    : type benchmark_on: bool</span>
+<span class="sd">    </span>
+<span class="sd">    :keyword options: Grid specific options to apply to each job</span>
+<span class="sd">    :type options: str</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Slurm</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="s2">&quot;slurm&quot;</span><span class="p">,</span> <span class="n">GridWorker</span><span class="p">,</span> <span class="n">SLURMQueue</span><span class="p">(</span><span class="n">partition</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="p">,</span> <span class="n">options</span><span class="p">),</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="p">)</span></div>
+
+
+<span class="k">class</span> <span class="nc">SLURMQueue</span><span class="p">(</span><span class="n">GridQueue</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SLURMQueue</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">partition</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">=</span><span class="n">options</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">job_code_completed</span><span class="o">=</span><span class="s2">&quot;COMPLETED&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job_code_cancelled</span><span class="o">=</span><span class="s2">&quot;CANCELLED&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job_code_failed</span><span class="o">=</span><span class="s2">&quot;FAILED&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job_code_timeout</span><span class="o">=</span><span class="s2">&quot;TIMEOUT&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job_code_memkill</span><span class="o">=</span><span class="s2">&quot;MEMKILL&quot;</span>
+       
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_failed_codes</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_failed</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_timeout</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_memkill</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_cancelled</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_stopped_codes</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_completed</span><span class="p">]</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">all_failed_codes</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">submit_command</span><span class="p">(</span><span class="n">grid_script</span><span class="p">):</span>    
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;sbatch&quot;</span><span class="p">,</span><span class="n">grid_script</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">submit_template</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;#SBATCH -p $</span><span class="si">{partition}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#SBATCH -N 1 &quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#SBATCH -n $</span><span class="si">{cpus}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#SBATCH -t $</span><span class="si">{time}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#SBATCH --mem $</span><span class="si">{memory}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#SBATCH -o $</span><span class="si">{output}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#SBATCH -e $</span><span class="si">{error}</span><span class="s2">&quot;</span><span class="p">]</span>
+        
+        <span class="c1"># add user supplied options if provided</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">:</span>
+            <span class="n">template</span><span class="o">+=</span><span class="p">[</span><span class="s2">&quot;#SBATCH &quot;</span><span class="o">+</span><span class="n">option</span> <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">]</span>
+            
+        <span class="k">return</span> <span class="n">template</span>
+    
+    <span class="k">def</span> <span class="nf">job_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">status</span><span class="p">):</span>
+        <span class="c1"># check if the job has a status that it failed</span>
+        <span class="c1"># This will capture &quot;CANCELLED by 0&quot; and the short form &quot;CANCELLED+&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_cancelled</span><span class="p">)</span> <span class="ow">or</span> <span class="n">status</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_failed_codes</span> <span class="k">else</span> <span class="kc">False</span>
+        
+    <span class="k">def</span> <span class="nf">job_stopped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">status</span><span class="p">):</span>
+        <span class="c1"># check if the job has a status which indicates it stopped running</span>
+        <span class="c1"># This will capture &quot;CANCELLED by 0&quot; and the short form &quot;CANCELLED+&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_cancelled</span><span class="p">)</span> <span class="ow">or</span> <span class="n">status</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_stopped_codes</span> <span class="k">else</span> <span class="kc">False</span>
+        
+    <span class="k">def</span> <span class="nf">job_memkill</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">memory</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_code_memkill</span> <span class="k">else</span> <span class="kc">False</span>
+        
+    <span class="k">def</span> <span class="nf">job_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_code_timeout</span> <span class="k">else</span> <span class="kc">False</span>
+    
+    <span class="k">def</span> <span class="nf">get_job_status_from_stderr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error_file</span><span class="p">,</span> <span class="n">grid_job_status</span><span class="p">,</span> <span class="n">grid_jobid</span><span class="p">):</span>
+        <span class="c1"># read the error file to see if any time or memory errors were reported</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">slurm_errors</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">([</span><span class="s2">&quot;grep&quot;</span><span class="p">,</span><span class="s2">&quot;-F&quot;</span><span class="p">,</span><span class="s2">&quot;slurmstepd: error:&quot;</span><span class="p">,</span><span class="n">error_file</span><span class="p">])</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">EnvironmentError</span><span class="p">,</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span><span class="p">):</span>
+            <span class="n">slurm_errors</span><span class="o">=</span><span class="p">[]</span>
+                
+        <span class="k">if</span> <span class="n">slurm_errors</span><span class="p">:</span>
+            <span class="c1"># check for time or memory</span>
+            <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot;TIME LIMIT&quot;</span> <span class="ow">in</span> <span class="n">x</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_code_cancelled</span> <span class="ow">in</span> <span class="n">x</span><span class="p">,</span> <span class="n">slurm_errors</span><span class="p">)):</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Slurm task </span><span class="si">%s</span><span class="s2"> cancelled due to time limit&quot;</span><span class="p">,</span> <span class="n">grid_jobid</span><span class="p">)</span>
+                <span class="c1"># This has the slurm status of &quot;TIMEOUT&quot; from slurm sacct</span>
+                <span class="n">grid_job_status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_timeout</span>
+            <span class="k">elif</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot;exceeded memory limit&quot;</span> <span class="ow">in</span> <span class="n">x</span> <span class="ow">and</span> <span class="s2">&quot;being killed&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">,</span> <span class="n">slurm_errors</span><span class="p">)):</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Slurm task </span><span class="si">%s</span><span class="s2"> cancelled due to memory limit&quot;</span><span class="p">,</span> <span class="n">grid_jobid</span><span class="p">)</span>
+                <span class="c1"># This has the slurm status of &quot;CANCELLED by 0&quot; from slurm sacct (short form is &quot;CANCELLED+&quot;)</span>
+                <span class="n">grid_job_status</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_memkill</span>
+                
+        <span class="k">return</span> <span class="n">grid_job_status</span>
+
+    <span class="k">def</span> <span class="nf">refresh_queue_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get the latest status for the grid jobs using the same command for</span>
+<span class="sd">        jobs in the queue and for completed jobs to benchmark &quot;&quot;&quot;</span>
+        
+        <span class="c1"># Get the jobid, state, and resources for all jobs for the current user</span>
+        <span class="n">stdout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run_grid_command_resubmit</span><span class="p">([</span><span class="s2">&quot;sacct&quot;</span><span class="p">,</span><span class="s2">&quot;-o&quot;</span><span class="p">,</span><span class="s2">&quot;JobID,State,AllocCPUs,Elapsed,MaxRSS&quot;</span><span class="p">])</span>
+
+        <span class="c1"># remove the header information from the status lines</span>
+        <span class="c1"># split each line and remove empty lines</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">info</span><span class="o">=</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)[</span><span class="mi">2</span><span class="p">:]])</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="n">info</span><span class="o">=</span><span class="p">[]</span>
+
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+    
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../../anadama2.html">anadama2</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Randall Schwager and the Huttenhower Lab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

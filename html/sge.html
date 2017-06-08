@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>sge &#8212; anadama2 0.1.2 documentation</title>
+    <title>sge &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -44,15 +44,15 @@
             
   <div class="section" id="sge">
 <h1>sge<a class="headerlink" href="#sge" title="Permalink to this headline">¶</a></h1>
-<span class="target" id="module-anadama2.sge"></span><dl class="class">
-<dt id="anadama2.sge.SGEPowerup">
-<em class="property">class </em><code class="descclassname">anadama2.sge.</code><code class="descname">SGEPowerup</code><span class="sig-paren">(</span><em>queue</em>, <em>tmpdir='/tmp'</em>, <em>extra_qsub_flags=[]</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/sge.html#SGEPowerup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.sge.SGEPowerup" title="Permalink to this definition">¶</a></dt>
+<span class="target" id="module-anadama2.grid.sge"></span><dl class="class">
+<dt id="anadama2.grid.sge.SGE">
+<em class="property">class </em><code class="descclassname">anadama2.grid.sge.</code><code class="descname">SGE</code><span class="sig-paren">(</span><em>partition</em>, <em>tmpdir</em>, <em>benchmark_on=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/grid/sge.html#SGE"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.grid.sge.SGE" title="Permalink to this definition">¶</a></dt>
 <dd><p>This class enables the Workflow class to dispatch tasks to
 Sun Grid Engine and its lookalikes. Use it like so:</p>
 <div class="code python highlight-default"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">anadama2</span> <span class="k">import</span> <span class="n">Workflow</span>
-<span class="kn">from</span> <span class="nn">anadama2.sge</span> <span class="k">import</span> <span class="n">SGEPowerup</span>
+<span class="kn">from</span> <span class="nn">anadama2.sge</span> <span class="k">import</span> <span class="n">SGE</span>
 
-<span class="n">ctx</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">grid_powerup</span><span class="o">=</span><span class="n">SGEPowerup</span><span class="p">(</span><span class="n">queue</span><span class="o">=</span><span class="s2">&quot;general&quot;</span><span class="p">))</span>
+<span class="n">ctx</span> <span class="o">=</span> <span class="n">Workflow</span><span class="p">(</span><span class="n">grid_powerup</span><span class="o">=</span><span class="n">SGE</span><span class="p">(</span><span class="n">queue</span><span class="o">=</span><span class="s2">&quot;general&quot;</span><span class="p">))</span>
 <span class="n">ctx</span><span class="o">.</span><span class="n">do</span><span class="p">(</span><span class="s2">&quot;wget &quot;</span>
        <span class="s2">&quot;ftp://public-ftp.hmpdacc.org/&quot;</span>
        <span class="s2">&quot;HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 &quot;</span>
@@ -77,14 +77,24 @@ Sun Grid Engine and its lookalikes. Use it like so:</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>queue</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The name of the SGE queue to submit tasks to</li>
+<li><strong>partition</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; The name of the SLURM partition to submit tasks to</li>
 <li><strong>tmpdir</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; A directory to store temporary files in. All
 machines in the cluster must be able to read the contents of
 this directory; uses <code class="xref py py-mod docutils literal"><span class="pre">anadama2.picklerunner</span></code> to create
 self-contained scripts to run individual tasks and calls
-<code class="docutils literal"><span class="pre">qsub</span></code> to run the script on the cluster.</li>
+<code class="docutils literal"><span class="pre">srun</span></code> to run the script on the cluster.</li>
+<li><strong>benchmark_on</strong> &#8211; Option to turn on/off benchmarking</li>
 </ul>
 </td>
+</tr>
+</tbody>
+</table>
+<p>: type benchmark_on: bool</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>options</strong> (<a class="reference external" href="https://docs.python.org/2/library/functions.html#str" title="(in Python v2.7)"><em>str</em></a>) &#8211; Grid specific options to apply to each job</td>
 </tr>
 </tbody>
 </table>
@@ -131,7 +141,7 @@ self-contained scripts to run individual tasks and calls
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |

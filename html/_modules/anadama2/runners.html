@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>anadama2.runners &#8212; anadama2 0.1.2 documentation</title>
+    <title>anadama2.runners &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -42,17 +42,23 @@
           <div class="body" role="main">
             
   <h1>Source code for anadama2.runners</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">time</span>
-<span class="kn">import</span> <span class="nn">Queue</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span>
+<span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">traceback</span>
 <span class="kn">import</span> <span class="nn">multiprocessing</span>
-<span class="kn">import</span> <span class="nn">cPickle</span> <span class="k">as</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">pickle</span> <span class="k">as</span> <span class="nn">pickle</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">namedtuple</span>
 
-<span class="kn">from</span> <span class="nn">.pickler</span> <span class="k">import</span> <span class="n">cloudpickle</span>
+<span class="kn">import</span> <span class="nn">six</span>
+<span class="kn">from</span> <span class="nn">six.moves</span> <span class="k">import</span> <span class="n">queue</span>
+<span class="kn">import</span> <span class="nn">cloudpickle</span>
+
 <span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">istask</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">tracked</span>
+<span class="kn">from</span> <span class="nn">.helpers</span> <span class="k">import</span> <span class="n">apply_sh</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">__name__</span><span class="p">)</span>
 
@@ -104,24 +110,60 @@
 
 
 <div class="viewcode-block" id="DryRunner"><a class="viewcode-back" href="../../runners.html#anadama2.runners.DryRunner">[docs]</a><span class="k">class</span> <span class="nc">DryRunner</span><span class="p">(</span><span class="n">BaseRunner</span><span class="p">):</span>
+
+    <span class="n">_typemap</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">tracked</span><span class="o">.</span><span class="n">TrackedString</span><span class="p">:</span> <span class="s2">&quot;String&quot;</span><span class="p">,</span>
+        <span class="n">tracked</span><span class="o">.</span><span class="n">TrackedVariable</span><span class="p">:</span> <span class="s2">&quot;Variable&quot;</span><span class="p">,</span>
+        <span class="n">tracked</span><span class="o">.</span><span class="n">TrackedFile</span><span class="p">:</span> <span class="s2">&quot;File&quot;</span><span class="p">,</span>
+        <span class="n">tracked</span><span class="o">.</span><span class="n">HugeTrackedFile</span><span class="p">:</span> <span class="s2">&quot;Big File&quot;</span><span class="p">,</span>
+        <span class="n">tracked</span><span class="o">.</span><span class="n">TrackedDirectory</span><span class="p">:</span> <span class="s2">&quot;Directory&quot;</span><span class="p">,</span>
+        <span class="n">tracked</span><span class="o">.</span><span class="n">TrackedFilePattern</span><span class="p">:</span> <span class="s2">&quot;File Pattern&quot;</span><span class="p">,</span>
+        <span class="n">tracked</span><span class="o">.</span><span class="n">TrackedExecutable</span><span class="p">:</span> <span class="s2">&quot;Executable&quot;</span><span class="p">,</span>
+        <span class="n">tracked</span><span class="o">.</span><span class="n">TrackedFunction</span><span class="p">:</span> <span class="s2">&quot;Python Function&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">sublist_template</span><span class="o">=</span><span class="s2">&quot;  - </span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span>
+
 <div class="viewcode-block" id="DryRunner.run_tasks"><a class="viewcode-back" href="../../runners.html#anadama2.runners.DryRunner.run_tasks">[docs]</a>    <span class="k">def</span> <span class="nf">run_tasks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task_idx_deque</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="n">task_idx_deque</span><span class="p">:</span>
-            <span class="n">task</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-            <span class="nb">print</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-            <span class="nb">print</span> <span class="s2">&quot;  Dependencies (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">depends</span><span class="p">))</span>
+        <span class="c1"># order the tasks by number</span>
+        <span class="n">tasks_by_number</span><span class="o">=</span><span class="p">{}</span>
+        <span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="n">task_idx_deque</span><span class="p">:</span>
+            <span class="n">number</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">.</span><span class="n">task_no</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">number</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">number</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+                <span class="k">pass</span>
+                
+            <span class="n">tasks_by_number</span><span class="p">[</span><span class="n">number</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+        <span class="c1"># print the tasks from first to last</span>
+        <span class="k">for</span> <span class="n">number</span><span class="p">,</span> <span class="n">task</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">tasks_by_number</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="n">six</span><span class="o">.</span><span class="n">print_</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">number</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">name</span><span class="p">))</span>
+            <span class="n">six</span><span class="o">.</span><span class="n">print_</span><span class="p">(</span><span class="s2">&quot;  Dependencies (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">depends</span><span class="p">)))</span>
             <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">depends</span><span class="p">:</span>
-                <span class="nb">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">_depformat</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
-            <span class="nb">print</span> <span class="s2">&quot;  Targets (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">targets</span><span class="p">))</span>
+                <span class="n">six</span><span class="o">.</span><span class="n">print_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_depformat</span><span class="p">(</span><span class="n">dep</span><span class="p">))</span>
+            <span class="n">six</span><span class="o">.</span><span class="n">print_</span><span class="p">(</span><span class="s2">&quot;  Targets (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">targets</span><span class="p">)))</span>
             <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">targets</span><span class="p">:</span>
-                <span class="nb">print</span> <span class="bp">self</span><span class="o">.</span><span class="n">_depformat</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
-            <span class="nb">print</span> <span class="s2">&quot;------------------&quot;</span></div>
+                <span class="n">six</span><span class="o">.</span><span class="n">print_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_depformat</span><span class="p">(</span><span class="n">dep</span><span class="p">))</span>
+            <span class="n">six</span><span class="o">.</span><span class="n">print_</span><span class="p">(</span><span class="s2">&quot;  Actions (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">actions</span><span class="p">)))</span>
+            <span class="k">for</span> <span class="n">action</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">actions</span><span class="p">:</span>
+                <span class="n">six</span><span class="o">.</span><span class="n">print_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_actionformat</span><span class="p">(</span><span class="n">action</span><span class="p">))</span>
+                    
+            <span class="n">six</span><span class="o">.</span><span class="n">print_</span><span class="p">(</span><span class="s2">&quot;------------------&quot;</span><span class="p">)</span></div>
 
 
     <span class="k">def</span> <span class="nf">_depformat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">d</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">istask</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
-            <span class="k">return</span> <span class="s2">&quot;    Task </span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">d</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="s2">&quot;  - Task </span><span class="si">{}</span><span class="s2"> - </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">d</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;    </span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">d</span><span class="p">))</span></div>
+            <span class="n">t</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+            <span class="n">desc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_typemap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sublist_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">desc</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">_actionformat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">six</span><span class="o">.</span><span class="n">callable</span><span class="p">(</span><span class="n">action</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sublist_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">action</span><span class="o">.</span><span class="n">__name__</span><span class="p">,</span><span class="s2">&quot;function&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sublist_template</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">action</span><span class="p">,</span><span class="s2">&quot;command&quot;</span><span class="p">)</span></div>
 
 
 
@@ -137,10 +179,12 @@
             <span class="n">failed_parents</span> <span class="o">=</span> <span class="n">parents</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">failed_tasks</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">failed_parents</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">_handle_task_result</span><span class="p">(</span>
-                    <span class="n">parent_failed_result</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="nb">iter</span><span class="p">(</span><span class="n">failed_parents</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">()))</span>
+                    <span class="n">parent_failed_result</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">failed_parents</span><span class="p">))))</span>
                 <span class="k">continue</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">_handle_task_started</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">_reporter</span><span class="o">.</span><span class="n">task_running</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">_reporter</span><span class="o">.</span><span class="n">task_command</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span>
             <span class="n">result</span> <span class="o">=</span> <span class="n">_run_task_locally</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">tasks</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">_handle_task_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
@@ -149,7 +193,7 @@
                 <span class="k">break</span></div></div>
 
 
-<div class="viewcode-block" id="worker_run_loop"><a class="viewcode-back" href="../../runners.html#anadama2.runners.worker_run_loop">[docs]</a><span class="k">def</span> <span class="nf">worker_run_loop</span><span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="n">result_q</span><span class="p">,</span> <span class="n">run_task</span><span class="p">):</span>
+<div class="viewcode-block" id="worker_run_loop"><a class="viewcode-back" href="../../runners.html#anadama2.runners.worker_run_loop">[docs]</a><span class="k">def</span> <span class="nf">worker_run_loop</span><span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="n">result_q</span><span class="p">,</span> <span class="n">run_task</span><span class="p">,</span> <span class="n">reporter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lock</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Starting worker&quot;</span><span class="p">)</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
@@ -175,6 +219,13 @@
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Failed to deserialize task&quot;</span><span class="p">)</span>
             <span class="k">continue</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Running task </span><span class="si">%s</span><span class="s2"> with </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">run_task</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reporter</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">lock</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">lock</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>
+            <span class="n">reporter</span><span class="o">.</span><span class="n">task_running</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">)</span>
+            <span class="n">reporter</span><span class="o">.</span><span class="n">task_command</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">lock</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">lock</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">run_task</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">extra</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Finished running task; &quot;</span>
                           <span class="s2">&quot;putting results on result_q&quot;</span><span class="p">)</span>
@@ -183,7 +234,8 @@
     
 
 <span class="k">def</span> <span class="nf">_run_task_locally</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">action_func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">actions</span><span class="p">):</span>
+    <span class="c1"># convert any command strings to sh actions before running</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">action_func</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">apply_sh</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">actions</span><span class="p">)):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Executing task </span><span class="si">%i</span><span class="s2"> action </span><span class="si">%i</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">action_func</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
@@ -195,6 +247,9 @@
                 <span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Completed executing task </span><span class="si">%i</span><span class="s2"> action </span><span class="si">%i</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">.</span><span class="n">task_no</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
 
+    <span class="k">return</span> <span class="n">_get_task_result</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">_get_task_result</span><span class="p">(</span><span class="n">task</span><span class="p">):</span>
     <span class="n">targ_keys</span><span class="p">,</span> <span class="n">targ_compares</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(),</span> <span class="nb">list</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">targets</span><span class="p">:</span>
         <span class="n">targ_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
@@ -212,20 +267,25 @@
     
 <div class="viewcode-block" id="ParallelLocalWorker"><a class="viewcode-back" href="../../runners.html#anadama2.runners.ParallelLocalWorker">[docs]</a><span class="k">class</span> <span class="nc">ParallelLocalWorker</span><span class="p">(</span><span class="n">multiprocessing</span><span class="o">.</span><span class="n">Process</span><span class="p">):</span>
             
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_q</span><span class="p">,</span> <span class="n">result_q</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">work_q</span><span class="p">,</span> <span class="n">result_q</span><span class="p">,</span> <span class="n">lock</span><span class="p">,</span> <span class="n">reporter</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ParallelLocalWorker</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">work_q</span> <span class="o">=</span> <span class="n">work_q</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span> <span class="o">=</span> <span class="n">result_q</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">lock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span> <span class="o">=</span> <span class="n">reporter</span>
 
 
     <span class="nd">@staticmethod</span>
 <div class="viewcode-block" id="ParallelLocalWorker.appropriate_q_class"><a class="viewcode-back" href="../../runners.html#anadama2.runners.ParallelLocalWorker.appropriate_q_class">[docs]</a>    <span class="k">def</span> <span class="nf">appropriate_q_class</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Queue</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
-
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="ParallelLocalWorker.appropriate_lock"><a class="viewcode-back" href="../../runners.html#anadama2.runners.ParallelLocalWorker.appropriate_lock">[docs]</a>    <span class="k">def</span> <span class="nf">appropriate_lock</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="ParallelLocalWorker.run"><a class="viewcode-back" href="../../runners.html#anadama2.runners.ParallelLocalWorker.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">worker_run_loop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span><span class="p">,</span> <span class="n">_run_task_locally</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">worker_run_loop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span><span class="p">,</span> <span class="n">_run_task_locally</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="ParallelLocalRunner"><a class="viewcode-back" href="../../runners.html#anadama2.runners.ParallelLocalRunner">[docs]</a><span class="k">class</span> <span class="nc">ParallelLocalRunner</span><span class="p">(</span><span class="n">BaseRunner</span><span class="p">):</span>
@@ -234,7 +294,9 @@
         <span class="nb">super</span><span class="p">(</span><span class="n">ParallelLocalRunner</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">run_context</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">work_q</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">workers</span> <span class="o">=</span> <span class="p">[</span> <span class="n">ParallelLocalWorker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span> <span class="o">=</span> <span class="n">run_context</span><span class="o">.</span><span class="n">_reporter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workers</span> <span class="o">=</span> <span class="p">[</span> <span class="n">ParallelLocalWorker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">work_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">result_q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reporter</span><span class="p">)</span>
                          <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">jobs</span><span class="p">)</span> <span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">started</span> <span class="o">=</span> <span class="kc">False</span>
 
@@ -396,7 +458,7 @@
 
 
 <div class="viewcode-block" id="GridRunner.terminate"><a class="viewcode-back" href="../../runners.html#anadama2.runners.GridRunner.terminate">[docs]</a>    <span class="k">def</span> <span class="nf">terminate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_worker_qs</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_worker_qs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="s2">&quot;_rlock&quot;</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_terminate_mpq</span><span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
             <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="s2">&quot;mutex&quot;</span><span class="p">):</span>
@@ -408,7 +470,7 @@
 
 
 <div class="viewcode-block" id="GridRunner.cleanup"><a class="viewcode-back" href="../../runners.html#anadama2.runners.GridRunner.cleanup">[docs]</a>    <span class="k">def</span> <span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">n_procs</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_worker_config</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">n_procs</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_worker_config</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_procs</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_worker_qs</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">put</span><span class="p">(({</span><span class="s2">&quot;stop&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span> <span class="kc">None</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="p">:</span>
@@ -453,17 +515,18 @@
 
     <span class="k">def</span> <span class="nf">_init_workers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">threads</span><span class="p">,</span> <span class="n">procs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(),</span> <span class="nb">list</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">worker_cls</span><span class="p">,</span> <span class="n">n_procs</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_worker_config</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">worker_cls</span><span class="p">,</span> <span class="n">n_procs</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_worker_config</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">work_q</span> <span class="o">=</span> <span class="n">worker_cls</span><span class="o">.</span><span class="n">appropriate_q_class</span><span class="p">()</span>
             <span class="n">result_q</span> <span class="o">=</span> <span class="n">worker_cls</span><span class="o">.</span><span class="n">appropriate_q_class</span><span class="p">()</span>
+            <span class="n">lock</span> <span class="o">=</span> <span class="n">worker_cls</span><span class="o">.</span><span class="n">appropriate_lock</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_worker_qs</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="n">result_q</span><span class="p">)</span>
             <span class="n">isproc</span> <span class="o">=</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">worker_cls</span><span class="p">,</span> <span class="n">multiprocessing</span><span class="o">.</span><span class="n">Process</span><span class="p">)</span> 
             <span class="n">l</span> <span class="o">=</span> <span class="n">procs</span> <span class="k">if</span> <span class="n">isproc</span> <span class="k">else</span> <span class="n">threads</span>
             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_procs</span><span class="p">):</span>
-                <span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">worker_cls</span><span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="n">result_q</span><span class="p">))</span>
+                <span class="n">l</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">worker_cls</span><span class="p">(</span><span class="n">work_q</span><span class="p">,</span> <span class="n">result_q</span><span class="p">,</span> <span class="n">lock</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">_reporter</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">workers</span> <span class="o">=</span> <span class="n">procs</span><span class="o">+</span><span class="n">threads</span> <span class="c1"># http://stackoverflow.com/a/13115499</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_qcycle</span> <span class="o">=</span> <span class="n">itertools</span><span class="o">.</span><span class="n">cycle</span><span class="p">(</span><span class="n">val</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-                                       <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_worker_qs</span><span class="o">.</span><span class="n">itervalues</span><span class="p">())</span>
+                                       <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_worker_qs</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
 
     <span class="k">def</span> <span class="nf">_get_next_task</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -472,7 +535,7 @@
         <span class="n">failed_parents</span> <span class="o">=</span> <span class="n">parents</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">failed_tasks</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">failed_parents</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">ctx</span><span class="o">.</span><span class="n">_handle_task_result</span><span class="p">(</span>
-                <span class="n">parent_failed_result</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="nb">iter</span><span class="p">(</span><span class="n">failed_parents</span><span class="p">)</span><span class="o">.</span><span class="n">next</span><span class="p">())</span>
+                <span class="n">parent_failed_result</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">failed_parents</span><span class="p">)))</span>
                 <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">n_to_do</span> <span class="o">-=</span> <span class="mi">1</span>
             <span class="k">return</span> <span class="kc">None</span>
@@ -490,7 +553,7 @@
             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">workers</span><span class="p">)):</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="n">ret</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_qcycle</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-                <span class="k">except</span> <span class="n">Queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
+                <span class="k">except</span> <span class="n">queue</span><span class="o">.</span><span class="n">Empty</span><span class="p">:</span>
                     <span class="k">continue</span>
                 <span class="k">return</span> <span class="n">ret</span>
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.05</span><span class="p">)</span>
@@ -539,7 +602,7 @@
 
     
 <div class="viewcode-block" id="exception_result"><a class="viewcode-back" href="../../runners.html#anadama2.runners.exception_result">[docs]</a><span class="k">def</span> <span class="nf">exception_result</span><span class="p">(</span><span class="n">exc</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">TaskResult</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="s2">&quot;task_no&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">exc</span><span class="o">.</span><span class="n">message</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">TaskResult</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="s2">&quot;task_no&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="parent_failed_result"><a class="viewcode-back" href="../../runners.html#anadama2.runners.parent_failed_result">[docs]</a><span class="k">def</span> <span class="nf">parent_failed_result</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">parent_idx</span><span class="p">):</span>
@@ -583,7 +646,7 @@
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
     </div>

@@ -1,0 +1,298 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>anadama2.grid.sge &mdash; anadama2 0.1.2 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '0.1.2',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="top" title="anadama2 0.1.2 documentation" href="../../../index.html" />
+    <link rel="up" title="anadama2" href="../../anadama2.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for anadama2.grid.sge</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">tempfile</span>
+<span class="kn">import</span> <span class="nn">pwd</span>
+
+<span class="kn">import</span> <span class="nn">six</span>
+
+<span class="kn">from</span> <span class="nn">.grid</span> <span class="k">import</span> <span class="n">Grid</span>
+<span class="kn">from</span> <span class="nn">.grid</span> <span class="k">import</span> <span class="n">GridWorker</span>
+<span class="kn">from</span> <span class="nn">.grid</span> <span class="k">import</span> <span class="n">GridQueue</span>
+
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">runners</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">picklerunner</span>
+<span class="kn">from</span> <span class="nn">..util</span> <span class="k">import</span> <span class="n">underscore</span>
+<span class="kn">from</span> <span class="nn">..util</span> <span class="k">import</span> <span class="n">find_on_path</span>
+<span class="kn">from</span> <span class="nn">..util</span> <span class="k">import</span> <span class="n">keyrename</span><span class="p">,</span> <span class="n">keepkeys</span>
+
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s1">&#39;posix&#39;</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">subprocess32</span> <span class="k">as</span> <span class="nn">subprocess</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">subprocess</span>
+
+<div class="viewcode-block" id="SGE"><a class="viewcode-back" href="../../../sge.html#anadama2.grid.sge.SGE">[docs]</a><span class="k">class</span> <span class="nc">SGE</span><span class="p">(</span><span class="n">Grid</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This class enables the Workflow class to dispatch tasks to</span>
+<span class="sd">    Sun Grid Engine and its lookalikes. Use it like so:</span>
+
+<span class="sd">    .. code:: python</span>
+
+<span class="sd">      from anadama2 import Workflow</span>
+<span class="sd">      from anadama2.sge import SGE</span>
+
+<span class="sd">      ctx = Workflow(grid_powerup=SGE(queue=&quot;general&quot;))</span>
+<span class="sd">      ctx.do(&quot;wget &quot;</span>
+<span class="sd">             &quot;ftp://public-ftp.hmpdacc.org/&quot;</span>
+<span class="sd">             &quot;HMMCP/finalData/hmp1.v35.hq.otu.counts.bz2 &quot;</span>
+<span class="sd">             &quot;-O @{input/hmp1.v35.hq.otu.counts.bz2}&quot;)</span>
+
+<span class="sd">      # run on sge with 200 MB of memory, 4 cores, and 60 minutes</span>
+<span class="sd">      t1 = ctx.grid_do(&quot;pbzip2 -d -p 4 &lt; #{input/hmp1.v35.hq.otu.counts.bz2} &quot;</span>
+<span class="sd">                       &quot;&gt; @{input/hmp1.v35.hq.otu.counts}&quot;,</span>
+<span class="sd">                       mem=200, cores=4, time=60)</span>
+
+<span class="sd">      # run on sge on the serial_requeue queue</span>
+<span class="sd">      ctx.grid_add_task(&quot;some_huge_analysis {depends[0]} {targets[0]}&quot;,</span>
+<span class="sd">                        depends=t1.targets, targets=&quot;output.txt&quot;,</span>
+<span class="sd">                        mem=4000, cores=1, time=300, partition=&quot;serial_requeue&quot;)</span>
+
+
+<span class="sd">      ctx.go()</span>
+
+
+<span class="sd">    :param partition: The name of the SLURM partition to submit tasks to</span>
+<span class="sd">    :type partition: str</span>
+
+<span class="sd">    :param tmpdir: A directory to store temporary files in. All</span>
+<span class="sd">      machines in the cluster must be able to read the contents of</span>
+<span class="sd">      this directory; uses :mod:`anadama2.picklerunner` to create</span>
+<span class="sd">      self-contained scripts to run individual tasks and calls</span>
+<span class="sd">      ``srun`` to run the script on the cluster.</span>
+<span class="sd">    :type tmpdir: str</span>
+<span class="sd">    </span>
+<span class="sd">    :keyword benchmark_on: Option to turn on/off benchmarking</span>
+<span class="sd">    : type benchmark_on: bool</span>
+<span class="sd">    </span>
+<span class="sd">    :keyword options: Grid specific options to apply to each job</span>
+<span class="sd">    :type options: str</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SGE</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="s2">&quot;sge&quot;</span><span class="p">,</span> <span class="n">GridWorker</span><span class="p">,</span> <span class="n">SGEQueue</span><span class="p">(</span><span class="n">partition</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="p">,</span> <span class="n">options</span><span class="p">),</span> <span class="n">tmpdir</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="p">)</span></div>
+        
+
+<span class="k">class</span> <span class="nc">SGEQueue</span><span class="p">(</span><span class="n">GridQueue</span><span class="p">):</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">partition</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">SGEQueue</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">partition</span><span class="p">,</span> <span class="n">benchmark_on</span><span class="p">)</span> 
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">=</span><span class="n">options</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">job_code_completed</span><span class="o">=</span><span class="s2">&quot;COMPLETED&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job_code_error</span><span class="o">=</span><span class="s2">&quot;FAILED&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job_code_terminated</span><span class="o">=</span><span class="s2">&quot;TERMINATED&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">job_code_deleted</span><span class="o">=</span><span class="s2">&quot;DELETED&quot;</span>
+       
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_failed_codes</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_error</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_terminated</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_deleted</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">all_stopped_codes</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_completed</span><span class="p">]</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">all_failed_codes</span>
+       
+        <span class="c1"># allow for jobs to be terminated when about to reach the memory requested</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">memory_buffer</span> <span class="o">=</span> <span class="mi">1024</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">submit_command</span><span class="p">(</span><span class="n">grid_script</span><span class="p">):</span>    
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;qsub&quot;</span><span class="p">,</span><span class="n">grid_script</span><span class="p">]</span>
+    
+    <span class="k">def</span> <span class="nf">submit_template</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">template</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;#$$ -q $</span><span class="si">{partition}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#$$ -pe smp $</span><span class="si">{cpus}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#$$ -l h_rt=$</span><span class="si">{time}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#$$ -l h_vmem=$</span><span class="si">{memory}</span><span class="s2">m&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#$$ -o $</span><span class="si">{output}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;#$$ -e $</span><span class="si">{error}</span><span class="s2">&quot;</span><span class="p">]</span>
+
+        <span class="c1"># add user supplied options if provided</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">:</span>
+            <span class="n">template</span><span class="o">+=</span><span class="p">[</span><span class="s2">&quot;#$$ &quot;</span><span class="o">+</span><span class="n">option</span> <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">]</span>        
+
+        <span class="k">return</span> <span class="n">template</span>
+    
+    <span class="k">def</span> <span class="nf">job_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">status</span><span class="p">):</span>
+        <span class="c1"># check if the job has a status that it failed</span>
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">status</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_failed_codes</span> <span class="k">else</span> <span class="kc">False</span>
+        
+    <span class="k">def</span> <span class="nf">job_stopped</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">status</span><span class="p">):</span>
+        <span class="c1"># check if the job has a status which indicates it stopped running</span>
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">status</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_stopped_codes</span> <span class="k">else</span> <span class="kc">False</span>
+    
+    <span class="k">def</span> <span class="nf">job_memkill</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">memory</span><span class="p">):</span>
+        <span class="c1"># check if the job was killed because it used too much memory</span>
+        <span class="n">new_status</span><span class="p">,</span> <span class="n">cpus</span><span class="p">,</span> <span class="n">new_time</span><span class="p">,</span> <span class="n">new_memory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_benchmark</span><span class="p">(</span><span class="n">jobid</span><span class="p">)</span>
+        
+        <span class="c1"># if memory is not yet available for the job, wait for a new benchmark</span>
+        <span class="k">if</span> <span class="n">new_memory</span> <span class="o">==</span> <span class="s2">&quot;NA&quot;</span><span class="p">:</span>
+            <span class="n">new_status</span><span class="p">,</span> <span class="n">cpus</span><span class="p">,</span> <span class="n">new_time</span><span class="p">,</span> <span class="n">new_memory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_benchmark</span><span class="p">(</span><span class="n">jobid</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">exceed_allocation</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">new_memory</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory_buffer</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">float</span><span class="p">(</span><span class="n">memory</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">exceed_allocation</span> <span class="o">=</span> <span class="kc">False</span>
+            
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">exceed_allocation</span> <span class="ow">and</span> <span class="n">new_status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_code_terminated</span> <span class="k">else</span> <span class="kc">False</span>
+            
+    <span class="k">def</span> <span class="nf">job_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">jobid</span><span class="p">,</span> <span class="n">time</span><span class="p">):</span>
+        <span class="c1"># check if the job was killed because it used too much memory</span>
+        <span class="n">new_status</span><span class="p">,</span> <span class="n">cpus</span><span class="p">,</span> <span class="n">new_time</span><span class="p">,</span> <span class="n">new_memory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_benchmark</span><span class="p">(</span><span class="n">jobid</span><span class="p">)</span>
+        
+        <span class="c1"># if time is not yet available for the job, wait for a new benchmark</span>
+        <span class="k">if</span> <span class="n">new_time</span> <span class="o">==</span> <span class="s2">&quot;NA&quot;</span><span class="p">:</span>
+            <span class="n">new_status</span><span class="p">,</span> <span class="n">cpus</span><span class="p">,</span> <span class="n">new_time</span><span class="p">,</span> <span class="n">new_memory</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_benchmark</span><span class="p">(</span><span class="n">jobid</span><span class="p">,</span> <span class="n">wait</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">exceed_allocation</span> <span class="o">=</span> <span class="kc">True</span> <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">new_time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">exceed_allocation</span> <span class="o">=</span> <span class="kc">False</span>
+            
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">exceed_allocation</span> <span class="ow">and</span> <span class="n">new_status</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_code_terminated</span> <span class="k">else</span> <span class="kc">False</span>
+            
+    <span class="k">def</span> <span class="nf">refresh_queue_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Get the latest status for the grid jobs using the same command for</span>
+<span class="sd">        jobs in the queue and for completed jobs to benchmark &quot;&quot;&quot;</span>
+        
+        <span class="c1"># Get the jobid and state for all jobs pending/running/completed for the current user</span>
+        <span class="n">qacct_stdout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run_grid_command_resubmit</span><span class="p">([</span><span class="s2">&quot;qacct&quot;</span><span class="p">,</span><span class="s2">&quot;-o&quot;</span><span class="p">,</span><span class="n">pwd</span><span class="o">.</span><span class="n">getpwuid</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getuid</span><span class="p">())[</span><span class="mi">0</span><span class="p">],</span><span class="s2">&quot;-j&quot;</span><span class="p">,</span><span class="s2">&quot;*&quot;</span><span class="p">])</span>
+        
+        <span class="c1"># info list should include jobid, state, cpus, time, and maxrss</span>
+        <span class="n">info</span><span class="o">=</span><span class="p">[]</span>
+        <span class="n">job_status</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">qacct_stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;jobnumber&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;job_number&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">job_status</span><span class="p">:</span>
+                    <span class="n">info</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_status</span><span class="p">)</span>
+                <span class="n">job_status</span><span class="o">=</span><span class="p">[</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="s2">&quot;NA&quot;</span><span class="p">,</span><span class="s2">&quot;NA&quot;</span><span class="p">,</span><span class="s2">&quot;NA&quot;</span><span class="p">,</span><span class="s2">&quot;NA&quot;</span><span class="p">]</span>
+            <span class="c1"># get the states for completed jobs</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;failed&quot;</span><span class="p">):</span>
+                <span class="n">failed_code</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">failed_code</span> <span class="o">!=</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">failed_code</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;37&quot;</span><span class="p">,</span><span class="s2">&quot;100&quot;</span><span class="p">]:</span>
+                        <span class="n">job_status</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_terminated</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">job_status</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_error</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;deleted_by&quot;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;NONE&quot;</span> <span class="ow">and</span> <span class="n">job_status</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">job_code_terminated</span><span class="p">:</span>
+                    <span class="n">job_status</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_deleted</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;exit_status&quot;</span><span class="p">):</span>
+                <span class="c1"># only record if status has not yet been set</span>
+                <span class="k">if</span> <span class="n">job_status</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;NA&quot;</span><span class="p">:</span>
+                    <span class="n">exit_status</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">exit_status</span> <span class="o">==</span> <span class="s2">&quot;0&quot;</span><span class="p">:</span>
+                        <span class="n">job_status</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_completed</span>
+                    <span class="k">elif</span> <span class="n">exit_status</span> <span class="o">==</span> <span class="s2">&quot;137&quot;</span><span class="p">:</span>
+                        <span class="n">job_status</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_terminated</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">job_status</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">job_code_error</span>
+            <span class="c1"># get the current state for running jobs</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;job_state&quot;</span><span class="p">):</span>
+                <span class="n">job_status</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;slots&quot;</span><span class="p">):</span>
+                <span class="n">job_status</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">=</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;ru_wallclock&quot;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># get the elapsed time in minutes</span>
+                    <span class="n">job_status</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">/</span><span class="mf">60.0</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="n">job_status</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;NA&quot;</span>
+            <span class="k">elif</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;ru_maxrss&quot;</span><span class="p">):</span>
+                <span class="n">job_status</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">=</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s2">&quot;K&quot;</span>
+        
+        <span class="k">if</span> <span class="n">job_status</span><span class="p">:</span>
+            <span class="n">info</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">job_status</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">info</span>
+
+
+
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  <li><a href="../../anadama2.html">anadama2</a><ul>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Randall Schwager and the Huttenhower Lab.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

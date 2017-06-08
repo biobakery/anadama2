@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>runners &#8212; anadama2 0.1.2 documentation</title>
+    <title>runners &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -60,6 +60,11 @@
 <dd><dl class="method">
 <dt id="anadama2.runners.DryRunner.run_tasks">
 <code class="descname">run_tasks</code><span class="sig-paren">(</span><em>task_idx_deque</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/runners.html#DryRunner.run_tasks"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.runners.DryRunner.run_tasks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="anadama2.runners.DryRunner.sublist_template">
+<code class="descname">sublist_template</code><em class="property"> = '  - {} ({})'</em><a class="headerlink" href="#anadama2.runners.DryRunner.sublist_template" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -116,8 +121,13 @@
 
 <dl class="class">
 <dt id="anadama2.runners.ParallelLocalWorker">
-<em class="property">class </em><code class="descclassname">anadama2.runners.</code><code class="descname">ParallelLocalWorker</code><span class="sig-paren">(</span><em>work_q</em>, <em>result_q</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/runners.html#ParallelLocalWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.runners.ParallelLocalWorker" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">anadama2.runners.</code><code class="descname">ParallelLocalWorker</code><span class="sig-paren">(</span><em>work_q</em>, <em>result_q</em>, <em>lock</em>, <em>reporter</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/runners.html#ParallelLocalWorker"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.runners.ParallelLocalWorker" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="staticmethod">
+<dt id="anadama2.runners.ParallelLocalWorker.appropriate_lock">
+<em class="property">static </em><code class="descname">appropriate_lock</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/runners.html#ParallelLocalWorker.appropriate_lock"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.runners.ParallelLocalWorker.appropriate_lock" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="staticmethod">
 <dt id="anadama2.runners.ParallelLocalWorker.appropriate_q_class">
 <em class="property">static </em><code class="descname">appropriate_q_class</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/runners.html#ParallelLocalWorker.appropriate_q_class"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.runners.ParallelLocalWorker.appropriate_q_class" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -200,7 +210,7 @@ successful task results.</li>
 
 <dl class="function">
 <dt id="anadama2.runners.worker_run_loop">
-<code class="descclassname">anadama2.runners.</code><code class="descname">worker_run_loop</code><span class="sig-paren">(</span><em>work_q</em>, <em>result_q</em>, <em>run_task</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/runners.html#worker_run_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.runners.worker_run_loop" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">anadama2.runners.</code><code class="descname">worker_run_loop</code><span class="sig-paren">(</span><em>work_q</em>, <em>result_q</em>, <em>run_task</em>, <em>reporter=None</em>, <em>lock=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/anadama2/runners.html#worker_run_loop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#anadama2.runners.worker_run_loop" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div>
@@ -244,7 +254,7 @@ successful task results.</li>
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
       |

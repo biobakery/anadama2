@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>anadama2.backends &#8212; anadama2 0.1.2 documentation</title>
+    <title>anadama2.backends &mdash; anadama2 0.1.2 documentation</title>
     
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
@@ -42,15 +42,18 @@
           <div class="body" role="main">
             
   <h1>Source code for anadama2.backends</h1><div class="highlight"><pre>
-<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">json</span>
 
+<span class="kn">import</span> <span class="nn">six</span>
 <span class="kn">import</span> <span class="nn">leveldb</span>
 
 <span class="kn">from</span> <span class="nn">.util</span> <span class="k">import</span> <span class="n">mkdirp</span>
 
 <span class="n">ENV_VAR</span> <span class="o">=</span> <span class="s2">&quot;ANADAMA_BACKEND_DIR&quot;</span>
+<span class="n">LOCAL_DB_FOLDER</span> <span class="o">=</span> <span class="s2">&quot;.anadama&quot;</span>
 
 <span class="n">_default_backend</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -58,7 +61,7 @@
     <span class="k">global</span> <span class="n">_default_backend</span>
     <span class="k">if</span> <span class="n">output_dir</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">LevelDBBackend</span><span class="p">(</span>
-            <span class="n">_try_dir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">output_dir</span><span class="p">),</span> <span class="s2">&quot;.anadama&quot;</span><span class="p">,</span> <span class="s2">&quot;db&quot;</span><span class="p">))</span>
+            <span class="n">_try_dir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">LOCAL_DB_FOLDER</span><span class="p">,</span> <span class="s2">&quot;db&quot;</span><span class="p">)))</span>
             <span class="p">)</span>
     <span class="k">if</span> <span class="n">_default_backend</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">_default_backend</span> <span class="o">=</span> <span class="n">LevelDBBackend</span><span class="p">()</span>
@@ -87,19 +90,20 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="n">mkdirp</span><span class="p">(</span><span class="n">maybe_datadir</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;Unable to create anadama &quot;</span>
-                   <span class="s2">&quot;database directory `</span><span class="si">{}</span><span class="s2">&#39;: &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-            <span class="nb">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">maybe_datadir</span><span class="p">)</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">six</span><span class="o">.</span><span class="n">u</span><span class="p">(</span><span class="s2">&quot;Unable to create anadama &quot;</span>
+                        <span class="s2">&quot;database directory `</span><span class="si">{}</span><span class="s2">&#39;: </span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">maybe_datadir</span><span class="p">))</span>
             <span class="n">fallback</span> <span class="o">=</span> <span class="n">_fallback_datadir</span><span class="p">()</span>
-            <span class="nb">print</span> <span class="o">&gt;&gt;</span> <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">,</span> <span class="s2">&quot;Using fallback directory: &quot;</span><span class="o">+</span><span class="n">fallback</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">u</span><span class="p">(</span><span class="s2">&quot;Using fallback directory: &quot;</span><span class="o">+</span><span class="n">fallback</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">))</span>
             <span class="k">return</span> <span class="n">fallback</span>
     <span class="k">return</span> <span class="n">maybe_datadir</span>
 
     
 <span class="k">def</span> <span class="nf">_fallback_datadir</span><span class="p">():</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">mkdirp</span><span class="p">(</span><span class="s2">&quot;.anadama/db&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">&quot;.anadama/db&quot;</span><span class="p">)</span>
+        <span class="n">folder</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">LOCAL_DB_FOLDER</span><span class="p">,</span><span class="s2">&quot;db&quot;</span><span class="p">)</span>
+        <span class="n">mkdirp</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>
     <span class="k">except</span><span class="p">:</span>
         <span class="n">mkdirp</span><span class="p">(</span><span class="s2">&quot;/tmp/anadama/db&quot;</span><span class="p">)</span>        
         <span class="k">return</span> <span class="s2">&quot;/tmp/anadama/db&quot;</span>
@@ -161,10 +165,10 @@
 
     <span class="k">def</span> <span class="nf">_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Get</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
 
 
 <div class="viewcode-block" id="LevelDBBackend.lookup"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.lookup">[docs]</a>    <span class="k">def</span> <span class="nf">lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dep</span><span class="p">):</span>
@@ -180,7 +184,7 @@
             <span class="k">return</span>
         <span class="n">batch</span> <span class="o">=</span> <span class="n">leveldb</span><span class="o">.</span><span class="n">WriteBatch</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">dep_keys</span><span class="p">,</span> <span class="n">dep_vals</span><span class="p">):</span>
-            <span class="n">batch</span><span class="o">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
+            <span class="n">batch</span><span class="o">.</span><span class="n">Put</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">val</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Write</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span></div>
 
 
@@ -188,12 +192,12 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">RangeIter</span><span class="p">(</span><span class="n">include_value</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="LevelDBBackend.delete"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Delete</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="LevelDBBackend.delete_many"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.delete_many">[docs]</a>    <span class="k">def</span> <span class="nf">delete_many</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
         <span class="n">batch</span> <span class="o">=</span> <span class="n">leveldb</span><span class="o">.</span><span class="n">WriteBatch</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
-            <span class="n">batch</span><span class="o">.</span><span class="n">Delete</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">batch</span><span class="o">.</span><span class="n">Delete</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">Write</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="LevelDBBackend.close"><a class="viewcode-back" href="../../backends.html#anadama2.backends.LevelDBBackend.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -234,7 +238,7 @@
       &copy;2016, Randall Schwager and the Huttenhower Lab.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
       
     </div>
