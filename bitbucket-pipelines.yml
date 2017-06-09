@@ -9,11 +9,11 @@ pipelines:
   custom:
     api:
       - step:
-        script:
-          - pip install Sphinx
-          - python setup.py sphinx_build
+          script:
+            - pip install Sphinx
+            - python setup.py sphinx_build
     test:
       - step:
-          script: 
+          script:
             - pip install numpy
             - python setup.py test
