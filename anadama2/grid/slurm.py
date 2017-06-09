@@ -154,6 +154,19 @@ class SLURMQueue(GridQueue):
             info=filter(lambda x: x, [line.rstrip().split() for line in stdout.split("\n")[2:]])
         except IndexError:
             info=[]
+            
+        # now merge the lines for each job so there is only a single item for each job
+        # the batch line includes the final MAXRSS
+        merged_info={}
+        for line in info:
+            if not "." in line[0]:
+                merged_info[line[0]]=line
+            elif ".ba" in line[0]:
+                try:
+                    merged_info[line[0].split(".")[0]].append(line[-1])
+                except KeyError:
+                    pass
+        info=merged_info.values()
 
         return list(info)
     
