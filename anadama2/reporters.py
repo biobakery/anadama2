@@ -522,25 +522,56 @@ class LoggerReporter(BaseReporter):
     def read_log(cls,file,type,remove_paths=True):
         """ Read the data from the log file """
         
-        # look for either commands or executable versions
-        format_output=lambda x: x
+        # read all of the lines from the log
+        data=collections.OrderedDict()
+        with open(file) as file_handle:
+            lines=file_handle.readlines()
+        
+        # look for commands, benchmarking, or executable version information
+        log_info={}
         if type == "commands":
-            keyword = SHELL_COMMAND
-            if remove_paths:
-                format_output=lambda x: " ".join([os.path.split(i.rstrip(os.path.sep))[-1] for i in x.split(" ")])
+            keyword=SHELL_COMMAND
+            for line in lines:
+                if keyword in line:
+                    new_command=line.split(keyword)[-1].strip()
+                    if remove_paths:
+                        new_command=" ".join([os.path.split(i.rstrip(os.path.sep))[-1] for i in new_command.split(" ")])
+                    data[new_command]=1
+            log_info=list(data.keys())
+        elif type == "benchmarking":
+            benchmarking_info={}
+            # read in the commands and also the benchmarking information
+            for i in range(len(lines)):
+                if "run_task_command" in lines[i]:
+                    # get the id and the executable plus input item
+                    id=lines[i].split()[-1].strip().replace(":","")
+                    command_tokens=lines[i+1].strip().split()
+                    executable=command_tokens[0]
+                    try:
+                        input=os.path.split(command_tokens[command_tokens.index("--input")+1])[-1]
+                    except (ValueError, IndexError):
+                        input="NA"
+                    log_info[id]="\t".join([executable, input])
+                elif "Benchmark" in lines[i]:
+                    # get the job id and benchmarking info
+                    id=lines[i].split()[-1].strip().replace(":","")
+                    info="\t".join([lines[j].strip().split(": ")[-1] for j in [i+1,i+2,i+3]])
+                    benchmarking_info[id]=info
+                    
+            # set the log info to include id, executable, input and benchmarking
+            for id in benchmarking_info.keys():
+                if id in log_info:
+                    log_info[id]=log_info[id]+"\t"+benchmarking_info[id]
         else:
             keyword = VERSION_COMMAND
             # remove redundant version from strings since these are already 
             # identified as version information
             format_output=lambda x: x.replace("Version:","").replace(", version","")
-        
-        data=collections.OrderedDict()
-        with open(file) as file_handle:
-            for line in file_handle:
+            for line in lines:
                 if keyword in line:
                     data[format_output(line.split(keyword)[-1].strip())]=1
+            log_info=list(data.keys())
                     
-        log_info=data.keys()
         if not log_info:
             log_info=["No {} found in log".format(type)]
                 
