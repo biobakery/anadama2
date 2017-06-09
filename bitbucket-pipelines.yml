@@ -6,7 +6,13 @@
 image: python:2.7
 
 pipelines:
-  default:
-    - step:
-        script: # Modify the commands below to build your repository.
-          - python setup.py build
+  custom:
+    api:
+      - step:
+        script:
+          - apt-get install python-sphinx
+          - python setup.py sphinx_build
+    test:
+      - step:
+          script: 
+            - python setup.py test
