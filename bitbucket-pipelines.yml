@@ -11,6 +11,7 @@ pipelines:
       - step:
           script:
             - pip install sphinx==1.4.5
+            - python setup.py install
             - python setup.py sphinx_build
     test:
       - step:
