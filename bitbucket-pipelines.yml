@@ -10,7 +10,7 @@ pipelines:
     api:
       - step:
           script:
-            - pip install Sphinx
+            - pip install sphinx==1.4.5
             - python setup.py sphinx_build
     test:
       - step:
