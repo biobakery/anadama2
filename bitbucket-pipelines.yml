@@ -15,4 +15,5 @@ pipelines:
     test:
       - step:
           script: 
+            - apt-get install numpy
             - python setup.py test
