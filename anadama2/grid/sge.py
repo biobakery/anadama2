@@ -69,16 +69,17 @@ class SGE(Grid):
 
     """
 
-    def __init__(self, partition, tmpdir, benchmark_on=None, options=None):
-        super(SGE, self).__init__("sge", GridWorker, SGEQueue(partition, benchmark_on, options), tmpdir, benchmark_on)
+    def __init__(self, partition, tmpdir, benchmark_on=None, options=None, environment=None):
+        super(SGE, self).__init__("sge", GridWorker, SGEQueue(partition, benchmark_on, options, environment), tmpdir, benchmark_on)
         
 
 class SGEQueue(GridQueue):
     
-    def __init__(self, partition, benchmark_on=None, options=None):
+    def __init__(self, partition, benchmark_on=None, options=None, environment=None):
         super(SGEQueue, self).__init__(partition, benchmark_on) 
         
         self.options=options
+        self.environment=environment
         
         self.job_code_completed="COMPLETED"
         self.job_code_error="FAILED"
@@ -107,6 +108,10 @@ class SGEQueue(GridQueue):
         # add user supplied options if provided
         if self.options:
             template+=["#$$ "+option for option in self.options]        
+            
+        # add user supplied environment commands if provided
+        if self.environment:
+            template+=self.environment
 
         return template
     

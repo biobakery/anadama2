@@ -65,16 +65,17 @@ class Slurm(Grid):
 
     """
 
-    def __init__(self, partition, tmpdir, benchmark_on=None, options=None):
-        super(Slurm, self).__init__("slurm", GridWorker, SLURMQueue(partition, benchmark_on, options), tmpdir, benchmark_on)
+    def __init__(self, partition, tmpdir, benchmark_on=None, options=None, environment=None):
+        super(Slurm, self).__init__("slurm", GridWorker, SLURMQueue(partition, benchmark_on, options, environment), tmpdir, benchmark_on)
 
 
 class SLURMQueue(GridQueue):
     
-    def __init__(self, partition, benchmark_on=None, options=None):
+    def __init__(self, partition, benchmark_on=None, options=None, environment=None):
         super(SLURMQueue, self).__init__(partition, benchmark_on)
         
         self.options=options
+        self.environment=environment
         
         self.job_code_completed="COMPLETED"
         self.job_code_cancelled="CANCELLED"
@@ -102,6 +103,10 @@ class SLURMQueue(GridQueue):
         # add user supplied options if provided
         if self.options:
             template+=["#SBATCH "+option for option in self.options]
+            
+        # add user supplied environment commands if provided
+        if self.environment:
+            template+=self.environment
             
         return template
     

@@ -120,6 +120,8 @@ class Configuration(object):
                 help="Benchmark gridable tasks \n[default: %(default)s]")),
             ("grid_options", cls.Argument(None, "--grid-options", action="append",
                 help="Grid specific options that will be applied to each grid task")),
+            ("grid_environment", cls.Argument(None, "--grid-environment", action="append",
+                help="Commands that will be run before each grid task to set up environment")),
             ("dry_run", cls.Argument(None, "--dry-run", action="store_true", 
                 help="Print tasks to be run but don't execute their actions ")),
             ("skip_nothing", cls.Argument(None, "--skip-nothing", action="store_true", 
