@@ -10,10 +10,10 @@ pipelines:
     api:
       - step:
         script:
-          - apt-get install python-sphinx
+          - pip install Sphinx
           - python setup.py sphinx_build
     test:
       - step:
           script: 
-            - apt-get install python-numpy
+            - pip install numpy
             - python setup.py test
