@@ -15,17 +15,16 @@ VERSION="0.3.0"
 AUTHOR = "AnADAMA2 Development Team"
 AUTHOR_EMAIL = "anadama-users@googlegroups.com"
 
-requires = [
-    'networkx==1.11',
-    'leveldb==0.193',
-    'six',
-    'cloudpickle==0.2.1',
-    'pweave==0.25',
-    'markdown'
-]
+# read requirements from file
+requires_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),"requirements.txt")
+with open(requires_file) as file_handle:
+    requires=[line.strip() for line in file_handle.readlines()]
 
-if os.name == 'posix' and sys.version_info[0] < 3:
-    requires.append("subprocess32")
+if os.name != 'posix' or sys.version_info[0] > 2:
+    try:
+        requires.remove("subprocess32")
+    except ValueError:
+        pass
 
 COUNTER_URL="http://bitbucket.org/biobakery/anadama2/downloads/counter.txt"
 
