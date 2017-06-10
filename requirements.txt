@@ -1,0 +1,7 @@
+networkx==1.11
+leveldb==0.193
+six
+cloudpickle==0.2.1
+pweave==0.25
+markdown
+subprocess32
