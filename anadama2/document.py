@@ -55,7 +55,7 @@ class PweaveDocument(Document):
     
     def __init__(self, templates=None, depends=None, targets=None, vars=None, table_of_contents=None):
         # allow for a single template or multiple templates
-        if templates is not None and isinstance(templates,basestring):
+        if templates is not None and isinstance(templates,str):
             templates=[templates]
         self.templates=templates
         self.depends=depends
@@ -63,7 +63,7 @@ class PweaveDocument(Document):
         self.table_of_contents=table_of_contents
         
         # if targets is a single item, save as a list
-        if targets is not None and isinstance(targets,basestring):
+        if targets is not None and isinstance(targets,str):
             targets=[targets]
             
         self.targets=targets
