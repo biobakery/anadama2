@@ -458,7 +458,7 @@ class VerboseConsoleReporter(BaseReporter):
             sys.stdout.write(six.u("  Name: "+name+"\n"))
             sys.stdout.write(six.u("  Original error: \n"))
             for line in result.error.split("\n"):
-                sys.stdout.write(six.u("  "+line+"\n"))
+                sys.stdout.write(six.u("  "+line.encode("utf-8")+"\n"))
         self.reset()
 
     def reset(self):
