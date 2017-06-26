@@ -880,7 +880,11 @@ class Workflow(object):
         return iter( (targ.name, task.task_no) for task in self.tasks
                      for targ in task.targets )
 
-    def _targetmatch(self, s, name_or_pattern, hier):
+    def _targetmatch(self, s, name_or_pattern, hier, try_cwd=False):
+        # try the target with the full path to the current working directory
+        if try_cwd:
+            name_or_pattern=os.path.join(os.getcwd(), name_or_pattern)
+
         if re.search(r'[?*\[]', name_or_pattern):
             regex = re.compile(fnmatch.translate(name_or_pattern))
             matches = [ no for name, no in self._alltargets
@@ -889,6 +893,10 @@ class Workflow(object):
                        for sibling in hier(self.dag, match) )
             if not ret:
                 msg = "Pattern {} matched no targets."
+                if try_cwd:
+                    msg+=" Tried without path and then with expected path. Please provide the full path."
+                elif not name_or_pattern.startswith(os.sep):
+                    return self._targetmatch(s, name_or_pattern, hier, try_cwd=True)
                 raise ValueError(msg.format(name_or_pattern))
         else:
             try:
@@ -896,9 +904,10 @@ class Workflow(object):
                                    if name_or_pattern == name) )
             except StopIteration:
                 msg = "Unable to find target {}.".format(name_or_pattern)
-                if os.sep not in name_or_pattern:
-                    m = os.path.join(os.getcwd(), name_or_pattern)
-                    msg += " Perhaps you meant `{}'?".format(m)
+                if try_cwd:
+                    msg+=" Tried without path and then with expected path. Please provide the full path."
+                elif not name_or_pattern.startswith(os.sep):
+                    return self._targetmatch(s, name_or_pattern, hier, try_cwd=True)
                 raise ValueError(msg)
             ret = set(hier(self.dag, match))
         return s.union(ret)
