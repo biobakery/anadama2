@@ -745,13 +745,15 @@ class PweaveDocument(Document):
         heatmap_file=hclust2_input_file+".png"
         self.write_table(["# "]+sample_names,feature_names,data,hclust2_input_file)
         
-        label_font="7"
+        # increase the dpi for small text
+        dpi=300
+        label_font="12"
         # compute the aspect ratio based on the number of samples and features
         aspect_ratio=len(sample_names)/(len(feature_names)*1.0)
         command=["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,"--title",title,
             "--title_font",str(int(label_font)*2),"--cell_aspect_ratio",str(aspect_ratio),
             "--flabel_size",label_font,"--slabel_size",label_font,
-            "--colorbar_font_size",label_font]
+            "--colorbar_font_size",label_font,"--dpi",str(dpi)]
         if log_scale:
             command+=["--log_scale"]
             
@@ -768,9 +770,8 @@ class PweaveDocument(Document):
         heatmap=read_png(heatmap_file)
         
         # create a subplot and remove the frame and axis labels
-        # set the figure to square and increase the dpi to the hclust2 default of 150
-        # increase the figure size to increase the size of the heatmap
-        fig = pyplot.figure(figsize=(8, 8), dpi=150)
+        # set the figure to square and increase the dpi for small text
+        fig = pyplot.figure(figsize=(8, 8), dpi=dpi)
         subplot = fig.add_subplot(111, frame_on=False)
         subplot.xaxis.set_visible(False)
         subplot.yaxis.set_visible(False)
