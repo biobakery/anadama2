@@ -327,7 +327,17 @@ class PweaveDocument(Document):
         # change the yaxis format if set
         axis = pyplot.gca()
         if yaxis_in_millions:
-            axis.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda value, position: "{:,}".format(int(value/1000000))))
+            # get the max value to determine if decimals should be shown on the label 
+            max_value=max([max(row)for row in data])/1000000.0
+            if max_value <= 0.5:
+                yaxis_format = lambda value, position: "{:,.3f}".format(float(value/1000000.0))
+            elif max_value <= 1:
+                yaxis_format = lambda value, position: "{:,.2f}".format(float(value/1000000.0))
+            elif max_value <= 5:
+                yaxis_format = lambda value, position: "{:,.1f}".format(float(value/1000000.0))
+            else:
+                yaxis_format = lambda value, position: "{:,}".format(int(value/1000000))
+            axis.get_yaxis().set_major_formatter(ticker.FuncFormatter(yaxis_format))
         
         # set the width of the bars as each total group width is one
         bar_start_point = numpy.arange(len(column_labels))
