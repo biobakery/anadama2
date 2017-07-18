@@ -774,10 +774,14 @@ class PweaveDocument(Document):
         # if more than max labels, do not include the feature labels on the heatmap
         if len(feature_names) > self.max_labels:
             command+=["--no_flabels"]
-            
-        output=subprocess.check_output(command)
-        # read the heatmap png file
-        heatmap=read_png(heatmap_file)
+           
+        try: 
+            output=subprocess.check_output(command)
+            # read the heatmap png file
+            heatmap=read_png(heatmap_file)
+        except subprocess.CalledProcessError:
+            print("Unable to generate heatmap")
+            heatmap=[]
         
         # create a subplot and remove the frame and axis labels
         # set the figure to square and increase the dpi for small text
@@ -787,7 +791,11 @@ class PweaveDocument(Document):
         subplot.yaxis.set_visible(False)
         
         # show but do not interpolate (as this will make the text hard to read)
-        pyplot.imshow(heatmap, interpolation="none")
+        try:
+            pyplot.imshow(heatmap, interpolation="none")
+        except TypeError:
+            print("Unable to plot heatmap")
+            pass
         
         # adjust the heatmap to fit in the figure area
         # this is needed to increase the image size (to fit in the increased figure)
