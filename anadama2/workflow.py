@@ -476,7 +476,7 @@ class Workflow(object):
                       interpret_deps_and_targs=False, name="archive")
 
     def add_task_group(self, actions=None, depends=None, targets=None,
-                       name=None, interpret_deps_and_targs=True, **kwargs):
+                       name=[None], interpret_deps_and_targs=True, **kwargs):
         """Create and add a group of :class:`anadama2.Task` to the workflow. 
         This function will create a task for each set of depends and targets
         provided. The number of targets and dependencies should be the same.
@@ -485,18 +485,18 @@ class Workflow(object):
         see the ``add_task`` documentation for more information."""
         
         task_group=[]
-        for deps, targs in zip(depends, targets):
-            task_group.append(self.add_task(actions, deps, targs, name, interpret_deps_and_targs, **kwargs))
+        for deps, targs, tname in zip(depends, targets, itertools.cycle(sugar_list(name))):
+            task_group.append(self.add_task(actions, deps, targs, tname, interpret_deps_and_targs, **kwargs))
             
         return task_group
             
     def add_task_group_gridable(self, actions=None, depends=None, targets=None,
-                       name=None, interpret_deps_and_targs=True, **kwargs):
+                       name=[None], interpret_deps_and_targs=True, **kwargs):
         """Create gridable tasks as a group."""
         
         task_group=[]
-        for deps, targs in zip(depends, targets):
-            task = self.add_task(actions, deps, targs, name, interpret_deps_and_targs, **kwargs)
+        for deps, targs, tname in zip(depends, targets, itertools.cycle(sugar_list(name))):
+            task = self.add_task(actions, deps, targs, tname, interpret_deps_and_targs, **kwargs)
             task_group.append(task)
             self._get_grid().add_task(task, **kwargs)
         
