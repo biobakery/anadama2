@@ -919,13 +919,19 @@ class PweaveDocument(Document):
         try:
             columns, rows, data = self.read_table(eigenvalues_file)
         except EnvironmentError:
-            raise ValueError("No eigenvalues found in AnADAMA2 document.show_pcoa function. "+
-                "Provide data to this function in the form of samples as columns and features as rows.")
+            print("No eigenvalues found")
+            data=[[0],[0]]
         pcoa1_x_label=int(data[0][0]*100)
         pcoa2_y_label=int(data[1][0]*100)
         
         # get the scores to plot
-        columns, rows, pcoa_data = self.read_table(scores_file)
+        try:
+            columns, rows, pcoa_data = self.read_table(scores_file)
+        except EnvironmentError:
+            print("No scores found")
+            columns=[]
+            rows=[]
+            pcoa_data=[]
         
         # create a figure subplot to move the legend
         figure = pyplot.figure()
