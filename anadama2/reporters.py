@@ -5,6 +5,7 @@ import multiprocessing
 import collections
 
 import six
+import string
 import time
 
 from .util import mkdirp
@@ -458,7 +459,8 @@ class VerboseConsoleReporter(BaseReporter):
             sys.stdout.write(six.u("  Name: "+name+"\n"))
             sys.stdout.write(six.u("  Original error: \n"))
             for line in result.error.split("\n"):
-                sys.stdout.write(six.u("  "+line.encode("utf-8")+"\n"))
+                print_line="".join(filter(lambda x: x in string.printable, line))
+                sys.stdout.write(six.u("  "+print_line+"\n"))
         self.reset()
 
     def reset(self):
