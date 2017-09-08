@@ -717,7 +717,7 @@ class PweaveDocument(Document):
             for name, row in zip(row_labels, data):
                 file_handle.write("\t".join([name]+[str(i) for i in row])+"\n")
         
-    def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False):
+    def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False,metadata_rows=None):
         """ Create a hclust2 heatmap with dendrogram and show it in the document
         
         :param sample_names: The names of the samples
@@ -737,6 +737,9 @@ class PweaveDocument(Document):
         
         :keyword zscore: Apply the zscore to the data prior to clustering
         :type zscore: bool
+
+        :keyword metadata_rows: A list of metadata rows
+        :type metadata_rows: list
         
         """
         
@@ -766,6 +769,8 @@ class PweaveDocument(Document):
             "--colorbar_font_size",label_font,"--dpi",str(dpi)]
         if log_scale:
             command+=["--log_scale"]
+        if metadata_rows:
+            command+=["--metadata_rows",",".join(str(i) for i in metadata_rows)]
             
         # if more than the max samples, do not include sample labels on the heatmap
         if len(sample_names) > self.max_labels:
