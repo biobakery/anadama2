@@ -283,6 +283,89 @@ class PweaveDocument(Document):
                 
         return column_names, row_names, data
 
+    def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
+        ylabel=None, legend_title=None, legend_style="normal"):
+        """ Plot a stacked barchart with data grouped into subplots
+        
+        :param grouped_data: A dict of lists containing the grouped data
+        :type data: dict
+        
+        :param row_labels: The labels for the data rows
+        :type row_labels: list
+        
+        :param column_labels_grouped: The labels for the columns grouped
+        :type column_labels: dict
+        
+        :param title: The title for the plot
+        :type title: str
+        
+        :keyword ylabel: The y-axis label
+        :type ylabel: str
+        
+        :keyword legend_title: The title for the legend
+        :type legend_title: str
+        
+        :keyword legend_style: The font style for the legend
+        :type legend_style: str
+        
+        """
+        
+        import numpy
+        import matplotlib.pyplot as pyplot
+        
+        total_groups=len(grouped_data.keys())
+        figure, group_axis = pyplot.subplots(1, total_groups+1, sharey=True, gridspec_kw = {'wspace':0.02})
+
+        # create a set of custom colors to prevent overlap
+        # get only a set number of items to recycle colors through subplots
+        custom_colors=list(itertools.islice(self._custom_colors(total_colors=len(row_labels)),len(row_labels)))
+        
+        # move the bottom of the figure for larger xaxis labels
+        # done first before adjusting the width of the figure
+        figure.subplots_adjust(bottom=0.3)
+
+        # create a subplot for each group
+        group_number=0
+        for group_name, data in grouped_data.items():
+            bar_plots=[]
+            # create a plot for each stacked group
+            column_labels=column_labels_grouped[group_name]
+            plot_indexes=numpy.arange(len(column_labels))
+            y_offset=numpy.array([0.0]*len(column_labels))
+            for plot_abundance, color in zip(data, custom_colors):
+                bar_plots.append(group_axis[group_number].bar(plot_indexes, plot_abundance, 
+                    bottom=y_offset, align="center", color=color))
+                # add to the y_offset which is the bottom of the stacked plot
+                y_offset=y_offset+plot_abundance
+            
+            # set the current axis to this groups plot
+            pyplot.sca(group_axis[group_number])    
+            
+            # Add the title, labels, and legend
+            pyplot.title(group_name, size=12)
+            # only set the ylabels for the first subplot
+            if ylabel is not None and group_number == 0:
+                pyplot.ylabel(ylabel)
+            else:
+                pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
+                
+            if len(column_labels) <= self.max_labels:
+                pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
+            else:
+                pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
+            pyplot.yticks(fontsize=7)
+            
+            group_number+=1
+            
+        # add the legend to the last subplot
+        group_axis[-1].set_axis_off()
+        group_axis[-1].legend(bar_plots, row_labels, title=legend_title, 
+            frameon=False, prop={"size":7, "style":legend_style})
+            
+        figure.suptitle(title, fontsize=14)
+        
+        pyplot.show()
+
     def plot_grouped_barchart(self, data, row_labels, column_labels, title, 
         xlabel=None, ylabel=None, legend_title=None, yaxis_in_millions=None):
         """ Plot a grouped barchart 
