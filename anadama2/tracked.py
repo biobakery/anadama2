@@ -550,7 +550,9 @@ class TrackedExecutable(Base):
 
     @staticmethod
     def key(name):
-        if os.path.exists(name):
+        # if the current path exists, it is a file (not a directory), and it is executable
+        # then use the existing path
+        if os.path.exists(name) and os.path.isfile(name) and os.access(name, os.X_OK):
             p = name
         else:
             p = find_on_path(name)
