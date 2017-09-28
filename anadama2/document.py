@@ -326,7 +326,23 @@ class PweaveDocument(Document):
 
         # create a subplot for each group
         group_number=0
-        for group_name, data in grouped_data.items():
+        # sort the groups prior to plotting
+        group_is_numerical=True
+        try:
+            map(float,grouped_data.keys())
+        except ValueError:
+            group_is_numerical=False
+        
+        if group_is_numerical:
+            sorted_group_names = sorted(grouped_data.keys(), key=float)
+        else:
+            sorted_group_names = sorted(grouped_data.keys())
+            
+        # get the total number of columns for all groups
+        total_columns_all_groups=len(list(itertools.chain.from_iterable(column_labels_grouped.values())))
+        
+        for group_name in sorted_group_names:
+            data = grouped_data[group_name]
             bar_plots=[]
             # create a plot for each stacked group
             column_labels=column_labels_grouped[group_name]
@@ -349,7 +365,8 @@ class PweaveDocument(Document):
             else:
                 pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
                 
-            if len(column_labels) <= self.max_labels:
+            # only label the x-axis if all subplots can have labels
+            if total_columns_all_groups <= self.max_labels:
                 pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
             else:
                 pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
