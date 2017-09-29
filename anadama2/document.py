@@ -12,6 +12,11 @@ try:
     import cPickle as pickle
 except ImportError:
     import pickle
+    
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 class Document(object):
     """A document that is auto generated from a template. 
@@ -171,11 +176,8 @@ class PweaveDocument(Document):
         current_working_directory = os.getcwd()
         os.chdir(temp_directory)
         
-        # get the intermediate output file based on the initial template type
-        if "rst" in template_extension:
-            intermediate_template = temp_template_basename+"."+"rst"
-        else:
-            intermediate_template = temp_template_basename+"."+"md"
+        # get the intermediate output file based on the initial template name
+        intermediate_template = temp_template_basename+"."+"md"
             
         # process the template based on the extension type
         temp_report = temp_template_basename+"."+report_extension
@@ -187,7 +189,58 @@ class PweaveDocument(Document):
             pandoc_command+=" --toc"
         
         # run pweave then pandoc to generate document
-        sh("pweave {0} -o {1}".format(temp_template, intermediate_template),log_command=True)()
+        
+        # call pweave to use class with fix
+        from pweave import PwebPandocFormatter, Pweb
+        from pweave.readers import PwebScriptReader
+
+        class PwebPandocFormatterFixedFigures(PwebPandocFormatter):
+            def make_figure_string_size(self, figname, width, label, caption = ""):
+                # new function to fix figure width string to work with pandoc format
+                figstring="![%s](%s){ width=%s }\n" % (caption, figname, width)
+                
+                if caption == "":
+                    figstring += "\\"
+        
+                figstring += "\n"
+                
+                return figstring
+
+            def formatfigure(self, chunk):
+                fignames = chunk['figure']
+                if chunk["caption"]:
+                    caption = chunk["caption"]
+                else:
+                    caption = ""
+                figstring = ""
+                
+                # increase default figure size
+                chunk["width"]="110%"
+        
+                if chunk['caption'] and len(fignames) > 0:
+                    if len(fignames) > 1:
+                        print("INFO: Only including the first plot in a chunk when the caption is set")
+                        figstring = self.make_figure_string_size(fignames[0], chunk["width"], chunk["name"], caption)
+                        return figstring
+        
+                for fig in fignames:
+                    # original line which duplicates figures commented out and replaced
+                    #figstring += self.make_figure_string(fignames[0], chunk["width"], chunk["name"])
+                    figstring += self.make_figure_string_size(fig, chunk["width"], chunk["name"])
+        
+                return figstring
+
+        # capture stdout messages
+        original_stdout = sys.stdout
+        sys.stdout = capture_stdout = StringIO()
+        
+        doc = Pweb(temp_template)
+        doc.setformat(Formatter = PwebPandocFormatterFixedFigures)
+        doc.detect_reader()
+        doc.weave()
+        
+        sys.stdout = original_stdout
+        
         sh(pandoc_command.format(intermediate_template, temp_report),log_command=True)()          
         
         # change back to original working directory
