@@ -337,7 +337,7 @@ class PweaveDocument(Document):
         return column_names, row_names, data
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
-        ylabel=None, legend_title=None, legend_style="normal"):
+        ylabel=None, legend_title=None, legend_style="normal", legend=True):
         """ Plot a stacked barchart with data grouped into subplots
         
         :param grouped_data: A dict of lists containing the grouped data
@@ -361,13 +361,16 @@ class PweaveDocument(Document):
         :keyword legend_style: The font style for the legend
         :type legend_style: str
         
+        :keyword legend: Display legend
+        :type legend: bool
+        
         """
         
         import numpy
         import matplotlib.pyplot as pyplot
         
         total_groups=len(grouped_data.keys())
-        figure, group_axis = pyplot.subplots(1, total_groups+1, sharey=True, gridspec_kw = {'wspace':0.02})
+        figure, group_axis = pyplot.subplots(1, total_groups+1 if legend else total_groups, sharey=True, gridspec_kw = {'wspace':0.02})
 
         # create a set of custom colors to prevent overlap
         # get only a set number of items to recycle colors through subplots
@@ -428,9 +431,10 @@ class PweaveDocument(Document):
             group_number+=1
             
         # add the legend to the last subplot
-        group_axis[-1].set_axis_off()
-        group_axis[-1].legend(bar_plots, row_labels, title=legend_title, 
-            frameon=False, prop={"size":7, "style":legend_style})
+        if legend:
+            group_axis[-1].set_axis_off()
+            group_axis[-1].legend(bar_plots, row_labels, title=legend_title, 
+                frameon=False, prop={"size":7, "style":legend_style})
             
         figure.suptitle(title, fontsize=14)
         
