@@ -215,7 +215,8 @@ class PweaveDocument(Document):
                 figstring = ""
                 
                 # increase default figure size
-                chunk["width"]="110%"
+                if not chunk["width"]:
+                    chunk["width"]="100%"
         
                 if chunk['caption'] and len(fignames) > 0:
                     if len(fignames) > 1:
