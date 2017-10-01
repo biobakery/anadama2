@@ -929,6 +929,8 @@ class PweaveDocument(Document):
             command+=["--log_scale"]
         if metadata_rows:
             command+=["--metadata_rows",",".join(str(i) for i in metadata_rows)]
+            if len(metadata_rows) > 1:
+                command+=["--metadata_height","0.1"]
             
         # if more than the max samples, do not include sample labels on the heatmap
         if len(sample_names) > self.max_labels:
@@ -1017,7 +1019,7 @@ class PweaveDocument(Document):
             
         return new_names, new_data
         
-    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species"):
+    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None):
         """ Use the vegan package in R plus matplotlib to plot a PCoA. 
         Input data should be organized with samples as columns and features as rows. 
         Data should be scaled to [0-1].
@@ -1039,6 +1041,9 @@ class PweaveDocument(Document):
         
         :keyword feature_types: What type of data are the rows
         :type feature_types: str
+        
+        :keyword metadata: Metadata for each sample 
+        :type metadata: dict
         
         """
         
@@ -1109,16 +1114,41 @@ class PweaveDocument(Document):
         subplot=pyplot.subplot(111)
         
         # create a set of custom colors to prevent overlap
-        custom_colors=self._custom_colors(total_colors=len(pcoa_data))
+        if metadata:
+            metadata_categories=list(set(metadata.values()))
+            custom_colors=self._custom_colors(total_colors=len(metadata_categories))
+            colors_by_metadata=dict((key, color) for key, color in zip(metadata_categories,custom_colors))
+        else:
+            custom_colors=self._custom_colors(total_colors=len(pcoa_data))
         
         # reduce the size of the plot to fit in the legend
         subplot_position=subplot.get_position()
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
             subplot_position.width *0.80, subplot_position.height])
         
+        
         plots = []
-        for x,y in pcoa_data:
-            plots.append(subplot.scatter(x,y,color=next(custom_colors)))
+        metadata_plots = {}
+        for i, (x,y) in enumerate(pcoa_data):
+            if metadata:
+                if metadata[sample_names[i]] not in metadata_plots:
+                    metadata_plots[metadata[sample_names[i]]]=[[x],[y]]
+                else:
+                    metadata_plots[metadata[sample_names[i]]][0].append(x)
+                    metadata_plots[metadata[sample_names[i]]][1].append(y)
+            else:
+                plots.append(subplot.scatter(x,y,color=next(custom_colors)))
+                
+        # order the plots alphabetically or numerically
+        metadata_ordered_keys=sorted(metadata_plots.keys())
+        try:
+            metadata_ordered_keys=sorted(metadata_plots.keys(),key=float)
+        except ValueError:
+            pass
+        
+        for key in metadata_ordered_keys:
+            plots.append(subplot.scatter(metadata_plots[key][0], metadata_plots[key][1],
+                color=colors_by_metadata[key]))
         
         pyplot.title(title)
         pyplot.xlabel("PCoA 1 ("+str(pcoa1_x_label)+" %)")
@@ -1128,10 +1158,14 @@ class PweaveDocument(Document):
         pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
         pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
         
-        if len(sample_names) <= self.max_labels:
+        if not metadata and len(sample_names) <= self.max_labels:
             subplot.legend(plots, sample_names, loc="center left", bbox_to_anchor=(1,0.5),
                 fontsize=7, title="Samples", frameon=False)
-
+        
+        if metadata and len(metadata_ordered_keys) <= self.max_labels:
+            subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1,0.5),
+                fontsize=7, frameon=False)            
+        
         caption="\n".join(["Principal coordinate analysis of variance among "+sample_types+", based on Bray-Curtis ", 
             "dissimilarities between "+feature_types+" profiles of "+sample_types+".  Filtered "+feature_types+"' relative abundances ", 
             "were arcsin-square root transformed to approximate a normal distribution and down-weigh the effect ",
