@@ -376,10 +376,6 @@ class PweaveDocument(Document):
         # create a set of custom colors to prevent overlap
         # get only a set number of items to recycle colors through subplots
         custom_colors=list(itertools.islice(self._custom_colors(total_colors=len(row_labels)),len(row_labels)))
-        
-        # move the bottom of the figure for larger xaxis labels
-        # done first before adjusting the width of the figure
-        figure.subplots_adjust(bottom=0.3)
 
         # create a subplot for each group
         group_number=0
@@ -424,6 +420,8 @@ class PweaveDocument(Document):
                 
             # only label the x-axis if all subplots can have labels
             if total_columns_all_groups <= self.max_labels:
+                # move the bottom of the figure for larger xaxis labels
+                figure.subplots_adjust(bottom=0.3)
                 pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
             else:
                 pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
@@ -506,16 +504,7 @@ class PweaveDocument(Document):
         barplots=[]
         for i, data_set in enumerate(data):
             barplots.append(subplot.bar(bar_start_point + i*bar_width, data_set,
-                width=bar_width, color=next(custom_colors)))
-
-        # move the bottom of the figure for larger xaxis labels
-        # done first before adjusting the width of the figure
-        figure.subplots_adjust(bottom=0.3)    
-        
-        # reduce the size of the plot to fit in the legend and the xlabels
-        subplot_position=subplot.get_position()
-        subplot.set_position([subplot_position.x0, subplot_position.y0, 
-            subplot_position.width *0.80, subplot_position.height])
+                width=bar_width, color=next(custom_colors)))   
         
         # add labels and title
         if xlabel is not None and len(column_labels) <= self.max_labels:
@@ -527,6 +516,9 @@ class PweaveDocument(Document):
         
         # place the xticks in the middle of each group
         if len(column_labels) <= self.max_labels:
+            # move the bottom of the figure for larger xaxis labels
+            # done first before adjusting the width of the figure
+            figure.subplots_adjust(bottom=0.3) 
             pyplot.xticks(bar_start_point + 0.5, column_labels, fontsize=7, rotation="vertical")
         else:
             pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
@@ -534,6 +526,11 @@ class PweaveDocument(Document):
         
         # set the limits on the x axis so the edge gaps are correct
         pyplot.xlim(0-gap,len(column_labels))
+        
+        # reduce the size of the plot to fit in the legend
+        subplot_position=subplot.get_position()
+        subplot.set_position([subplot_position.x0, subplot_position.y0, 
+            subplot_position.width *0.80, subplot_position.height])
         
         subplot.legend(barplots,row_labels,loc="center left", bbox_to_anchor=(1,0.5),
             fontsize=7, title=legend_title, frameon=False)
@@ -727,15 +724,6 @@ class PweaveDocument(Document):
             # add to the y_offset which is the bottom of the stacked plot
             y_offset=y_offset+plot_abundance
             
-        # move the bottom of the figure for larger xaxis labels
-        # done first before adjusting the width of the figure
-        figure.subplots_adjust(bottom=0.3)
-            
-        # reduce the size of the plot to fit in the legend
-        subplot_position=subplot.get_position()
-        subplot.set_position([subplot_position.x0, subplot_position.y0, 
-            subplot_position.width *0.80, subplot_position.height])
-            
         # Add the title, labels, and legend
         if xlabel is not None and len(column_labels) <= self.max_labels:
             subplot.set_xlabel(xlabel)
@@ -745,9 +733,19 @@ class PweaveDocument(Document):
         pyplot.title(title)
         
         if len(column_labels) <= self.max_labels:
+            # move the bottom of the figure for larger xaxis labels
+            # done first before adjusting the width of the figure
+            figure.subplots_adjust(bottom=0.3)
+            # add labels
             pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
         else:
             pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
+            
+        # reduce the size of the plot to fit in the legend
+        subplot_position=subplot.get_position()
+        subplot.set_position([subplot_position.x0, subplot_position.y0, 
+            subplot_position.width *0.80, subplot_position.height])
+            
         pyplot.yticks(fontsize=7)
         subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
             title=legend_title, frameon=False, prop={"size":7, "style":legend_style})
