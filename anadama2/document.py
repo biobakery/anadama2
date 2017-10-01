@@ -371,7 +371,7 @@ class PweaveDocument(Document):
         import matplotlib.pyplot as pyplot
         
         total_groups=len(grouped_data.keys())
-        figure, group_axis = pyplot.subplots(1, total_groups+1 if legend else total_groups, sharey=True, gridspec_kw = {'wspace':0.02})
+        figure, group_axis = pyplot.subplots(1, total_groups, sharey=True, gridspec_kw = {'wspace':0.02})
 
         # create a set of custom colors to prevent overlap
         # get only a set number of items to recycle colors through subplots
@@ -431,9 +431,11 @@ class PweaveDocument(Document):
             
         # add the legend to the last subplot
         if legend:
-            group_axis[-1].set_axis_off()
-            group_axis[-1].legend(bar_plots, row_labels, title=legend_title, 
-                frameon=False, prop={"size":7, "style":legend_style})
+            # reduce the size of the plot to fit in the legend
+            figure.subplots_adjust(right=0.62)
+                
+            pyplot.legend(bar_plots,row_labels, loc="center left", bbox_to_anchor=(1,0.5),
+                title=legend_title, frameon=False, prop={"size":7, "style":legend_style})
             
         figure.suptitle(title, fontsize=14)
         
