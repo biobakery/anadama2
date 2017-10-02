@@ -432,7 +432,7 @@ class PweaveDocument(Document):
         # add the legend to the last subplot
         if legend:
             # reduce the size of the plot to fit in the legend
-            figure.subplots_adjust(right=0.62)
+            figure.subplots_adjust(right=0.75)
                 
             pyplot.legend(bar_plots,row_labels, loc="center left", bbox_to_anchor=(1,0.5),
                 title=legend_title, frameon=False, prop={"size":7, "style":legend_style})
