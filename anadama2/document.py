@@ -75,7 +75,9 @@ class PweaveDocument(Document):
         self.vars=vars
         
         # set the max number of x tick labels to be shown on plots
-        self.max_labels = 30
+        self.max_labels = 50
+        # set the max labels for legends
+        self.max_labels_legend = 30
         
         # set the location of the final figures and data folders
         # only create if the document has a target
@@ -419,7 +421,7 @@ class PweaveDocument(Document):
                 pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
                 
             # only label the x-axis if all subplots can have labels
-            if total_columns_all_groups <= self.max_labels:
+            if total_columns_all_groups <= self.max_labels and len(column_labels) < 6:
                 # move the bottom of the figure for larger xaxis labels
                 figure.subplots_adjust(bottom=0.3)
                 pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
@@ -929,7 +931,11 @@ class PweaveDocument(Document):
             command+=["--log_scale"]
         if metadata_rows:
             command+=["--metadata_rows",",".join(str(i) for i in metadata_rows)]
-            if len(metadata_rows) > 1:
+            if len(metadata_rows) > 10:
+                command+=["--metadata_height","0.35"]
+            elif len(metadata_rows) > 4:
+                command+=["--metadata_height","0.2"]
+            elif len(metadata_rows) > 1:
                 command+=["--metadata_height","0.1"]
             
         # if more than the max samples, do not include sample labels on the heatmap
@@ -1158,11 +1164,11 @@ class PweaveDocument(Document):
         pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
         pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
         
-        if not metadata and len(sample_names) <= self.max_labels:
+        if not metadata and len(sample_names) <= self.max_labels_legend:
             subplot.legend(plots, sample_names, loc="center left", bbox_to_anchor=(1,0.5),
                 fontsize=7, title="Samples", frameon=False)
         
-        if metadata and len(metadata_ordered_keys) <= self.max_labels:
+        if metadata and len(metadata_ordered_keys) <= self.max_labels_legend:
             subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1,0.5),
                 fontsize=7, frameon=False)            
         
