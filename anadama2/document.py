@@ -338,6 +338,27 @@ class PweaveDocument(Document):
             data=new_data
                 
         return column_names, row_names, data
+    
+    def sorted_data_numerical_or_alphabetical(self, data):
+        """ Sort the data numerically or alphabetically depending on data type """
+
+        # sort the data alphabetically
+        sorted_data = sorted(data)
+        
+        try:
+            # allow for NA in keys
+            na=False
+            if "NA" in data:
+                data.remove("NA")
+                na=True
+            sorted_data = sorted(data, key=float)
+            if na:
+                sorted_data+=["NA"]
+        except ValueError:
+            pass        
+        
+        return sorted_data
+        
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
         ylabel=None, legend_title=None, legend_style="normal", legend=True):
@@ -381,17 +402,9 @@ class PweaveDocument(Document):
 
         # create a subplot for each group
         group_number=0
-        # sort the groups prior to plotting
-        group_is_numerical=True
-        try:
-            map(float,grouped_data.keys())
-        except ValueError:
-            group_is_numerical=False
         
-        if group_is_numerical:
-            sorted_group_names = sorted(grouped_data.keys(), key=float)
-        else:
-            sorted_group_names = sorted(grouped_data.keys())
+        # sort the groups prior to plotting
+        sorted_group_names = self.sorted_data_numerical_or_alphabetical(grouped_data.keys())
             
         # get the total number of columns for all groups
         total_columns_all_groups=len(list(itertools.chain.from_iterable(column_labels_grouped.values())))
@@ -1146,11 +1159,7 @@ class PweaveDocument(Document):
                 plots.append(subplot.scatter(x,y,color=next(custom_colors)))
                 
         # order the plots alphabetically or numerically
-        metadata_ordered_keys=sorted(metadata_plots.keys())
-        try:
-            metadata_ordered_keys=sorted(metadata_plots.keys(),key=float)
-        except ValueError:
-            pass
+        metadata_ordered_keys=self.sorted_data_numerical_or_alphabetical(metadata_plots.keys())
         
         for key in metadata_ordered_keys:
             plots.append(subplot.scatter(metadata_plots[key][0], metadata_plots[key][1],
