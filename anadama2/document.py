@@ -612,16 +612,16 @@ class PweaveDocument(Document):
 
         pyplot.show()        
         
-    def plot_barchart(self, data, labels, title, xlabel=None, ylabel=None):
+    def plot_barchart(self, data, labels=None, title=None, xlabel=None, ylabel=None):
         """ Plot a barchart 
         
         :param data: A list of lists containing the data
         :type data: list
 
-        :param labels: The labels for the data rows
+        :keyword labels: The labels for the data rows
         :type labels: list
 
-        :param title: The title for the plot
+        :keyword title: The title for the plot
         :type title: str
         
         :keyword xlabel: The x-axis label
@@ -634,6 +634,8 @@ class PweaveDocument(Document):
         
         import numpy
         import matplotlib.pyplot as pyplot
+        
+        figure = pyplot.figure()
         
         # check for a list of lists
         # if a list of lists of single items is found convert to a list
@@ -648,7 +650,8 @@ class PweaveDocument(Document):
 
         positions=numpy.arange(len(data))
         pyplot.bar(positions, data, align="center")
-        pyplot.xticks(positions, labels, rotation="vertical")
+        if labels:
+            pyplot.xticks(positions, labels, rotation="vertical")
         
         if ylabel:
             pyplot.ylabel(ylabel)
