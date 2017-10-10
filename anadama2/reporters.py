@@ -564,6 +564,17 @@ class LoggerReporter(BaseReporter):
             for id in benchmarking_info.keys():
                 if id in log_info:
                     log_info[id]=log_info[id]+"\t"+benchmarking_info[id]
+        elif type == "variables":
+            # read in the variables set for the workflow
+            # use the last variable values for workflow with more than one run
+            for line in lines:
+                if "started\tINFO:" in line and " = " in line:
+                    data = line.rstrip().split(": ")[-1]
+                    try:
+                        variable, value = data.split(" = ")
+                        log_info[variable]=value
+                    except ValueError:
+                        pass
         else:
             keyword = VERSION_COMMAND
             # remove redundant version from strings since these are already 
