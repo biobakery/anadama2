@@ -163,7 +163,7 @@ class Configuration(object):
         if grid == "slurm":
             partitions = ["serial_requeue","general",4*60]
         elif grid == "sge":
-            partitions = ["short","long",110]
+            partitions = "broad"
         else:
             partitions = []
             
