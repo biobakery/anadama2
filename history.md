@@ -1,6 +1,16 @@
 
 # AnADAMA2 History #
 
+## v0.4.0 10-19-2017 ##
+
+* Add read of variables from log to LoggerReporter class method read_log.
+* Add metadata keyword to hclust2 method.
+* Add new method plot_stacked_barchart_grouped.
+* Update pweave section to use custom formatter class (to fix pweave issue of duplicating plots in single code block).
+* Add metadata option to pcoa plot.
+* Include any document dependencies in the output data folder so they can be bundled with the report archive.
+* Update sge default partition to match new broad configuration.
+
 ## v0.3.1 07-24-2017 ##
 
 * The API is now hosted at Readthedocs. The html has been removed from the source since it is now automatically generated.
