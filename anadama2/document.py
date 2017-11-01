@@ -206,7 +206,11 @@ class PweaveDocument(Document):
         class PwebPandocFormatterFixedFigures(PwebPandocFormatter):
             def make_figure_string_size(self, figname, width, label, caption = ""):
                 # new function to fix figure width string to work with pandoc format
-                figstring="![%s](%s){ width=%s }\n" % (caption, figname, width)
+                # only use width if pandoc installed is >= v1.16.0
+                if self.new_pandoc:
+                    figstring="![%s](%s){ width=%s }\n" % (caption, figname, width)
+                else:
+                    figstring="![%s](%s)\n" % (caption, figname) 
                 
                 if caption == "":
                     figstring += "\\"
