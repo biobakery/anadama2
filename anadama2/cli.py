@@ -288,7 +288,7 @@ class Configuration(object):
             self.ask_user()
         
         args=CommandLineOptions()
-        for option in self._user_arguments.keys() + self._arguments.keys():
+        for option in list(self._user_arguments.keys()) + list(self._arguments.keys()):
             option = re.sub(r'-', '_', option)
             value = self.get(option)
             setattr(args,option,value)
