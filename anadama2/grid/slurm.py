@@ -129,7 +129,7 @@ class SLURMQueue(GridQueue):
     def get_job_status_from_stderr(self, error_file, grid_job_status, grid_jobid):
         # read the error file to see if any time or memory errors were reported
         try:
-            slurm_errors=subprocess.check_output(["grep","-F","slurmstepd: error:",error_file]).split("\n")
+            slurm_errors=subprocess.check_output(["grep","-i","slurmstepd: error\|killed",error_file]).split("\n")
         except (EnvironmentError, subprocess.CalledProcessError):
             slurm_errors=[]
                 
@@ -139,9 +139,11 @@ class SLURMQueue(GridQueue):
                 logging.info("Slurm task %s cancelled due to time limit", grid_jobid)
                 # This has the slurm status of "TIMEOUT" from slurm sacct
                 grid_job_status=self.job_code_timeout
-            elif list(filter(lambda x: "exceeded memory limit" in x and "being killed" in x, slurm_errors)):
+            elif list(filter(lambda x: "exceeded memory limit" in x and "being killed" in x, slurm_errors)) or \
+                all([i in "\n".join(slurm_errors).lower() for i in ["exceeded","memory limit","killed"]]):
                 logging.info("Slurm task %s cancelled due to memory limit", grid_jobid)
                 # This has the slurm status of "CANCELLED by 0" from slurm sacct (short form is "CANCELLED+")
+                # It might also have the slurm status of FAILED
                 grid_job_status=self.job_code_memkill
                 
         return grid_job_status
