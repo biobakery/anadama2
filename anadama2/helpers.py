@@ -47,12 +47,18 @@ from .reporters import SHELL_COMMAND
 def file_size(depends):
     """ Return the size of the file in GB """
     
+    # allow for paths to files and also dependency classes
+    file_name = depends
+    if hasattr(depends,"name"):
+        file_name = depends.name
+
     try:
-        size = os.path.getsize(depends.name) / (1024.0**3)
+        size = os.path.getsize(file_name) / (1024.0**3)
     except (OSError, AttributeError):
         size = 0
         
     return size 
+
 
 def apply_sh(actions):
     """Add the shell function to any actions that are strings"""
