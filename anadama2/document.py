@@ -1058,7 +1058,7 @@ class PweaveDocument(Document):
             
         return new_names, new_data
         
-    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None):
+    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None, apply_transform=True):
         """ Use the vegan package in R plus matplotlib to plot a PCoA. 
         Input data should be organized with samples as columns and features as rows. 
         Data should be scaled to [0-1].
@@ -1084,6 +1084,8 @@ class PweaveDocument(Document):
         :keyword metadata: Metadata for each sample 
         :type metadata: dict
         
+        :keyword apply_transform: Arcsin transform to be applied
+        :type apply_transform: bool
         """
         
         import matplotlib.pyplot as pyplot
@@ -1092,16 +1094,21 @@ class PweaveDocument(Document):
             "library(vegan)",
             "args<-commandArgs(TRUE)",
             "data<-read.table(args[1],sep='\\t',header=TRUE, row.names=1)",
-            "data.t<-as.data.frame(t(data))",
-            "pcoa<-capscale(asin(sqrt(data.t))~1,distance='bray')",
+            "data.t<-as.data.frame(t(data))"]
+        if apply_transform:
+            r_vegan_pcoa+=["pcoa<-capscale(asin(sqrt(data.t))~1,distance='bray')"]
+        else:
+            r_vegan_pcoa+=["pcoa<-capscale(data.t~1,distance='bray')"]
+        r_vegan_pcoa+=[
             "write.table(head(eigenvals(pcoa)/sum(eigenvals(pcoa))),args[2],sep='\\t')",
             "write.table(as.data.frame(scores(pcoa,display='sites')),args[3],sep='\\t')"]
         
         # test that the data is scaled to [0-1]
-        for row in data:
-            out_of_range=list(filter(lambda x: x < 0 or x > 1, row))
-            if len(out_of_range) > 0:
-                raise ValueError("Provide data to the AnADAMA2 document.show_pcoa function in the range of [0-1].")
+        if apply_transform:
+            for row in data:
+                out_of_range=list(filter(lambda x: x < 0 or x > 1, row))
+                if len(out_of_range) > 0:
+                    raise ValueError("Provide data to the AnADAMA2 document.show_pcoa function in the range of [0-1].")
             
         # test for duplicate feature names
         feature_set=set(feature_names)
