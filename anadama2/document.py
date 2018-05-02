@@ -1138,11 +1138,13 @@ class PweaveDocument(Document):
         self._run_r(r_vegan_pcoa,[vegan_input_file,eigenvalues_file,scores_file])
         
         # get the x and y labels
+        r_run_error=False
         try:
             columns, rows, data = self.read_table(eigenvalues_file)
         except EnvironmentError:
             print("No eigenvalues found")
             data=[[0],[0]]
+            r_run_error=True
         pcoa1_x_label=int(data[0][0]*100)
         pcoa2_y_label=int(data[1][0]*100)
         
@@ -1151,10 +1153,21 @@ class PweaveDocument(Document):
             columns, rows, pcoa_data = self.read_table(scores_file)
         except EnvironmentError:
             print("No scores found")
+            r_run_error=True
             columns=[]
             rows=[]
             pcoa_data=[]
-        
+       
+        # if there were no errors, remove the temp files
+        if not r_run_error:
+            try:
+                os.remove(vegan_input_file)
+                os.remove(eigenvalues_file)
+                os.remove(scores_file)
+            except EnvironmentError:
+                print("Warning: Unable to remove temp files")
+            
+ 
         # create a figure subplot to move the legend
         figure = pyplot.figure()
         subplot=pyplot.subplot(111)
