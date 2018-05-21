@@ -1058,7 +1058,7 @@ class PweaveDocument(Document):
             
         return new_names, new_data
         
-    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None, apply_transform=True):
+    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None, apply_transform=False):
         """ Use the vegan package in R plus matplotlib to plot a PCoA. 
         Input data should be organized with samples as columns and features as rows. 
         Data should be scaled to [0-1].
@@ -1220,12 +1220,17 @@ class PweaveDocument(Document):
         if metadata and len(metadata_ordered_keys) <= self.max_labels_legend:
             subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1,0.5),
                 fontsize=7, frameon=False)            
-        
-        caption="\n".join(["Principal coordinate analysis of variance among "+sample_types+", based on Bray-Curtis ", 
-            "dissimilarities between "+feature_types+" profiles of "+sample_types+".  Filtered "+feature_types+"' relative abundances ", 
-            "were arcsin-square root transformed to approximate a normal distribution and down-weigh the effect ",
-            "of highly abundant "+feature_types+" on Bray-Curtis dissimilarities.  Numbers in parenthesis on each axis ",
-            "represent the amount of variance explained by that axis."])
+       
+        if apply_transform: 
+            caption="\n".join(["Principal coordinate analysis of variance among "+sample_types+", based on Bray-Curtis ", 
+                "dissimilarities between "+feature_types+" profiles of "+sample_types+".  Filtered "+feature_types+"' relative abundances ", 
+                "were arcsin-square root transformed to approximate a normal distribution and down-weigh the effect ",
+                "of highly abundant "+feature_types+" on Bray-Curtis dissimilarities.  Numbers in parenthesis on each axis ",
+                "represent the amount of variance explained by that axis."])
+        else:
+            caption="\n".join(["Principal coordinate analysis of variance among "+sample_types+", based on Bray-Curtis ", 
+                "dissimilarities between "+feature_types+" profiles of "+sample_types+".  Numbers in parenthesis on each axis ",
+                "represent the amount of variance explained by that axis."])
         
         pyplot.show()
         
