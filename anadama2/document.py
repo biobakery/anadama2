@@ -1057,11 +1057,11 @@ class PweaveDocument(Document):
         new_data = data_temp
             
         return new_names, new_data
-        
-    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None, apply_transform=False):
-        """ Use the vegan package in R plus matplotlib to plot a PCoA. 
+       
+    def compute_pcoa(self, sample_names, feature_names, data, apply_transform):
+        """ Use the vegan package in R to compute a PCoA. 
         Input data should be organized with samples as columns and features as rows. 
-        Data should be scaled to [0-1].
+        Data should be scaled to [0-1] if transform is to be applied.
         
         :param sample_names: The labels for the columns
         :type sample_names: list
@@ -1072,24 +1072,10 @@ class PweaveDocument(Document):
         :param data: A list of lists containing the data
         :type data: list
         
-        :param title: The title for the plot
-        :type title: str
-        
-        :keyword sample_types: What type of data are the columns
-        :type sample_types: str
-        
-        :keyword feature_types: What type of data are the rows
-        :type feature_types: str
-        
-        :keyword metadata: Metadata for each sample 
-        :type metadata: dict
-        
         :keyword apply_transform: Arcsin transform to be applied
         :type apply_transform: bool
         """
-        
-        import matplotlib.pyplot as pyplot
-        
+
         r_vegan_pcoa=[
             "library(vegan)",
             "args<-commandArgs(TRUE)",
@@ -1166,7 +1152,107 @@ class PweaveDocument(Document):
                 os.remove(scores_file)
             except EnvironmentError:
                 print("Warning: Unable to remove temp files")
+
+        return pcoa_data, pcoa1_x_label, pcoa2_y_label
             
+    def show_pcoa_multiple_plots(self, sample_names, feature_names, data, title, abundances, legend_title="% Abundance", sample_types="samples", feature_types="species", apply_transform=False):
+        """ Use the vegan package in R plus matplotlib to plot a PCoA. 
+        Input data should be organized with samples as columns and features as rows. 
+        Data should be scaled to [0-1] if transform is to be applied.
+        Show multiple PCoA plots as subplots each with coloring based on abundance.
+        
+        :param sample_names: The labels for the columns
+        :type sample_names: list
+
+        :param feature_names: The labels for the data rows
+        :type feature_names: list
+
+        :param data: A list of lists containing the data
+        :type data: list
+        
+        :param title: The title for the plot
+        :type title: str
+        
+        :param abundances: The sets of abundance data and names for the subplots
+        :type abundances: dict
+        
+        :keyword legend_title: The title for the legend
+        :type legend_title: str
+
+        :keyword sample_types: What type of data are the columns
+        :type sample_types: str
+        
+        :keyword feature_types: What type of data are the rows
+        :type feature_types: str
+        
+        :keyword apply_transform: Arcsin transform to be applied
+        :type apply_transform: bool
+        """
+
+        import numpy
+        import matplotlib.pyplot as pyplot
+        from matplotlib import cm
+
+        pcoa_data, pcoa1_x_label, pcoa2_y_label=self.compute_pcoa(sample_names, feature_names, data, apply_transform)         
+ 
+        # create a figure and subplots
+        nrows = len(abundances.keys())/2
+        figure, axis = pyplot.subplots(nrows=nrows,ncols=2)
+        # if needed, modify matrix of axis to list
+        reformatted_axis = []
+        if isinstance(axis[0],numpy.ndarray):
+            for axis_list in axis:
+                reformatted_axis+=axis_list.tolist()
+            axis=reformatted_axis
+        figure.suptitle(title,fontsize=12,y=1.003)      
+ 
+        x_values = [x for x,y in pcoa_data]
+        y_values = [y for x,y in pcoa_data]
+        for subplot, abundance_name in zip(axis,sorted(abundances.keys())):
+            pcoa_plot=subplot.scatter(x_values,y_values,c=abundances[abundance_name],cmap=cm.jet)
+            figure.colorbar(pcoa_plot,ax=subplot,label=legend_title)
+            subplot.set_title(abundance_name)
+            subplot.set(xlabel="PCoA 1 ("+str(pcoa1_x_label)+" %)",ylabel="PCoA 2 ("+str(pcoa2_y_label)+" %)")
+            subplot.tick_params(axis="both",bottom="off",labelbottom="off",left="off",labelleft="off")
+             
+        # adjust spacing between subplots
+        figure.tight_layout()   
+
+        pyplot.show()
+ 
+    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None, apply_transform=False):
+        """ Use the vegan package in R plus matplotlib to plot a PCoA. 
+        Input data should be organized with samples as columns and features as rows. 
+        Data should be scaled to [0-1] if transform is to be applied.
+        
+        :param sample_names: The labels for the columns
+        :type sample_names: list
+
+        :param feature_names: The labels for the data rows
+        :type feature_names: list
+
+        :param data: A list of lists containing the data
+        :type data: list
+        
+        :param title: The title for the plot
+        :type title: str
+        
+        :keyword sample_types: What type of data are the columns
+        :type sample_types: str
+        
+        :keyword feature_types: What type of data are the rows
+        :type feature_types: str
+        
+        :keyword metadata: Metadata for each sample 
+        :type metadata: dict
+        
+        :keyword apply_transform: Arcsin transform to be applied
+        :type apply_transform: bool
+        """
+        
+        import matplotlib.pyplot as pyplot
+
+        pcoa_data, pcoa1_x_label, pcoa2_y_label=self.compute_pcoa(sample_names, feature_names, data, apply_transform)         
  
         # create a figure subplot to move the legend
         figure = pyplot.figure()
