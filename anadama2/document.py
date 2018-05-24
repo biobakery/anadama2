@@ -1204,7 +1204,7 @@ class PweaveDocument(Document):
             for axis_list in axis:
                 reformatted_axis+=axis_list.tolist()
             axis=reformatted_axis
-        figure.suptitle(title,fontsize=12,y=1.003)      
+        figure.suptitle(title,fontsize=12,y=1.002)      
  
         x_values = [x for x,y in pcoa_data]
         y_values = [y for x,y in pcoa_data]
