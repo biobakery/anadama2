@@ -910,7 +910,7 @@ class PweaveDocument(Document):
             for name, row in zip(row_labels, data):
                 file_handle.write("\t".join([name]+[str(i) for i in row])+"\n")
         
-    def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False,metadata_rows=None):
+    def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False,metadata_rows=None,method="correlation"):
         """ Create a hclust2 heatmap with dendrogram and show it in the document
         
         :param sample_names: The names of the samples
@@ -933,6 +933,9 @@ class PweaveDocument(Document):
 
         :keyword metadata_rows: A list of metadata rows
         :type metadata_rows: list
+
+        :keyword method: The distance function for features
+        :type method: str
         
         """
         
@@ -959,7 +962,7 @@ class PweaveDocument(Document):
         command=["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,"--title",title,
             "--title_font",str(int(label_font)*2),"--cell_aspect_ratio",str(aspect_ratio),
             "--flabel_size",label_font,"--slabel_size",label_font,
-            "--colorbar_font_size",label_font,"--dpi",str(dpi)]
+            "--colorbar_font_size",label_font,"--dpi",str(dpi),"--f_dist_f",method]
         if log_scale:
             command+=["--log_scale"]
         if metadata_rows:
@@ -983,7 +986,7 @@ class PweaveDocument(Document):
             output=subprocess.check_output(command)
             # read the heatmap png file
             heatmap=read_png(heatmap_file)
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, OSError):
             print("Unable to generate heatmap")
             heatmap=[]
         
