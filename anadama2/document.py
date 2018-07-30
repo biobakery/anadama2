@@ -448,7 +448,7 @@ class PweaveDocument(Document):
                 pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
                 
             # only label the x-axis if all subplots can have labels
-            if total_columns_all_groups <= self.max_labels and len(column_labels) < 6:
+            if total_columns_all_groups <= self.max_labels and len(column_labels) < 10:
                 # move the bottom of the figure for larger xaxis labels
                 figure.subplots_adjust(bottom=0.3)
                 pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
