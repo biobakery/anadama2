@@ -666,6 +666,8 @@ class PweaveDocument(Document):
         pyplot.bar(positions, data, align="center")
         if labels:
             pyplot.xticks(positions, labels, rotation="vertical")
+            # move the bottom of the figure for larger xaxis labels
+            figure.subplots_adjust(bottom=0.3)
         
         if ylabel:
             pyplot.ylabel(ylabel)
