@@ -1,6 +1,15 @@
 
 # AnADAMA2 History #
 
+## v0.5.0 08-21-2018 ##
+
+* Add distance function keyword to show_hclust2 doc method
+* Add method to plot multiple poca colored by abundance
+* In document show_pcoa, set default to not apply arcsin-sqrt transform and add caption for this case
+* Detect new rc exceeded memory limit reported in error file to slurm class
+* Make cli argument keys a list for python3 compatibility
+* In document formatter, allow for older versions of pandoc by only using width in figure if newer version of pandoc is installed
+
 ## v0.4.0 10-19-2017 ##
 
 * Add read of variables from log to LoggerReporter class method read_log.
