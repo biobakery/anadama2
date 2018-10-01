@@ -11,7 +11,7 @@ try:
 except ImportError:
     from urllib import urlretrieve
 
-VERSION="0.4.0"
+VERSION="0.5.0"
 AUTHOR = "AnADAMA2 Development Team"
 AUTHOR_EMAIL = "anadama-users@googlegroups.com"
 
