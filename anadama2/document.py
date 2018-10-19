@@ -131,7 +131,8 @@ class PweaveDocument(Document):
         if self.depends and self.data_folder and os.path.isdir(self.data_folder):
             depends_files = list(filter(lambda x: not isinstance(x,Task), self.depends))
             for data_file in depends_files:
-                shutil.copy(data_file,os.path.join(self.data_folder,os.path.basename(data_file)))
+                if data_file:
+                    shutil.copy(data_file,os.path.join(self.data_folder,os.path.basename(data_file)))
 
     def create(self, task):
         """ Create the documents specified as targets """
