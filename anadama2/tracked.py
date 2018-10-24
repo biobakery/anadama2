@@ -61,6 +61,8 @@ def auto(x):
 
 
 def _autostring(s):
+    if s.startswith("s3:/"):
+        return AWSHugeTrackedFile(s)
     s = os.path.expanduser(os.path.expandvars(s))
     if s.endswith('/'):
         return TrackedDirectory(s)
@@ -378,6 +380,32 @@ class HugeTrackedFile(TrackedFile):
         yield stat.st_mtime
 
 
+class AWSHugeTrackedFile(HugeTrackedFile):
+    """Track a file in the AWS S3 bucket """
+
+    def __init__(self,name):
+        import boto3
+        self.name = self.__class__.key(name)
+        self.resource = boto3.resource("s3")
+        self.aws_bucket = name.replace("s3://","").split("/")[0] 
+        self.aws_key = "/".join(name.replace("s3://","").split("/")[1:])
+
+    def exists(self):
+        found = True
+        try:
+            last_modified = self.resource.ObjectSummary(self.aws_bucket,self.aws_key).last_modified
+        except botocore.exceptions.ClientError:
+            found = False
+        return found
+
+    def compare(self):
+        aws_object = self.resource.ObjectSummary(self.aws_bucket,self.aws_key)
+        yield aws_object.size
+        yield str(aws_object.last_modified)
+
+    @staticmethod
+    def key(name):
+        return name
 
 class Container(object):
     """Track a collection of small strings. This is useful for rerunning
