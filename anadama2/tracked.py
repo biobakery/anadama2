@@ -381,6 +381,15 @@ class HugeTrackedFile(TrackedFile):
         yield stat.st_size
         yield stat.st_mtime
 
+def download_files_if_needed(depends):
+    """ From the list of dependencies, for any that are remote, download if needed """
+
+    for depend in depends:
+        try:
+            depend.download()
+        except AttributeError as err:
+            next
+
 
 class AWSHugeTrackedFile(HugeTrackedFile):
     """Track a file in the AWS S3 bucket """
@@ -418,6 +427,12 @@ class AWSHugeTrackedFile(HugeTrackedFile):
             self.local = os.path.join(self.local_base,self.name.replace("s3://",""))
         return self.local
 
+    def download(self):
+        # create download folder if needed
+        directory = os.path.dirname(self.local)
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
+        self.resource.Bucket(self.aws_bucket).download_file(self.aws_key,self.local)
 
 class Container(object):
     """Track a collection of small strings. This is useful for rerunning
