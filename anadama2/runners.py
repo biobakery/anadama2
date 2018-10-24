@@ -203,6 +203,9 @@ def _run_task_locally(task, extra=None):
             return exception_result(
                 TaskFailed(msg.format(i, traceback.format_exc()), task.task_no)
                 )
+        # upload files if need (not needed for invisible file tracking tasks)
+        if task.visible:
+            tracked.upload_files_if_needed(task.targets)
         logger.debug("Completed executing task %i action %i", task.task_no, i)
 
     return _get_task_result(task)

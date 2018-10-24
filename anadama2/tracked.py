@@ -390,6 +390,14 @@ def download_files_if_needed(depends):
         except AttributeError as err:
             next
 
+def upload_files_if_needed(targets):
+    """ From the list of targets, for any that are remote, upload if needed """
+
+    for target in targets:
+        try:
+            target.upload()
+        except AttributeError as err:
+            next
 
 class AWSHugeTrackedFile(HugeTrackedFile):
     """Track a file in the AWS S3 bucket """
@@ -433,6 +441,9 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         if not os.path.isdir(directory):
             os.makedirs(directory)
         self.resource.Bucket(self.aws_bucket).download_file(self.aws_key,self.local)
+
+    def upload(self):
+        self.resource.Bucket(self.aws_bucket).upload_file(self.local,self.aws_key)
 
 class Container(object):
     """Track a collection of small strings. This is useful for rerunning
