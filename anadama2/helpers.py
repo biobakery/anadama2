@@ -100,24 +100,32 @@ def format_command(command, **kwargs):
     ``[threads]`` be formatted to ``1`` in the shell command.
     :type s: str
     """
-       
+
+    def try_local(target):
+        try:
+            return target.local_path()
+        except AttributeError:
+            return target       
+
     # start with the longest keys for replacement first
     keys=sorted(kwargs.keys(), key=len)
         
     # store the original command, incase needed for error message
     original_command = command
         
-    # replace instances of "[key]" with value
+    # replace instances of "[key]" with value (local path if available)
     # for values that are lists, replace "[key[0]]" with value
     for key in keys:
         replacement=kwargs[key]
         if isinstance(replacement, list) or isinstance(replacement, tuple):
+            replacement=map(try_local,replacement)
             for i, item in enumerate(replacement):
                 command=command.replace("["+str(key)+"["+str(i)+"]]",str(item))
             # for lists/tuples with one item, allow for index to not be included
             if len(replacement) == 1:
                 command=command.replace("["+str(key)+"]",str(replacement[0]))
         else:
+            replacement=try_local(replacement)
             command=command.replace("["+str(key)+"]",str(replacement))
             # also allow for the item to be referenced as the first object
             command=command.replace("["+str(key)+"[0]]",str(replacement))
