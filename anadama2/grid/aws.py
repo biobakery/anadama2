@@ -7,7 +7,6 @@ import itertools
 import time
 import functools
 import shlex
-import tempfile
 
 import six
 
@@ -74,12 +73,11 @@ class AWSQueue(GridQueue):
             region = "us-east-2"
 
         # this is the refresh rate for checking the queue, in seconds
-        self.refresh_rate = 3*60
+        self.refresh_rate = 2*60
 
         self.partition = partition
 
         self.client = boto3.client("batch",region)
-        self.job_ids = []
        
         self.job_code_completed="SUCCEEDED"
         self.job_code_failed="FAILED"
@@ -108,16 +106,8 @@ class AWSQueue(GridQueue):
     def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir):
         """ Create a grid script from the template also creating job definition """
 
-        # create temp files for stdout, stderr, and return code    
-        job_name = "task_{}".format(taskid)
-        handle_out, out_file=tempfile.mkstemp(suffix=".out",prefix=job_name+"_",dir=dir)
-        os.close(handle_out)
-        handle_err, error_file=tempfile.mkstemp(suffix=".err",prefix=job_name+"_",dir=dir)
-        os.close(handle_err)
-        handle_rc, rc_file=tempfile.mkstemp(suffix=".rc",prefix=job_name+"_",dir=dir)
-        os.close(handle_rc)
-
         # create job definition
+        job_name = "task_{}".format(taskid)
         response = self.client.register_job_definition(
             containerProperties={
                 'image': 'amazonlinux',
@@ -134,7 +124,7 @@ class AWSQueue(GridQueue):
             jobName=job_name,
             jobQueue=self.partition)
 
-        return submit_script, out_file, error_file, rc_file
+        return submit_script, None, None, None
     
     def job_failed(self,status):
         # check if the job has a status that it failed
