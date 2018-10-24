@@ -574,7 +574,7 @@ class GridWorker(threading.Thread):
     
         try:
             line=open(file).readline().rstrip()
-        except EnvironmentError:
+        except (EnvironmentError, TypeError):
             line=""
     
         return line
@@ -632,7 +632,7 @@ class GridWorker(threading.Thread):
                 break
             
             # check if the return code file is written
-            if os.path.getsize(rc_file) > 0:
+            if rc_file and os.path.getsize(rc_file) > 0:
                 logging.info("Return code file for job id %s shows it has stopped",task.task_no)
                 break
             
@@ -640,9 +640,12 @@ class GridWorker(threading.Thread):
         grid_job_status = grid_queue.get_job_status_from_stderr(error_file, grid_job_status, grid_jobid)
         
         # write the stdout and stderr to the log
-        cls.log_grid_output(task.task_no, out_file, "standard output")
-        cls.log_grid_output(task.task_no, error_file, "standard error")
-        cls.log_grid_output(task.task_no, rc_file, "return code")
+        if out_file:
+            cls.log_grid_output(task.task_no, out_file, "standard output")
+        if error_file:
+            cls.log_grid_output(task.task_no, error_file, "standard error")
+        if rc_file:
+            cls.log_grid_output(task.task_no, rc_file, "return code")
         
         # check the return code
         extra_error=""
