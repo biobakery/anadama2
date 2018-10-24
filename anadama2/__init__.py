@@ -22,7 +22,7 @@ class Task(object):
     :type task_no: int
 
     :param visible: Whether the task should appear in the console or
-      not.
+      not. These tasks do not generate targets (only track).
     :type visible: bool
 
     """
