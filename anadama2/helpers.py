@@ -86,7 +86,7 @@ def sh(s, log_command=True, **kwargs):
                     ret[1] or '')
     return actually_sh
 
-def format_command(command, **kwargs):
+def format_command(command, tmpdir, **kwargs):
     """Format the shell command to allow for special variables 
     Here's a synopsis of
     common use cases:
@@ -103,7 +103,7 @@ def format_command(command, **kwargs):
 
     def try_local(target):
         try:
-            return target.local_path()
+            return target.local_path(tmpdir)
         except AttributeError:
             return target       
 

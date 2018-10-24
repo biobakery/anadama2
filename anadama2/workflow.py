@@ -120,6 +120,12 @@ class Workflow(object):
         if storage_backend:
             self._backend = storage_backend
 
+        # get the temp directory location
+        self.tmpdir=self.vars.get("output")
+        if self.tmpdir is None:
+            # if no output folder is provided, then write to the current working directory
+            self.tmpdir = os.getcwd()
+
         logger.debug("Instantiated run context")
         
     def _get_grid(self):
@@ -140,29 +146,23 @@ class Workflow(object):
         grid_environment = self.vars.get("grid_environment")
         grid_benchmark_setting = True if self.vars.get("grid_benchmark") == "on" else False
         
-        # get the temp directory location
-        tmpdir=self.vars.get("output")
-        if tmpdir is None:
-            # if no output folder is provided, then write to the current working directory
-            tmpdir = os.getcwd()
-        
         # set the grid instance based on the user option
         # if no grid jobs are selected, then no grid will be used
         if grid_jobs == 0:
             grid = _grid.Dummy()
         elif grid_selection == "slurm":
             # get the temp output folder for the slurm scripts and stdout/stderr files
-            tmpdir = os.path.join(tmpdir, "slurm_files")
+            tmpdir = os.path.join(self.tmpdir, "slurm_files")
             grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
                 options=grid_options, environment=grid_environment)
         elif grid_selection == "sge":
             # get the temp output folder for the sge scripts and stdout/stderr files
-            tmpdir = os.path.join(tmpdir, "sge_files")
+            tmpdir = os.path.join(self.tmpdir, "sge_files")
             grid = SGE(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
                 options=grid_options, environment=grid_environment)
         elif grid_selection == "aws":
             # get the temp output folder for the aws scripts and stdout/stderr files
-            tmpdir = os.path.join(tmpdir, "aws_files")
+            tmpdir = os.path.join(self.tmpdir, "aws_files")
             grid = AWS(partition=grid_partition, tmpdir=tmpdir)
         else:
             print("Grid selected ( "+grid_selection+" ) can not be found. Tasks will run locally.")
@@ -572,7 +572,7 @@ class Workflow(object):
                 self._add_task(the_task)
             return finish_add_task
         else:
-            acts = _build_actions(actions, deps, targs, kwargs,
+            acts = _build_actions(actions, deps, targs, self.tmpdir, kwargs, 
                                   use_parse_sh=interpret_deps_and_targs)
             the_task = Task(name, acts, deps, targs, task_no, bool(visible))
             self._add_task(the_task)
@@ -930,10 +930,10 @@ class Workflow(object):
                 
         return taskset
 
-def _build_actions(actions, deps, targs, kwds, use_parse_sh=True):
+def _build_actions(actions, deps, targs, tmpdir, kwds, use_parse_sh=True):
     actions = filter(None, sugar_list(actions))
     if use_parse_sh:
-        return [ a if six.callable(a) else format_command(a, depends=deps, targets=targs, **kwds)
+        return [ a if six.callable(a) else format_command(a, tmpdir, depends=deps, targets=targs, **kwds)
                  for a in actions ]
     else:
         return [a for a in actions]

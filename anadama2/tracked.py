@@ -357,7 +357,7 @@ class TrackedFile(Base):
     def key(name):
         return os.path.abspath(name)
 
-    def local_path(self):
+    def local_path(self, tmpdir):
         return self.name
 
     def __str__(self):
@@ -388,10 +388,11 @@ class AWSHugeTrackedFile(HugeTrackedFile):
     def __init__(self,name):
         import boto3
         self.name = self.__class__.key(name)
-        self.local = name.replace("s3://","/tmp/s3/")
         self.resource = boto3.resource("s3")
         self.aws_bucket = name.replace("s3://","").split("/")[0] 
         self.aws_key = "/".join(name.replace("s3://","").split("/")[1:])
+        self.local_base = None
+        self.local = None
 
     def exists(self):
         import botocore
@@ -411,7 +412,10 @@ class AWSHugeTrackedFile(HugeTrackedFile):
     def key(name):
         return name
 
-    def local_path(self):
+    def local_path(self, tmpdir):
+        if not self.local:
+            self.local_base = os.path.join(os.path.abspath(tmpdir),"s3")
+            self.local = os.path.join(self.local_base,self.name.replace("s3://",""))
         return self.local
 
 
