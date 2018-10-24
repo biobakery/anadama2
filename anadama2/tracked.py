@@ -357,6 +357,8 @@ class TrackedFile(Base):
     def key(name):
         return os.path.abspath(name)
 
+    def local_path(self):
+        return self.name
 
     def __str__(self):
         return self.name
@@ -386,11 +388,13 @@ class AWSHugeTrackedFile(HugeTrackedFile):
     def __init__(self,name):
         import boto3
         self.name = self.__class__.key(name)
+        self.local = name.replace("s3://","/tmp/s3/")
         self.resource = boto3.resource("s3")
         self.aws_bucket = name.replace("s3://","").split("/")[0] 
         self.aws_key = "/".join(name.replace("s3://","").split("/")[1:])
 
     def exists(self):
+        import botocore
         found = True
         try:
             last_modified = self.resource.ObjectSummary(self.aws_bucket,self.aws_key).last_modified
@@ -406,6 +410,10 @@ class AWSHugeTrackedFile(HugeTrackedFile):
     @staticmethod
     def key(name):
         return name
+
+    def local_path(self):
+        return self.local
+
 
 class Container(object):
     """Track a collection of small strings. This is useful for rerunning
