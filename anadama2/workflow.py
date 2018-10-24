@@ -30,6 +30,7 @@ from .util import keepkeys
 from .util import fname
 from .grid.slurm import Slurm
 from .grid.sge import SGE
+from .grid.aws import AWS
 from .document import PweaveDocument
 
 second = itemgetter(1)
@@ -159,6 +160,10 @@ class Workflow(object):
             tmpdir = os.path.join(tmpdir, "sge_files")
             grid = SGE(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
                 options=grid_options, environment=grid_environment)
+        elif grid_selection == "aws":
+            # get the temp output folder for the aws scripts and stdout/stderr files
+            tmpdir = os.path.join(tmpdir, "aws_files")
+            grid = AWS(partition=grid_partition, tmpdir=tmpdir)
         else:
             print("Grid selected ( "+grid_selection+" ) can not be found. Tasks will run locally.")
             grid = _grid.Dummy()

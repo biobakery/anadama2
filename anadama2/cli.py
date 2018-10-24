@@ -146,7 +146,7 @@ class Configuration(object):
         
         found_grid="None"
         # check for the grid job submission command for slurm and sge
-        for command, grid in [["sbatch","slurm"],["qsub","sge"]]:
+        for command, grid in [["sbatch","slurm"],["qsub","sge"],["aws","aws"]]:
             try:
                 output=subprocess.check_output(["which",command],stderr=subprocess.STDOUT)
                 found_grid=grid
@@ -164,6 +164,8 @@ class Configuration(object):
             partitions = ["serial_requeue","general",4*60]
         elif grid == "sge":
             partitions = "broad"
+        elif grid == "aws":
+            partitions = ["general"]
         else:
             partitions = []
             

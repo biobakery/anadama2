@@ -327,14 +327,22 @@ class GridQueue(object):
     
     def run_grid_command(self,command):
         """ Run the grid command and check for errors """
-        
+       
         error=None
-        try:
-            logging.debug("Running grid command: %s"," ".join(command))
-            stdout=subprocess.check_output(command, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as err:
-            error=err.output
-            stdout=error or "error"
+        if six.callable(command):
+            try:
+                logging.debug("Running grid submit command")
+                stdout=command()
+            except StandardError as err:
+                error=err.output
+                stdout=error or "error"
+        else: 
+            try:
+                logging.debug("Running grid command: %s"," ".join(command))
+                stdout=subprocess.check_output(command, stderr=subprocess.STDOUT)
+            except subprocess.CalledProcessError as err:
+                error=err.output
+                stdout=error or "error"
             
         timeout_error=False
         if error and "error" in error and "Socket timed out on send/recv operation" in error:
@@ -365,6 +373,16 @@ class GridQueue(object):
         """ Check if the job failed in submission and did not get an id """
         return True if not jobid.isdigit() else False
 
+    @staticmethod
+    def get_job_id_from_submit_output(stdout):
+        try:
+            # search for the decimal job id at any location in stdout
+            jobid=re.findall(r'\d+',stdout)[0]
+        except IndexError:
+            jobid="error"
+
+        return jobib
+
     def submit_job(self,grid_script):
         """ Submit the grid jobs and return the grid job id """
         
@@ -374,12 +392,9 @@ class GridQueue(object):
         # submit the job and get the grid id
         logging.debug("Submitting job to grid")
         stdout=self.run_grid_command_resubmit(self.submit_command(grid_script))
-        
-        try:
-            # search for the decimal job id at any location in stdout
-            jobid=re.findall(r'\d+',stdout)[0]
-        except IndexError:
-            jobid="error"
+
+        # get the job id from the stdout
+        jobid=self.get_job_id_from_submit_output(stdout)        
         
         # check the jobid for a submission failed
         if self.job_submission_failed(jobid):
