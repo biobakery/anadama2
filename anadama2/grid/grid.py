@@ -43,7 +43,7 @@ class GridJobRequires(object):
     :type partition: string
     """
     
-    def __init__(self, time, mem, cores, partition, depends=None):
+    def __init__(self, time, mem, cores, partition, docker_image, depends=None):
         # if time is not an int, try to format the equation
         if not str(time).isdigit():
             self.time = format_command(time, depends=depends, cores=cores)
@@ -59,6 +59,7 @@ class GridJobRequires(object):
         self.cores = int(cores) 
         
         self.partition = partition
+        self.docker_image = docker_image
     
 class Grid(object):
     """ Base Grid Workflow manager class """
@@ -88,6 +89,11 @@ class Grid(object):
         # check for optional keyword
         try:
             requires.append(kwargs["partition"])
+        except KeyError:
+            requires.append(None)    
+        
+        try:
+            requires.append(kwargs["docker_image"])
         except KeyError:
             requires.append(None)    
         
@@ -407,7 +413,7 @@ class GridQueue(object):
     
         return jobid
     
-    def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir):
+    def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir,docker_image):
         """ Create a grid script from the template also creating temp stdout and stderr files """
     
         # create temp files for stdout, stderr, and return code    
@@ -493,10 +499,10 @@ class GridWorker(threading.Thread):
         logging.info("Running commands for task id %s:\n%s", task.task_no, commands)
     
         resubmission = 0    
-        cores, time, memory, partition = perf.cores, perf.time, perf.mem, perf.partition
+        cores, time, memory, partition, docker_image = perf.cores, perf.time, perf.mem, perf.partition, perf.docker_image
     
         jobid, out_file, error_file, rc_file = cls.submit_grid_job(cores, time, memory, 
-            partition, tmpdir, commands, task, grid_queue, reporter)
+            partition, tmpdir, commands, task, grid_queue, reporter, docker_image)
     
         # monitor job if submission was successful
         result, job_final_status = cls.check_submission_then_monitor_grid_job(grid_queue, 
@@ -518,7 +524,7 @@ class GridWorker(threading.Thread):
                 reporter.task_grid_status(task.task_no,jobid,"Resubmitting due to max memory")
             
             jobid, out_file, error_file, rc_file = cls.submit_grid_job(cores, time, memory,
-                partition, tmpdir, commands, task, grid_queue, reporter)
+                partition, tmpdir, commands, task, grid_queue, reporter, docker_image)
     
             # monitor job if submission was successful
             result, job_final_status = cls.check_submission_then_monitor_grid_job(grid_queue, 
@@ -531,7 +537,7 @@ class GridWorker(threading.Thread):
         return result
     
     @classmethod
-    def submit_grid_job(cls, cores, time, memory, partition, tmpdir, commands, task, grid_queue, reporter):
+    def submit_grid_job(cls, cores, time, memory, partition, tmpdir, commands, task, grid_queue, reporter, docker_image):
         
         # evaluate the time/memory requests for the job
         time, memory = cls.evaluate_resource_requests(time, memory)
@@ -541,7 +547,7 @@ class GridWorker(threading.Thread):
         
         # create the grid bash script
         grid_script, out_file, error_file, rc_file = grid_queue.create_grid_script(current_partition,
-            cores, time, memory, commands, task.task_no, tmpdir)
+            cores, time, memory, commands, task.task_no, tmpdir, docker_image)
     
         logging.info("Created grid files for task id %s: %s, %s, %s, %s",
             task.task_no, grid_script, out_file, error_file, rc_file)
