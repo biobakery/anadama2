@@ -937,6 +937,8 @@ def _build_actions(actions, deps, targs, tmpdir, visible, kwds, use_parse_sh=Tru
     # if any targets or depends generate temp files, create temp folder for task
     tracked_with_temp = list(filter(lambda x: x.temp_files(), deps+targs))
     if visible and tracked_with_temp:
+        if not os.path.isdir(tmpdir):
+            os.makedirs(tmpdir)
         tmpdir = tempfile.mkdtemp(dir=tmpdir)
 
     if use_parse_sh:
