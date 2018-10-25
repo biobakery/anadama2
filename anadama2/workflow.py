@@ -9,6 +9,7 @@ from operator import attrgetter, itemgetter
 from collections import deque, defaultdict
 import copy
 import subprocess
+import tempfile
 
 import six
 from six.moves import filter, map
@@ -572,7 +573,7 @@ class Workflow(object):
                 self._add_task(the_task)
             return finish_add_task
         else:
-            acts = _build_actions(actions, deps, targs, self.tmpdir, kwargs, 
+            acts = _build_actions(actions, deps, targs, self.tmpdir, visible, kwargs, 
                                   use_parse_sh=interpret_deps_and_targs)
             the_task = Task(name, acts, deps, targs, task_no, bool(visible))
             self._add_task(the_task)
@@ -930,8 +931,14 @@ class Workflow(object):
                 
         return taskset
 
-def _build_actions(actions, deps, targs, tmpdir, kwds, use_parse_sh=True):
+def _build_actions(actions, deps, targs, tmpdir, visible, kwds, use_parse_sh=True):
     actions = filter(None, sugar_list(actions))
+
+    # if any targets or depends generate temp files, create temp folder for task
+    tracked_with_temp = list(filter(lambda x: x.temp_files(), deps+targs))
+    if visible and tracked_with_temp:
+        tmpdir = tempfile.mkdtemp(dir=tmpdir)
+
     if use_parse_sh:
         return [ a if six.callable(a) else format_command(a, tmpdir, depends=deps, targets=targs, **kwds)
                  for a in actions ]

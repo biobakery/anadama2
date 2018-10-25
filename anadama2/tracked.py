@@ -209,7 +209,10 @@ class Base(object):
 
     def __getnewargs__(self):
         return (self.name,)
-            
+           
+    def temp_files(self):
+        """ True if tracked generates temp files """
+        return False 
 
     def init(self, key):
         """Initialize the dependency. Only run once for each new dependency
@@ -411,6 +414,9 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         self.local_base = None
         self.local = None
 
+    def temp_files(self):
+        return True
+
     def exists(self):
         import botocore
         found = True
@@ -490,6 +496,8 @@ class Container(object):
         for k, v in kwds.items():
             self._d[k] = TrackedVariable(self._ns, k, v)
 
+    def temp_files(self):
+        return False
 
     @staticmethod
     def key(namespace=None):
