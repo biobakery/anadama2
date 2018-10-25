@@ -103,14 +103,17 @@ class AWSQueue(GridQueue):
 
         return functools.partial(submit_aws_batch, grid_script)
 
-    def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir):
+    def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir,docker_image):
         """ Create a grid script from the template also creating job definition """
+
+        if not docker_image:
+            docker_image='amazonlinux'
 
         # create job definition
         job_name = "task_{}".format(taskid)
         response = self.client.register_job_definition(
             containerProperties={
-                'image': 'amazonlinux',
+                'image': docker_image,
                 'memory': memory,
                 'vcpus': cpus,
                 'volumes': [
