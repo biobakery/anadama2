@@ -418,6 +418,7 @@ class AWSHugeTrackedFile(HugeTrackedFile):
 
     def exists(self):
         import botocore
+        import boto3
         resource = boto3.resource("s3")
         found = True
         try:
@@ -427,6 +428,7 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         return found
 
     def compare(self):
+        import boto3
         resource = boto3.resource("s3")
         aws_object = resource.ObjectSummary(self.aws_bucket,self.aws_key)
         yield aws_object.size
@@ -448,6 +450,7 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         return self.local
 
     def download(self):
+        import boto3
         # create download folder if needed
         directory = os.path.dirname(self.local)
         if not os.path.isdir(directory):
@@ -456,6 +459,7 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         resource.Bucket(self.aws_bucket).download_file(self.aws_key,self.local)
 
     def upload(self):
+        import boto3
         resource = boto3.resource("s3")
         resource.Bucket(self.aws_bucket).upload_file(self.local,self.aws_key)
 
