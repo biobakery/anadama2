@@ -441,6 +441,11 @@ class AWSHugeTrackedFile(HugeTrackedFile):
             self.local = os.path.join(self.local_base,self.name.replace("s3://",""))
         return self.local
 
+    def prepend_local_path(self, tmpdir):
+        self.local_base = os.path.join(tmpdir, self.local_base)
+        self.local = os.path.join(tmpdir, self.local)
+        return self.local
+
     def download(self):
         # create download folder if needed
         directory = os.path.dirname(self.local)
