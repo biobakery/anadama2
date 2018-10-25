@@ -112,8 +112,28 @@ class AWSQueue(GridQueue):
             containerProperties={
                 'image': 'amazonlinux',
                 'memory': memory,
-                'vcpus': cpus
-                },
+                'vcpus': cpus,
+                'volumes': [
+                    { 'host': { 'sourcePath': '/opt' },
+                      'name': 'opt'
+                    },
+                    { 'host': { 'sourcePath': '/tmp' },
+                      'name': 'tmp'
+                    },
+                ],
+                'mountPoints': [
+                    {
+                        'containerPath': '/opt',
+                        'readOnly': True,
+                        'sourceVolume': 'opt'
+                    },
+                    {
+                        'containerPath': '/tmp',
+                        'readOnly': False,
+                        'sourceVolume': 'tmp'
+                    }
+                ]
+            },
             jobDefinitionName=job_name,
             type='container'
             )
