@@ -408,7 +408,6 @@ class AWSHugeTrackedFile(HugeTrackedFile):
     def __init__(self,name):
         import boto3
         self.name = self.__class__.key(name)
-        self.resource = boto3.resource("s3")
         self.aws_bucket = name.replace("s3://","").split("/")[0] 
         self.aws_key = "/".join(name.replace("s3://","").split("/")[1:])
         self.local_base = None
@@ -419,15 +418,17 @@ class AWSHugeTrackedFile(HugeTrackedFile):
 
     def exists(self):
         import botocore
+        resource = boto3.resource("s3")
         found = True
         try:
-            last_modified = self.resource.ObjectSummary(self.aws_bucket,self.aws_key).last_modified
+            last_modified = resource.ObjectSummary(self.aws_bucket,self.aws_key).last_modified
         except botocore.exceptions.ClientError:
             found = False
         return found
 
     def compare(self):
-        aws_object = self.resource.ObjectSummary(self.aws_bucket,self.aws_key)
+        resource = boto3.resource("s3")
+        aws_object = resource.ObjectSummary(self.aws_bucket,self.aws_key)
         yield aws_object.size
         yield str(aws_object.last_modified)
 
@@ -451,10 +452,12 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         directory = os.path.dirname(self.local)
         if not os.path.isdir(directory):
             os.makedirs(directory)
-        self.resource.Bucket(self.aws_bucket).download_file(self.aws_key,self.local)
+        resource = boto3.resource("s3")
+        resource.Bucket(self.aws_bucket).download_file(self.aws_key,self.local)
 
     def upload(self):
-        self.resource.Bucket(self.aws_bucket).upload_file(self.local,self.aws_key)
+        resource = boto3.resource("s3")
+        resource.Bucket(self.aws_bucket).upload_file(self.local,self.aws_key)
 
 class Container(object):
     """Track a collection of small strings. This is useful for rerunning
