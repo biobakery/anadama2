@@ -114,6 +114,11 @@ setup(
         ],
     packages=find_packages(exclude=['ez_setup', 'tests', 'tests.*']),
     zip_safe=False,
+    entry_points={
+        'console_scripts': [
+            'anadama2_aws_batch_task = anadama2.grid.aws_batch_task:main',
+        ]
+    },
     install_requires=requires,
     test_suite="tests.test_suite",
     cmdclass={ 'sphinx_build' : SphinxBuild }
