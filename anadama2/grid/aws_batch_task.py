@@ -7,7 +7,6 @@ import sys
 import argparse
 
 import six
-import cloudpickle
 
 from anadama2.runners import _run_task_locally
 
@@ -36,21 +35,25 @@ def parse_arguments(args):
 def parse_s3(name):
     """ Parse the file into bucket, key, and filename """
 
-    bucket = name.replace("s3://","").split("/")[0]
-    key = "/".join(name.replace("s3://","").split("/")[1:])
+    bucket = str(name).replace("s3://","").split("/")[0]
+    key = "/".join(str(name).replace("s3://","").split("/")[1:])
     filename = key.split("/")[-1]
 
     return bucket, key, filename
 
 def download_file(resource,bucket,key,filename):
     """ Download a file from s3 """
+    import botocore
 
     # create download folder if needed
     directory = os.path.dirname(filename)
     if directory and not os.path.isdir(directory):
         os.makedirs(directory)
 
-    resource.Bucket(bucket).download_file(key,filename)
+    try:
+        resource.Bucket(bucket).download_file(key,filename)
+    except botocore.exceptions.ClientError:
+        print("Unable to download file: s://"+bucket+"/"+key)
 
 def upload_file(resource,bucket,key,filename):
     """ Upload a file to s3 """
@@ -61,7 +64,7 @@ def local_path(filename,working_directory):
     return filename.replace("s3://",working_directory)
 
 def main():
-
+    import cloudpickle
     import boto3
     resource = boto3.resource("s3")
 
@@ -78,16 +81,6 @@ def main():
     
     # read in the task information
     task = cloudpickle.load(open(local_in_file,"rb"))
-
-    # move all temp targets/depends to local working directory
-    tracked_with_temp = list(filter(lambda x: x.temp_files(), task.depends+task.targets))
-    current_local_paths = [x.local_path() for x in tracked_with_temp]
-    new_local_paths = [x.prepend_local_path(args.working_directory) for x in tracked_with_temp] 
-    paths = dict( (old, new) for old, new in zip(current_local_paths, new_local_paths)) 
-    for i, action in enumerate(task.actions):
-        if not six.callable(action):
-            for old_path in sorted(paths, key=len, reverse=True):
-                task.actions[i]=action.replace(old_path, paths[old_path])
 
     # run the task
     result = _run_task_locally(task)

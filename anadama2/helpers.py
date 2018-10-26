@@ -42,6 +42,7 @@ import six
 from .util import sh as _sh
 from .util import sugar_list
 
+from .tracked import try_get_local_path
 from .reporters import SHELL_COMMAND
 
 def file_size(depends):
@@ -86,7 +87,16 @@ def sh(s, log_command=True, **kwargs):
                     ret[1] or '')
     return actually_sh
 
-def format_command(command, tmpdir, **kwargs):
+def build_actions(actions, deps, targs, visible, kwds, use_parse_sh=True):
+    actions = filter(None, sugar_list(actions))
+    if use_parse_sh:
+        return [ a if six.callable(a) else format_command(a, depends=deps, targets=targs, **kwds)
+                 for a in actions ]
+    else:
+        return [a for a in actions]
+
+
+def format_command(command, **kwargs):
     """Format the shell command to allow for special variables 
     Here's a synopsis of
     common use cases:
@@ -101,12 +111,6 @@ def format_command(command, tmpdir, **kwargs):
     :type s: str
     """
 
-    def try_local(target):
-        try:
-            return target.local_path(tmpdir)
-        except AttributeError:
-            return target       
-
     # start with the longest keys for replacement first
     keys=sorted(kwargs.keys(), key=len)
         
@@ -118,14 +122,14 @@ def format_command(command, tmpdir, **kwargs):
     for key in keys:
         replacement=kwargs[key]
         if isinstance(replacement, list) or isinstance(replacement, tuple):
-            replacement=map(try_local,replacement)
+            replacement=map(try_get_local_path,replacement)
             for i, item in enumerate(replacement):
                 command=command.replace("["+str(key)+"["+str(i)+"]]",str(item))
             # for lists/tuples with one item, allow for index to not be included
             if len(replacement) == 1:
                 command=command.replace("["+str(key)+"]",str(replacement[0]))
         else:
-            replacement=try_local(replacement)
+            replacement=try_get_local_path(replacement) 
             command=command.replace("["+str(key)+"]",str(replacement))
             # also allow for the item to be referenced as the first object
             command=command.replace("["+str(key)+"[0]]",str(replacement))

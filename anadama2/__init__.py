@@ -25,9 +25,18 @@ class Task(object):
       not. These tasks do not generate targets (only track).
     :type visible: bool
 
+    :param actions_raw: The raw actions from the user, unbuilt.
+    :type actions: list of callable
+
+    :param kwargs: Optional arguments used to build the actions.
+    :type kwargs: dictionary
+
+    :param use_parse_sh: Should parse actions resolving targets/dependencies.
+    :type use_parse_sh: bool
+
     """
     
-    def __init__(self, name, actions, depends, targets, task_no, visible):
+    def __init__(self, name, actions, depends, targets, task_no, visible, actions_raw, kwargs, use_parse_sh):
         # Set a default task number
         if task_no is None:
             self.task_no="NA"
@@ -44,6 +53,10 @@ class Task(object):
         self.depends=depends
         self.targets=targets
         self.visible=visible
+
+        self.actions_raw=actions_raw
+        self.kwargs=kwargs
+        self.use_parse_sh=use_parse_sh
         
         # get a task description based on the actions or name
         if six.callable(actions[0]):
