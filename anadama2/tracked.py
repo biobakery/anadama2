@@ -445,8 +445,8 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         return self.local
 
     def prepend_local_path(self, tmpdir):
-        self.local_base = os.path.join(tmpdir, self.local_base)
-        self.local = os.path.join(tmpdir, self.local)
+        self.local_base = os.path.join(tmpdir, self.local_base[1:] if self.local_base.startswith("/") else self.local_base)
+        self.local = os.path.join(tmpdir, self.local[1:] if self.local.startswith("/") else self.local)
         return self.local
 
     def download(self):
