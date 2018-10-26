@@ -327,7 +327,6 @@ class TrackedVariable(Base):
         return str(self.val)
 
 
-
 class TrackedFile(Base):
     """Track a small file. Small being small enough that you don't mind
     that the entire file is read to create a checksum of its contents.
@@ -360,9 +359,6 @@ class TrackedFile(Base):
     def key(name):
         return os.path.abspath(name)
 
-    def local_path(self, tmpdir=None):
-        return self.name
-
     def __str__(self):
         return self.name
 
@@ -383,6 +379,20 @@ class HugeTrackedFile(TrackedFile):
         stat = os.stat(self.name)
         yield stat.st_size
         yield stat.st_mtime
+
+def try_set_local_path(target, tmpdir):
+    """ Try to set the local path for a tracked object """
+    try:
+        return target.set_local_path(tmpdir)
+    except AttributeError:
+        return target
+
+def try_get_local_path(target):
+    """ Try to get the local path for a tracked object """
+    try:
+        return target.local
+    except AttributeError:
+        return target
 
 def download_files_if_needed(depends):
     """ From the list of dependencies, for any that are remote, download if needed """
@@ -438,11 +448,10 @@ class AWSHugeTrackedFile(HugeTrackedFile):
     def key(name):
         return name
 
-    def local_path(self, tmpdir=None):
-        if not self.local and tmpdir:
-            self.local_base = os.path.join(os.path.abspath(tmpdir),"s3")
-            self.local = os.path.join(self.local_base,self.name.replace("s3://",""))
-        return self.local
+    def set_local_path(self, tmpdir):
+        self.local_base = os.path.join(os.path.abspath(tmpdir),"s3")
+        self.local = os.path.join(self.local_base,self.name.replace("s3://",""))
+        return self
 
     def prepend_local_path(self, tmpdir):
         self.local_base = os.path.join(tmpdir, self.local_base[1:] if self.local_base.startswith("/") else self.local_base)

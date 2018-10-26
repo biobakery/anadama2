@@ -193,7 +193,8 @@ def _run_task_locally(task, extra=None):
     # convert any command strings to sh actions before running
     for i, action_func in enumerate(apply_sh(task.actions)):
         # check if any files need to be copied to local paths
-        tracked.download_files_if_needed(task.depends)
+        if task.visible:
+            tracked.download_files_if_needed(task.depends)
         logger.debug("Executing task %i action %i", task.task_no, i)
         try:
             action_func(task)

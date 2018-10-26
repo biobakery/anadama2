@@ -7,12 +7,17 @@ import itertools
 import time
 import functools
 import shlex
+import copy
 
 import six
+
+from ..helpers import build_actions
 
 from .grid import Grid
 from .grid import GridWorker
 from .grid import GridQueue
+
+from .aws_batch_task import parse_s3, upload_file, download_file
 
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
@@ -57,8 +62,70 @@ class AWS(Grid):
     """
 
     def __init__(self, partition, tmpdir):
-        super(AWS, self).__init__("aws", GridWorker, AWSQueue(partition), tmpdir)
+        super(AWS, self).__init__("aws", AWSGridWorker, AWSQueue(partition), tmpdir)
 
+class AWSGridWorker(GridWorker):
+    """ Base Grid Worker class """
+
+    def __init__(self, work_q, result_q, lock, reporter):
+        super(AWSGridWorker, self).__init__(work_q, result_q, lock, reporter)
+
+    @classmethod
+    def run_task_by_type(cls, task, extra):
+        import cloudpickle
+        import boto3
+
+        (perf, tmpdir, grid_queue, reporter) = extra
+
+        # move the temp tracked files to /tmp folder for docker run
+        # update the action to use the new dependency locations        
+        tracked_with_temp = list(filter(lambda x: x.temp_files(), task.depends+task.targets))
+        tmp_paths = [x.prepend_local_path("/tmp") for x in tracked_with_temp]
+
+        # build the actions again with the new targets/depends paths
+        task.actions=build_actions(task.actions_raw, task.depends, task.targets,
+            task.visible, task.kwargs, task.use_parse_sh) 
+
+        task_name="task_"+str(task.task_no)
+        task_pkl_file_basename = task_name+".pkl"
+        task_pkl_file=os.path.join(tmpdir,task_pkl_file_basename)
+        task_result_pkl_file_basename = "result_"+task_name+".pkl"
+        task_result_pkl_file=os.path.join(tmpdir,task_result_pkl_file_basename)
+
+        # write the input pickle file
+        resource = boto3.resource("s3")
+        bucket, key, filename = parse_s3(task.targets[0])      
+        input_s3 = "s3://"+bucket+"/"+task_pkl_file_basename
+        output_s3 = "s3://"+bucket+"/"+task_result_pkl_file_basename
+
+        with open(task_pkl_file,"wb") as file_handle:
+            cloudpickle.dump(task,file_handle)
+        # copy to cloud
+        upload_file(resource,bucket,task_pkl_file_basename,task_pkl_file)
+
+        # update the task to run the pickle script
+        pickle_task = copy.deepcopy(task)
+        pickle_task.actions = ["anadama2_aws_batch_task",
+            "--input", input_s3, "--output", output_s3]
+
+        # run the task as a command
+        result = cls.run_task_command(pickle_task, extra)
+
+        # download the results
+        download_file(resource,bucket,task_result_pkl_file_basename,task_result_pkl_file)
+
+        # decode the result
+        extra_error = None
+        try:
+            with open(task_result_pkl_file,"rb") as file_handle:
+                result = cloudpickle.load(file_handle)
+        except (ValueError, EOFError):
+            extra_error = "Unable to decode pickle task result"
+
+        if extra_error:
+            result = result._replace(error=str(result.error)+extra_error)
+
+        return result
 
 class AWSQueue(GridQueue):
     

@@ -24,7 +24,7 @@ from . import backends
 from . import runners
 from .cli import Configuration
 from .taskcontainer import TaskContainer
-from .helpers import format_command
+from .helpers import format_command, build_actions
 from .util import matcher, noop, find_on_path
 from .util import istask, sugar_list, dichotomize
 from .util import keepkeys
@@ -569,13 +569,25 @@ class Workflow(object):
         task_no = next(self.task_counter)
         if not actions: # must be a decorator
             def finish_add_task(fn):
-                the_task = Task(name, [fn], deps, targs, task_no, bool(visible))
+                the_task = Task(name, [fn], deps, targs, task_no, bool(visible), [fn], kwargs, interpret_deps_and_targs)
                 self._add_task(the_task)
             return finish_add_task
         else:
-            acts = _build_actions(actions, deps, targs, self.tmpdir, visible, kwargs, 
+            # if any targets or depends generate temp files, create temp folder for task
+            tracked_with_temp = list(filter(lambda x: x.temp_files(), deps+targs))
+            tmpdir = os.path.join(self.tmpdir,"anadama2_temp_tracked")
+            if visible and tracked_with_temp:
+                if not os.path.isdir(tmpdir):
+                    os.makedirs(tmpdir)
+                tmpdir = tempfile.mkdtemp(dir=tmpdir)
+
+                # set local temp locations for tracked items
+                tmp = [tracked.try_set_local_path(x, tmpdir) for x in tracked_with_temp]
+
+            acts = build_actions(actions, deps, targs, visible, kwargs, 
                                   use_parse_sh=interpret_deps_and_targs)
-            the_task = Task(name, acts, deps, targs, task_no, bool(visible))
+
+            the_task = Task(name, acts, deps, targs, task_no, bool(visible), actions, kwargs, interpret_deps_and_targs)
             self._add_task(the_task)
             return the_task
 
@@ -930,23 +942,6 @@ class Workflow(object):
                 taskset.append(task)
                 
         return taskset
-
-def _build_actions(actions, deps, targs, tmpdir, visible, kwds, use_parse_sh=True):
-    actions = filter(None, sugar_list(actions))
-
-    # if any targets or depends generate temp files, create temp folder for task
-    tracked_with_temp = list(filter(lambda x: x.temp_files(), deps+targs))
-    if visible and tracked_with_temp:
-        if not os.path.isdir(tmpdir):
-            os.makedirs(tmpdir)
-        tmpdir = tempfile.mkdtemp(dir=tmpdir)
-
-    if use_parse_sh:
-        return [ a if six.callable(a) else format_command(a, tmpdir, depends=deps, targets=targs, **kwds)
-                 for a in actions ]
-    else:
-        return [a for a in actions]
-        
 
 def _build_depends(depends):
     depends = filter(None, sugar_list(depends))
