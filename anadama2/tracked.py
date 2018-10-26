@@ -360,7 +360,7 @@ class TrackedFile(Base):
     def key(name):
         return os.path.abspath(name)
 
-    def local_path(self, tmpdir):
+    def local_path(self, tmpdir=None):
         return self.name
 
     def __str__(self):
@@ -438,8 +438,8 @@ class AWSHugeTrackedFile(HugeTrackedFile):
     def key(name):
         return name
 
-    def local_path(self, tmpdir):
-        if not self.local:
+    def local_path(self, tmpdir=None):
+        if not self.local and tmpdir:
             self.local_base = os.path.join(os.path.abspath(tmpdir),"s3")
             self.local = os.path.join(self.local_base,self.name.replace("s3://",""))
         return self.local
