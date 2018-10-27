@@ -9,6 +9,7 @@ import argparse
 import six
 
 from anadama2.runners import _run_task_locally
+from anadama2.tracked import try_get_local_path
 
 def parse_arguments(args):
     """
@@ -45,10 +46,7 @@ def download_file(resource,bucket,key,filename):
     """ Download a file from s3 """
     import botocore
 
-    # create download folder if needed
-    directory = os.path.dirname(filename)
-    if directory and not os.path.isdir(directory):
-        os.makedirs(directory)
+    create_directories(filename)
 
     try:
         resource.Bucket(bucket).download_file(key,filename)
@@ -62,6 +60,13 @@ def upload_file(resource,bucket,key,filename):
 
 def local_path(filename,working_directory):
     return filename.replace("s3://",working_directory)
+
+def create_directories(filename):
+    """ Create directories if needed """
+
+    directory = os.path.dirname(filename)
+    if directory and not os.path.isdir(directory):
+        os.makedirs(directory)
 
 def main():
     import cloudpickle
@@ -81,6 +86,12 @@ def main():
     
     # read in the task information
     task = cloudpickle.load(open(local_in_file,"rb"))
+
+    # create folders for targets (if needed)
+    for target in task.targets:
+        target_local_path = try_get_local_path(target)
+        if isinstance(target_local_path, basestring):
+            create_directories(target_local_path)
 
     # run the task
     result = _run_task_locally(task)
