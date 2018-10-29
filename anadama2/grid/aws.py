@@ -105,8 +105,8 @@ class AWSGridWorker(GridWorker):
 
         # update the task to run the pickle script
         pickle_task = copy.deepcopy(task)
-        pickle_task.actions = " ".join(["anadama2_aws_batch_task",
-            "--input", input_s3, "--output", output_s3])
+        pickle_task.actions = [" ".join(["anadama2_aws_batch_task",
+            "--input", input_s3, "--output", output_s3])]
 
         # run the task as a command
         result = cls.run_task_command(pickle_task, extra)

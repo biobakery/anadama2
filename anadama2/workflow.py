@@ -123,7 +123,7 @@ class Workflow(object):
 
         # get the temp directory location
         self.tmpdir=self.vars.get("output")
-        if self.tmpdir is None:
+        if self.tmpdir is None or tracked.s3_folder(self.tmpdir):
             # if no output folder is provided, then write to the current working directory
             self.tmpdir = os.getcwd()
 
@@ -209,14 +209,24 @@ class Workflow(object):
         """
         
         # get the contents of the input folder (with the full paths)
-        input = os.path.abspath(self.vars.get("input"))
+        vars_input = self.vars.get("input")
+        if tracked.s3_folder(vars_input):
+            import boto3
+            client = boto3.client("s3")
+            bucket = tracked.s3_bucket(vars_input)
+            contents = [i['Key'] for i in client.list_objects(Bucket=bucket)['Contents']]
+            input_files = [tracked.s3_build_path(bucket,file) for file in filter(lambda file: not file.endswith("/"), contents)]
+        else:
+            input = os.path.abspath(vars_input)
         
-        input_folder_contents = map(lambda file: os.path.join(input, file), os.listdir(input))
-        # filter out contents to only include files
-        input_files = [item for item in input_folder_contents if os.path.isfile(item)]
+            input_folder_contents = map(lambda file: os.path.join(input, file), os.listdir(input))
+            # filter out contents to only include files
+            input_files = [item for item in input_folder_contents if os.path.isfile(item)]
+
         # if extension is set, then filter files
         if extension:
             input_files = list(filter(lambda file: file.endswith(extension), input_files))
+
         # if name is set, then filter files to only those with the exact name
         if name:
             input_files = list(filter(lambda file: os.path.basename(file) == name, input_files))
@@ -245,9 +255,12 @@ class Workflow(object):
         if not isinstance(name, list):
             name=[name]
             convert_to_string=True
-        
-        # get the output folder name
-        output_folder = os.path.abspath(self.vars.get("output"))
+       
+        output_folder = self.vars.get("output") 
+        if not tracked.s3_folder(output_folder):
+            # get the output folder name (full path)
+            output_folder = os.path.abspath(output_folder)
+
         # add the subfolder if provided
         if subfolder:
             output_folder = os.path.join(output_folder, subfolder)
@@ -404,7 +417,7 @@ class Workflow(object):
         targets=[os.path.abspath(target) for target in sugar_list(targets)]
         
         # get the absolute path to the output folder
-        if not self.vars.get("output") is None:
+        if not self.vars.get("output") is None and not tracked.s3_folder(self.vars.get("output")):
             output_folder = os.path.abspath(self.vars.get("output"))
         else:
             output_folder = None
