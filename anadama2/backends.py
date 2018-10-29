@@ -7,6 +7,7 @@ import six
 import leveldb
 
 from .util import mkdirp
+from .tracked import s3_folder
 
 ENV_VAR = "ANADAMA_BACKEND_DIR"
 LOCAL_DB_FOLDER = ".anadama"
@@ -15,6 +16,8 @@ _default_backend = None
 
 def default(output_dir=None):
     global _default_backend
+    if s3_folder(output_dir):
+        output_dir=os.getcwd()
     if output_dir is not None:
         return LevelDBBackend(
             _try_dir(os.path.abspath(os.path.join(output_dir, LOCAL_DB_FOLDER, "db")))

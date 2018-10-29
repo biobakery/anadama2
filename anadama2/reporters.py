@@ -9,13 +9,13 @@ import string
 import time
 
 from .util import mkdirp
-from .tracked import TrackedExecutable
+from .tracked import TrackedExecutable, s3_folder
 
 LOG_FILE_NAME = "anadama.log"
 
 def default(output_dir=None, log_level=None):
     log = LOG_FILE_NAME
-    if not output_dir:
+    if not output_dir or s3_folder(output_dir):
         output_dir=os.getcwd()
     log = os.path.abspath(os.path.join(output_dir, log))
     return ReporterGroup([

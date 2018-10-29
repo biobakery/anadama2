@@ -195,6 +195,7 @@ def _run_task_locally(task, extra=None):
         # check if any files need to be copied to local paths
         if task.visible:
             tracked.download_files_if_needed(task.depends)
+            tracked.create_temp_folders_if_needed(task.targets)
         logger.debug("Executing task %i action %i", task.task_no, i)
         try:
             action_func(task)

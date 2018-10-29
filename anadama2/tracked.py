@@ -403,6 +403,15 @@ def download_files_if_needed(depends):
         except AttributeError as err:
             next
 
+def create_temp_folders_if_needed(targets):
+    """ Create temp folders for targets if needed """
+
+    for target in targets:
+        try:
+            target.create_temp_folder()
+        except AttributeError as err:
+            next
+
 def upload_files_if_needed(targets):
     """ From the list of targets, for any that are remote, upload if needed """
 
@@ -411,6 +420,18 @@ def upload_files_if_needed(targets):
             target.upload()
         except AttributeError as err:
             next
+
+def s3_folder(path):
+    """ Check if file/folder is in AWS s3 """
+    return True if path.startswith("s3://") else False
+
+def s3_bucket(path):
+    """ Get the bucket name """
+    return path.replace("s3://","").split("/")[0]
+
+def s3_build_path(bucket,key):
+    """ Build the full path to the file """
+    return "s3://{}/{}".format(bucket,key)
 
 class AWSHugeTrackedFile(HugeTrackedFile):
     """Track a file in the AWS S3 bucket """
@@ -471,6 +492,12 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         import boto3
         resource = boto3.resource("s3")
         resource.Bucket(self.aws_bucket).upload_file(self.local,self.aws_key)
+
+    def create_temp_folder(self):
+        # create all temp folders needed for local path
+        directory = os.path.dirname(self.local)
+        if not os.path.isdir(directory):
+            os.makedirs(directory)
 
 class Container(object):
     """Track a collection of small strings. This is useful for rerunning
