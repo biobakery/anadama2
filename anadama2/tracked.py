@@ -423,7 +423,7 @@ def upload_files_if_needed(targets):
 
 def s3_folder(path):
     """ Check if file/folder is in AWS s3 """
-    return True if path.startswith("s3://") else False
+    return True if path and path.startswith("s3://") else False
 
 def s3_bucket(path):
     """ Get the bucket name """
