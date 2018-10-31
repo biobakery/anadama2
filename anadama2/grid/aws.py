@@ -12,6 +12,8 @@ import copy
 import six
 
 from ..helpers import build_actions
+from ..tracked import AWSHugeTrackedFile
+from ..runners import _get_task_result
 
 from .grid import Grid
 from .grid import GridWorker
@@ -76,6 +78,12 @@ class AWSGridWorker(GridWorker):
         import boto3
 
         (perf, tmpdir, grid_queue, reporter) = extra
+
+        # check that task writes output to S3 bucket
+        if not task.targets or not isinstance(task.targets[0], AWSHugeTrackedFile):
+            result = _get_task_result(task)
+            extra_error = "AWS Batch tasks must write targets to S3 buckets"
+            return result._replace(error=extra_error)
 
         # move the temp tracked files to /tmp folder for docker run
         # update the action to use the new dependency locations        
