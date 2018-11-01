@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.5.1 11-01-2018 ##
+
+* Allow for optional data files in the archiving of a document.
+
 ## v0.5.0 08-21-2018 ##
 
 * Add distance function keyword to show_hclust2 doc method
