@@ -127,8 +127,8 @@ class AWSGridWorker(GridWorker):
         try:
             with open(task_result_pkl_file,"rb") as file_handle:
                 result = cloudpickle.load(file_handle)
-        except (ValueError, EOFError):
-            extra_error = "Unable to decode pickle task result"
+        except (ValueError, EOFError, IOError):
+            extra_error = "Unable to read task result, check the AWS batch logs"
 
         if extra_error:
             result = result._replace(error=str(result.error)+extra_error)
