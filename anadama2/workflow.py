@@ -590,6 +590,8 @@ class Workflow(object):
             tracked_with_temp = list(filter(lambda x: x.temp_files(), deps+targs))
             tmpdir = os.path.join(self.tmpdir,"anadama2_temp_tracked")
             if visible and tracked_with_temp:
+                if not os.path.isdir(tmpdir):
+                    os.makedirs(tmpdir)
                 tmpdir = tempfile.mkdtemp(dir=tmpdir)
 
                 # set local temp locations for tracked items
