@@ -105,7 +105,8 @@ def dict_to_cmd_opts(*args, **kwds):
 
 def mkdirp(path):
     try:
-        return os.makedirs(path)
+        if not path.startswith("s3://"):
+            return os.makedirs(path)
     except OSError as e:
         if e.errno == errno.EEXIST and os.path.isdir(path):
             pass
