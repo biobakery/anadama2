@@ -443,6 +443,7 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         self.aws_key = "/".join(name.replace("s3://","").split("/")[1:])
         self.local_base = None
         self.local = None
+        self.tmpdir = None
 
     def temp_files(self):
         return True
@@ -470,6 +471,7 @@ class AWSHugeTrackedFile(HugeTrackedFile):
         return name
 
     def set_local_path(self, tmpdir):
+        self.tmpdir = os.path.split(tmpdir)[-1]
         self.local_base = os.path.join(os.path.abspath(tmpdir),"s3")
         self.local = os.path.join(self.local_base,self.name.replace("s3://",""))
         return self

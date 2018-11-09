@@ -88,7 +88,8 @@ class AWSGridWorker(GridWorker):
         # move the temp tracked files to /tmp folder for docker run
         # update the action to use the new dependency locations        
         tracked_with_temp = list(filter(lambda x: x.temp_files(), task.depends+task.targets))
-        tmp_paths = [x.prepend_local_path("/tmp") for x in tracked_with_temp]
+        task_working_directory = os.path.join("/tmp",task.targets[0].tmpdir)
+        tmp_paths = [x.prepend_local_path(task_working_directory) for x in tracked_with_temp]
 
         # build the actions again with the new targets/depends paths
         task.actions=build_actions(task.actions_raw, task.depends, task.targets,
@@ -114,7 +115,8 @@ class AWSGridWorker(GridWorker):
         # update the task to run the pickle script
         pickle_task = copy.deepcopy(task)
         pickle_task.actions = [" ".join(["anadama2_aws_batch_task",
-            "--input", input_s3, "--output", output_s3])]
+            "--input", input_s3, "--output", output_s3,
+            "--working-directory", task_working_directory])]
 
         # run the task as a command
         result = cls.run_task_command(pickle_task, extra)

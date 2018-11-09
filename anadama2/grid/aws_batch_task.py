@@ -5,6 +5,7 @@
 import os
 import sys
 import argparse
+import shutil
 
 import six
 
@@ -77,6 +78,7 @@ def main():
     args=parse_arguments(sys.argv)
 
     # move to the working directory
+    os.makedirs(args.working_directory)
     os.chdir(args.working_directory)
 
     # download the input file from S3
@@ -103,6 +105,9 @@ def main():
 
     # upload the results to S3
     upload_file(resource,out_bucket,out_key,local_out_file)
+
+    # remove the working directory
+    shutil.rmtree(args.working_directory)
 
 if __name__ == "__main__":
     main()
