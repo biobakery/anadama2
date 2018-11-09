@@ -211,7 +211,7 @@ def _get_task_result(task):
         targ_keys.append(target.name)
         try:
             targ_compares.append(list(target.compare()))
-        except Exception:
+        except (Exception, EnvironmentError):
             msg = "Failed to produce target `{}'. Original exception: {}"
             return exception_result(
                 TaskFailed(msg.format(target, traceback.format_exc()),
