@@ -1226,7 +1226,7 @@ class PweaveDocument(Document):
 
         pyplot.show()
  
-    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None, apply_transform=False):
+    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None, apply_transform=False, sort_function=None):
         """ Use the vegan package in R plus matplotlib to plot a PCoA. 
         Input data should be organized with samples as columns and features as rows. 
         Data should be scaled to [0-1] if transform is to be applied.
@@ -1254,6 +1254,9 @@ class PweaveDocument(Document):
         
         :keyword apply_transform: Arcsin transform to be applied
         :type apply_transform: bool
+
+        :keyword sort_function: The function to sort the plot data
+        :type sort_function: lambda
         """
         
         import matplotlib.pyplot as pyplot
@@ -1291,8 +1294,11 @@ class PweaveDocument(Document):
                 plots.append(subplot.scatter(x,y,color=next(custom_colors)))
                 
         # order the plots alphabetically or numerically
-        metadata_ordered_keys=self.sorted_data_numerical_or_alphabetical(metadata_plots.keys())
-        
+        if not sort_function:
+            metadata_ordered_keys=self.sorted_data_numerical_or_alphabetical(metadata_plots.keys())
+        else:
+            metadata_ordered_keys=sort_function(metadata_plots.keys())        
+
         for key in metadata_ordered_keys:
             plots.append(subplot.scatter(metadata_plots[key][0], metadata_plots[key][1],
                 color=colors_by_metadata[key]))
