@@ -76,7 +76,7 @@ class PweaveDocument(Document):
         self.vars=vars
         
         # set the max number of x tick labels to be shown on plots
-        self.max_labels = 50
+        self.max_labels = 60
         # set the max labels for legends
         self.max_labels_legend = 30
         
@@ -959,7 +959,7 @@ class PweaveDocument(Document):
         
         # increase the dpi for small text
         dpi=300
-        label_font="12"
+        label_font="8"
         # compute the aspect ratio based on the number of samples and features
         aspect_ratio=len(sample_names)/(len(feature_names)*1.0)
         command=["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,"--title",title,
@@ -971,9 +971,9 @@ class PweaveDocument(Document):
         if metadata_rows:
             command+=["--metadata_rows",",".join(str(i) for i in metadata_rows)]
             if len(metadata_rows) > 10:
-                command+=["--metadata_height","0.35"]
+                command+=["--metadata_height","0.4"]
             elif len(metadata_rows) > 4:
-                command+=["--metadata_height","0.2"]
+                command+=["--metadata_height","0.3"]
             elif len(metadata_rows) > 1:
                 command+=["--metadata_height","0.1"]
             
