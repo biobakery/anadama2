@@ -76,7 +76,7 @@ class PweaveDocument(Document):
         self.vars=vars
         
         # set the max number of x tick labels to be shown on plots
-        self.max_labels = 60
+        self.max_labels = 65
         # set the max labels for legends
         self.max_labels_legend = 30
         
