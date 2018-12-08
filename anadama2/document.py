@@ -1333,6 +1333,7 @@ class PweaveDocument(Document):
         pyplot.show()
         
         return caption
+    
 
     def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species",
                   metadata=None, metadata_type=None, apply_transform=False, sort_function=None):
@@ -1390,8 +1391,8 @@ class PweaveDocument(Document):
             else:
                 # metadata_type = 'continuous'
                 # setup the normalization and the colormap
-                normalize = mcolors.Normalize(vmin=metadata.values().min(), vmax=metadata.values().max())
-                colormap = cm.jet
+                normalize = mcolors.Normalize(vmin=min(metadata.values()), vmax=max(metadata.values()))
+                colormap = pyplot.get_cmap('jet')
 
                 # plot
                 for n in metadata.values():
@@ -1464,5 +1465,3 @@ class PweaveDocument(Document):
 
         return caption
 
-
-    
