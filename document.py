@@ -1334,6 +1334,7 @@ class PweaveDocument(Document):
         
         return caption
 
+
     def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species",
                   metadata=None, metadata_type=None, apply_transform=False, sort_function=None):
         """ Use the vegan package in R plus matplotlib to plot a PCoA.
@@ -1394,8 +1395,8 @@ class PweaveDocument(Document):
                 colormap = pyplot.get_cmap('jet')
 
                 # plot
-                for n in metadata.values():
-                    pyplot.plot(metadata.values()[n], color=colormap(normalize(n)))
+                for md in metadata.values():
+                    pyplot.plot(md, color=colormap(normalize(len(metadata))))
 
                 # setup the colorbar
                 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
@@ -1464,5 +1465,3 @@ class PweaveDocument(Document):
 
         return caption
 
-
-    
