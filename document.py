@@ -1394,9 +1394,11 @@ class PweaveDocument(Document):
                 normalize = mcolors.Normalize(vmin=min(metadata.values()), vmax=max(metadata.values()))
                 colormap = pyplot.get_cmap('jet')
 
+                print(len(metadata.items()))
+                print("-----------------")
                 # plot
-                for md in metadata.values():
-                    pyplot.plot(md, color=colormap(normalize(len(metadata))))
+                for key,value in sorted(metadata.items()):
+                    pyplot.plot(value, color=colormap(normalize(len(metadata.items()))))
 
                 # setup the colorbar
                 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
