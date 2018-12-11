@@ -1384,26 +1384,27 @@ class PweaveDocument(Document):
 
         # create a set of custom colors to prevent overlap
         if metadata:
-            if metadata_type == 'categorical':
-                metadata_categories = list(set(metadata.values()))
-                custom_colors = self._custom_colors(total_colors=len(metadata_categories))
-                colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors))
-            else:
-                # metadata_type = 'continuous'
-                # setup the normalization and the colormap
+            metadata_categories = list(set(metadata.values()))
+            custom_colors = self._custom_colors(total_colors=len(metadata_categories))
+            colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors))
+
+            if metadata_type == 'con':
                 normalize = mcolors.Normalize(vmin=min(metadata.values()), vmax=max(metadata.values()))
                 colormap = pyplot.get_cmap('jet')
 
-                print(len(metadata.items()))
-                print("-----------------")
-                # plot
-                for key,value in sorted(metadata.items()):
-                    pyplot.plot(value, color=colormap(normalize(len(metadata.items()))))
+                custom_colors_cont=[]
+                for value in metadata.values():
+                    custom_colors_cont.append(colormap(normalize(value)))
+
+                colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors_cont))
 
                 # setup the colorbar
                 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
                 scalarmappaple.set_array(metadata.values())
                 pyplot.colorbar(scalarmappaple)
+
+
+
         else:
             custom_colors = self._custom_colors(total_colors=len(pcoa_data))
 
@@ -1447,7 +1448,8 @@ class PweaveDocument(Document):
                            fontsize=7, title="Samples", frameon=False)
 
         if metadata and len(metadata_ordered_keys) <= self.max_labels_legend:
-            subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1, 0.5),
+            if not metadata_type == 'con':
+                subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1, 0.5),
                            fontsize=7, frameon=False)
 
         if apply_transform:
