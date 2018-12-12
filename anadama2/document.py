@@ -1226,10 +1226,10 @@ class PweaveDocument(Document):
 
         pyplot.show()
  
-    
+
 
     def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species",
-                  metadata=None, metadata_type=None, apply_transform=False, sort_function=None):
+                  metadata=None, apply_transform=False, sort_function=None, metadata_type=None):
         """ Use the vegan package in R plus matplotlib to plot a PCoA.
         Input data should be organized with samples as columns and features as rows.
         Data should be scaled to [0-1] if transform is to be applied.
@@ -1294,9 +1294,6 @@ class PweaveDocument(Document):
                 # setup the colorbar
                 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
                 scalarmappaple.set_array(metadata.values())
-                pyplot.colorbar(scalarmappaple)
-
-
 
         else:
             custom_colors = self._custom_colors(total_colors=len(pcoa_data))
@@ -1341,9 +1338,11 @@ class PweaveDocument(Document):
                            fontsize=7, title="Samples", frameon=False)
 
         if metadata and len(metadata_ordered_keys) <= self.max_labels_legend:
-            if not metadata_type == 'con':
+            if metadata_type == 'con':
+                pyplot.colorbar(scalarmappaple, fraction=0.046, pad=0.04)
+            else:
                 subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1, 0.5),
-                           fontsize=7, frameon=False)
+                               fontsize=7, frameon=False)
 
         if apply_transform:
             caption = "\n".join(
