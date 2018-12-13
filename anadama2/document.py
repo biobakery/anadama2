@@ -1298,10 +1298,11 @@ class PweaveDocument(Document):
         else:
             custom_colors = self._custom_colors(total_colors=len(pcoa_data))
 
-        # reduce the size of the plot to fit in the legend
-        subplot_position = subplot.get_position()
-        subplot.set_position([subplot_position.x0, subplot_position.y0,
-                              subplot_position.width * 0.80, subplot_position.height])
+        if not metadata_type == 'con':
+            # reduce the size of the plot to fit in the legend
+            subplot_position = subplot.get_position()
+            subplot.set_position([subplot_position.x0, subplot_position.y0,
+                                  subplot_position.width * 0.80, subplot_position.height])
 
         plots = []
         metadata_plots = {}
@@ -1322,7 +1323,7 @@ class PweaveDocument(Document):
             metadata_ordered_keys = sort_function(metadata_plots.keys())
 
         for key in metadata_ordered_keys:
-            plots.append(subplot.scatter(metadata_plots[key][0], metadata_plots[key][1],
+                plots.append(subplot.scatter(metadata_plots[key][0], metadata_plots[key][1],
                                          color=colors_by_metadata[key]))
 
         pyplot.title(title)
@@ -1339,7 +1340,7 @@ class PweaveDocument(Document):
 
         if metadata and len(metadata_ordered_keys) <= self.max_labels_legend:
             if metadata_type == 'con':
-                pyplot.colorbar(scalarmappaple, fraction=0.046, pad=0.04)
+                subplot = pyplot.colorbar(scalarmappaple)
             else:
                 subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1, 0.5),
                                fontsize=7, frameon=False)
