@@ -217,6 +217,8 @@ class AWSQueue(GridQueue):
             jobDefinitionName=job_name,
             type='container'
             )
+        # wait before registering another job
+        time.sleep(0.5)
 
         submit_script = functools.partial(self.client.submit_job,
             containerOverrides={'command': shlex.split(command)},
