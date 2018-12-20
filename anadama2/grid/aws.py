@@ -186,6 +186,9 @@ class AWSQueue(GridQueue):
         if not docker_image:
             docker_image='amazonlinux'
 
+        # get the partition for the task (to allow for multiple queues and partitions in task definition)
+        partition = self.get_partition(time, partition)
+
         # create job definition
         job_name = "task_{}".format(taskid)
         response = self.client.register_job_definition(
@@ -222,7 +225,7 @@ class AWSQueue(GridQueue):
             containerOverrides={'command': shlex.split(command)},
             jobDefinition=job_name,
             jobName=job_name,
-            jobQueue=self.partition)
+            jobQueue=partition)
 
         return submit_script, None, None, None
     
@@ -242,14 +245,28 @@ class AWSQueue(GridQueue):
             for job in response['jobSummaryList']:
                 job_stats.append([job['jobId'],job['status'],"NA","NA","NA"])
             return job_stats
+    
+        def list_jobs(state, nextToken=None):
+            if self.partition_long != self.partition_short:
+                if nextToken:
+                    response = self.client.list_jobs(jobQueue=self.partition_short,jobStatus=state,nextToken=nextToken)
+                    response.update(self.client.list_jobs(jobQueue=self.partition_long,jobStatus=state,nextToken=nextToken))
+                else:
+                    response = self.client.list_jobs(jobQueue=self.partition_short,jobStatus=state)
+                    response.update(self.client.list_jobs(jobQueue=self.partition_long,jobStatus=state))
+            else:
+                if nextToken:
+                    response = self.client.list_jobs(jobQueue=self.partition,jobStatus=state,nextToken=nextToken)
+                else:
+                    response = self.client.list_jobs(jobQueue=self.partition,jobStatus=state)
+            return response
 
         job_status = []
         for state in self.all_codes:
-            response = self.client.list_jobs(jobQueue=self.partition,jobStatus=state)
+            response = list_jobs(state)
             job_status += gather_job_status(response)
             while response.get('nextToken',None):
-                response = self.client.list_jobs(jobQueue=self.partition,jobStatus=state,
-                    nextToken=response['nextToken'])
+                response = list_jobs(state, nextToken=response['nextToken'])
                 job_status += gather_job_status(response)
         
         return job_status
