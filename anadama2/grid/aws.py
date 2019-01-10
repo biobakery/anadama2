@@ -8,6 +8,7 @@ import time
 import functools
 import shlex
 import copy
+import threading
 
 import six
 
@@ -149,8 +150,14 @@ class AWSQueue(GridQueue):
         except (subprocess.CalledProcessError, EnvironmentError):
             region = "us-east-2"
 
+        # this is the number of seconds to wait after task definition submission
+        self.submit_definition_sleep = 3
+
         # this is the refresh rate for checking the queue, in seconds
         self.refresh_rate = 2*60
+
+        # this is a lock for task definition submission
+        self.lock_submit_task_definition = threading.Lock()
 
         self.partition = partition
 
@@ -191,6 +198,10 @@ class AWSQueue(GridQueue):
 
         # create job definition
         job_name = "task_{}".format(taskid)
+
+        # get lock to submit job definition
+        self.lock_submit_task_definition.acquire()
+
         response = self.client.register_job_definition(
             containerProperties={
                 'image': docker_image,
@@ -220,6 +231,12 @@ class AWSQueue(GridQueue):
             jobDefinitionName=job_name,
             type='container'
             )
+
+        # pause after submission
+        time.sleep(self.submit_definition_sleep)
+
+        # release lock
+        self.lock_submit_task_definition.release()
 
         submit_script = functools.partial(self.client.submit_job,
             containerOverrides={'command': shlex.split(command)},
