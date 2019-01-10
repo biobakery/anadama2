@@ -267,10 +267,12 @@ class AWSQueue(GridQueue):
             if self.partition_long != self.partition_short:
                 if nextToken:
                     response = self.client.list_jobs(jobQueue=self.partition_short,jobStatus=state,nextToken=nextToken)
-                    response.update(self.client.list_jobs(jobQueue=self.partition_long,jobStatus=state,nextToken=nextToken))
+                    response2 = self.client.list_jobs(jobQueue=self.partition_long,jobStatus=state,nextToken=nextToken)
+                    response['jobSummaryList'].append(response2['jobSummaryList'])
                 else:
                     response = self.client.list_jobs(jobQueue=self.partition_short,jobStatus=state)
-                    response.update(self.client.list_jobs(jobQueue=self.partition_long,jobStatus=state))
+                    response2 = self.client.list_jobs(jobQueue=self.partition_long,jobStatus=state)
+                    response['jobSummaryList'].append(response2['jobSummaryList'])
             else:
                 if nextToken:
                     response = self.client.list_jobs(jobQueue=self.partition,jobStatus=state,nextToken=nextToken)
