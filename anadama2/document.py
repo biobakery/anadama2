@@ -709,8 +709,22 @@ class PweaveDocument(Document):
         for color_set in itertools.cycle(zip(*sets)):
             for color in color_set:
                 yield color
+
+    def add_threshold(self, threshold, color, label):
+        """  Adds horizontal line to plot as threshold
+        :param threshold:  float
+        :param color:  string
+        :param label:  string
+
+        """
+        import matplotlib.pyplot as pyplot
         
-    def plot_stacked_barchart(self, data, row_labels, column_labels, title, 
+        pyplot.axhline(threshold, color=color)
+        pyplot.text(0, int(threshold) + 50, label)
+
+        pyplot.show()
+
+    def plot_stacked_barchart(self, data, row_labels, column_labels, title,
         xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7):
         """ Plot a stacked barchart
         
@@ -780,7 +794,7 @@ class PweaveDocument(Document):
             pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
         else:
             pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
-            
+        
         # reduce the size of the plot to fit in the legend
         subplot_position=subplot.get_position()
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
