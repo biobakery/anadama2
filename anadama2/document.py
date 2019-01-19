@@ -1291,28 +1291,31 @@ class PweaveDocument(Document):
 
         # create a set of custom colors to prevent overlap
         if metadata:
+
             metadata_categories = list(set(metadata.values()))
             custom_colors = self._custom_colors(total_colors=len(metadata_categories))
             colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors))
 
             if metadata_type == 'con':
-                normalize = mcolors.Normalize(vmin=min(metadata.values()), vmax=max(metadata.values()))
+
+                normalize = mcolors.Normalize(vmin=min(metadata_categories), vmax=max(metadata_categories))
+                #colormap = mcolors.LinearSegmentedColormap.from_list('cmap', custom_colors, N=metadata_categories)
                 colormap = pyplot.get_cmap('jet')
 
-                custom_colors_cont=[]
-                for value in metadata.values():
+                scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
+                scalarmappaple.set_array(metadata_categories)
+
+                custom_colors_cont = []
+                for value in metadata_categories:
                     custom_colors_cont.append(colormap(normalize(value)))
 
                 colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors_cont))
-
-                # setup the colorbar
-                scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
-                scalarmappaple.set_array(metadata.values())
 
         else:
             custom_colors = self._custom_colors(total_colors=len(pcoa_data))
 
         if not metadata_type == 'con':
+
             # reduce the size of the plot to fit in the legend
             subplot_position = subplot.get_position()
             subplot.set_position([subplot_position.x0, subplot_position.y0,
@@ -1321,7 +1324,7 @@ class PweaveDocument(Document):
         plots = []
         metadata_plots = {}
         for i, (x, y) in enumerate(pcoa_data):
-            if metadata:
+            if not metadata == None:
                 if metadata[sample_names[i]] not in metadata_plots:
                     metadata_plots[metadata[sample_names[i]]] = [[x], [y]]
                 else:
