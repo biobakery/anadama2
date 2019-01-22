@@ -1,6 +1,12 @@
 
 # AnADAMA2 History #
 
+## v0.5.2 01-11-2019 ##
+
+* Add colorbar for continuous data in pcoa plots
+* Update max labels on plots as we can fit a few more sample names
+* Increase space in heatmap for metadata labels
+
 ## v0.5.1 11-01-2018 ##
 
 * Allow for optional data files in the archiving of a document.
