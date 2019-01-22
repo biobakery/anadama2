@@ -710,19 +710,7 @@ class PweaveDocument(Document):
             for color in color_set:
                 yield color
 
-    def add_threshold(self, threshold, color, label):
-        """  Adds horizontal line to plot as threshold
-        :param threshold:  float
-        :param color:  string
-        :param label:  string
-
-        """
-        import matplotlib.pyplot as pyplot
-        
-        pyplot.axhline(threshold, color=color)
-        pyplot.text(0, int(threshold) + 50, label)
-
-        pyplot.show()
+  
 
     def plot_stacked_barchart(self, data, row_labels, column_labels, title,
         xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7):
