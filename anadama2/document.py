@@ -1283,7 +1283,6 @@ class PweaveDocument(Document):
 
             metadata_categories = list(set(metadata.values()))
             custom_colors = self._custom_colors(total_colors=len(metadata_categories))
-            colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors))
 
             if metadata_type == 'con':
 
@@ -1301,6 +1300,8 @@ class PweaveDocument(Document):
                         custom_colors_cont.append(colormap(normalize(value)))
 
                 colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors_cont))
+            else:
+                colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors))
 
         else:
             custom_colors = self._custom_colors(total_colors=len(pcoa_data))
