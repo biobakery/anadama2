@@ -1270,6 +1270,7 @@ class PweaveDocument(Document):
         import matplotlib.pyplot as pyplot
         import matplotlib.colors as mcolors
         import matplotlib.cm as cm
+        import numpy as np
 
         pcoa_data, pcoa1_x_label, pcoa2_y_label = self.compute_pcoa(sample_names, feature_names, data, apply_transform)
 
@@ -1286,16 +1287,18 @@ class PweaveDocument(Document):
 
             if metadata_type == 'con':
 
-                normalize = mcolors.Normalize(vmin=min(metadata_categories), vmax=max(metadata_categories))
-                #colormap = mcolors.LinearSegmentedColormap.from_list('cmap', custom_colors, N=metadata_categories)
+                cleaned_array = [value for value in metadata_categories if ~np.isnan(value)]
+                normalize = mcolors.Normalize(vmin=min(cleaned_array), vmax=max(cleaned_array))
                 colormap = pyplot.get_cmap('jet')
-
                 scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
-                scalarmappaple.set_array(metadata_categories)
+                scalarmappaple.set_array(cleaned_array)
 
                 custom_colors_cont = []
                 for value in metadata_categories:
-                    custom_colors_cont.append(colormap(normalize(value)))
+                    if np.isnan(value):
+                        custom_colors_cont.append('grey')
+                    else:
+                        custom_colors_cont.append(colormap(normalize(value)))
 
                 colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors_cont))
 
