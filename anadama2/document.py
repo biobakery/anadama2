@@ -1270,6 +1270,7 @@ class PweaveDocument(Document):
         import matplotlib.pyplot as pyplot
         import matplotlib.colors as mcolors
         import matplotlib.cm as cm
+        import matplotlib.patches as mpatches
         import numpy as np
 
         pcoa_data, pcoa1_x_label, pcoa2_y_label = self.compute_pcoa(sample_names, feature_names, data, apply_transform)
@@ -1277,6 +1278,7 @@ class PweaveDocument(Document):
         # create a figure subplot to move the legend
         figure = pyplot.figure()
         subplot = pyplot.subplot(111)
+        nancolor="grey"
 
         # create a set of custom colors to prevent overlap
         if metadata:
@@ -1295,11 +1297,12 @@ class PweaveDocument(Document):
                 custom_colors_cont = []
                 for value in metadata_categories:
                     if np.isnan(value):
-                        custom_colors_cont.append('grey')
+                        custom_colors_cont.append(nancolor)
                     else:
                         custom_colors_cont.append(colormap(normalize(value)))
 
                 colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors_cont))
+
             else:
                 colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors))
 
@@ -1334,6 +1337,7 @@ class PweaveDocument(Document):
                 plots.append(subplot.scatter(metadata_plots[key][0], metadata_plots[key][1],
                                          color=colors_by_metadata[key]))
 
+
         pyplot.title(title)
         pyplot.xlabel("PCoA 1 (" + str(pcoa1_x_label) + " %)")
         pyplot.ylabel("PCoA 2 (" + str(pcoa2_y_label) + " %)")
@@ -1348,7 +1352,10 @@ class PweaveDocument(Document):
 
         if metadata:
             if metadata_type == 'con':
-                subplot = pyplot.colorbar(scalarmappaple)
+                subplot.append = pyplot.colorbar(scalarmappaple)
+                if nancolor in custom_colors_cont:
+                    nanpatch = mpatches.Patch(color=nancolor, label='NaN')
+                    subplot.legend(handles=[nanpatch], bbox_to_anchor=(1, 1.07), loc=2, borderaxespad=0.)
             else:
                 if len(metadata_ordered_keys) <= self.max_labels_legend:
                     subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1, 0.5),
