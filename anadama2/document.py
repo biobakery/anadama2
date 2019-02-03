@@ -966,7 +966,7 @@ class PweaveDocument(Document):
         dpi=300
         label_font="8"
 
-        # compute the as1pect ratio based on the number of samples and features
+        # compute the aspect ratio based on the number of samples and features
         aspect_ratio=len(sample_names)/(len(feature_names)*1.0)
         command=["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,"--title",title,
             "--title_font",str(int(label_font)*2),"--cell_aspect_ratio",str(aspect_ratio),
@@ -1002,7 +1002,6 @@ class PweaveDocument(Document):
 
         # create a subplot and remove the frame and axis labels
         # set the figure and increase the dpi for small text
-        # fig = pyplot.figure(figsize=(12,16), dpi=dpi)
 
         fig = pyplot.figure(figsize=(8,8),dpi=dpi)
 
