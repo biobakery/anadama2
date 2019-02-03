@@ -946,36 +946,41 @@ class PweaveDocument(Document):
         
         from matplotlib._png import read_png
         import matplotlib.pyplot as pyplot
+        import numpy
         
         # apply zscore if requested
         if zscore:
             from scipy import stats
-            import numpy
             
             data = stats.zscore(numpy.array(data),axis=1)
         
         # write a file of the data
         handle, hclust2_input_file=tempfile.mkstemp(prefix="hclust2_input",dir=os.getcwd())
         heatmap_file=hclust2_input_file+".png"
+        if metadata_rows:
+            metadata_legend_file = hclust2_input_file+"_legend.png"
+
         self.write_table(["# "]+sample_names,feature_names,data,hclust2_input_file)
         
         # increase the dpi for small text
         dpi=300
         label_font="8"
-        # compute the aspect ratio based on the number of samples and features
+
+        # compute the as1pect ratio based on the number of samples and features
         aspect_ratio=len(sample_names)/(len(feature_names)*1.0)
         command=["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,"--title",title,
             "--title_font",str(int(label_font)*2),"--cell_aspect_ratio",str(aspect_ratio),
-            "--flabel_size",label_font,"--slabel_size",label_font,
+            "--flabel_size", label_font, "--slabel_size", label_font,
             "--colorbar_font_size",label_font,"--dpi",str(dpi),"--f_dist_f",method]
         if log_scale:
             command+=["--log_scale"]
         if metadata_rows:
             command+=["--metadata_rows",",".join(str(i) for i in metadata_rows)]
+            command+=["--legend_file", metadata_legend_file]
             if len(metadata_rows) > 10:
-                command+=["--metadata_height","0.4"]
+                command+=["--metadata_height","0.8"]
             elif len(metadata_rows) > 4:
-                command+=["--metadata_height","0.3"]
+                command+=["--metadata_height","0.4"]
             elif len(metadata_rows) > 1:
                 command+=["--metadata_height","0.1"]
             
@@ -994,21 +999,33 @@ class PweaveDocument(Document):
         except (subprocess.CalledProcessError, OSError):
             print("Unable to generate heatmap")
             heatmap=[]
-        
+
         # create a subplot and remove the frame and axis labels
-        # set the figure to square and increase the dpi for small text
-        fig = pyplot.figure(figsize=(8, 8), dpi=dpi)
-        subplot = fig.add_subplot(111, frame_on=False)
-        subplot.xaxis.set_visible(False)
-        subplot.yaxis.set_visible(False)
-        
+        # set the figure and increase the dpi for small text
+        # fig = pyplot.figure(figsize=(12,16), dpi=dpi)
+
+        fig = pyplot.figure(figsize=(8,8),dpi=dpi)
+
+        if metadata_rows:
+            subplot1 = pyplot.subplot2grid((4,1),(0,0), rowspan=3, frame_on=False)
+            subplot1.xaxis.set_visible(False)
+            subplot1.yaxis.set_visible(False)
+        else:
+            subplot = fig.add_subplot(111, frame_on=False)
+            subplot.xaxis.set_visible(False)
+            subplot.yaxis.set_visible(False)
         # show but do not interpolate (as this will make the text hard to read)
-        try:
-            pyplot.imshow(heatmap, interpolation="none")
-        except TypeError:
-            print("Unable to plot heatmap")
-            pass
-        
+        pyplot.imshow(heatmap, interpolation="none")
+
+        if metadata_rows:
+            heatmap_legend = read_png(metadata_legend_file)
+            # metadata legend subplot
+            subplot2 = pyplot.subplot2grid((4,1),(3,0), rowspan=1, frame_on=False)
+            subplot2.xaxis.set_visible(False)
+            subplot2.yaxis.set_visible(False)
+            pyplot.imshow(heatmap_legend, interpolation="none")
+
+        pyplot.show()
         # adjust the heatmap to fit in the figure area
         # this is needed to increase the image size (to fit in the increased figure)
         pyplot.tight_layout()
@@ -1305,6 +1322,7 @@ class PweaveDocument(Document):
 
             else:
                 colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors))
+                colors_by_metadata["NA"] = nancolor
 
         else:
             custom_colors = self._custom_colors(total_colors=len(pcoa_data))
@@ -1354,8 +1372,8 @@ class PweaveDocument(Document):
             if metadata_type == 'con':
                 subplot.append = pyplot.colorbar(scalarmappaple)
                 if nancolor in custom_colors_cont:
-                    nanpatch = mpatches.Patch(color=nancolor, label='NaN')
-                    subplot.legend(handles=[nanpatch], bbox_to_anchor=(1, 1.07), loc=2, borderaxespad=0.)
+                    nanpatch = mpatches.Patch(color=nancolor, label='NA')
+                    subplot.legend(handles=[nanpatch], bbox_to_anchor=(0.85, -0.001), loc=2, frameon=False, borderaxespad=0.)
             else:
                 if len(metadata_ordered_keys) <= self.max_labels_legend:
                     subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1, 0.5),
