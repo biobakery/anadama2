@@ -1371,12 +1371,13 @@ class PweaveDocument(Document):
             if metadata_type == 'con':
                 subplot.append = pyplot.colorbar(scalarmappaple)
                 if nancolor in custom_colors_cont:
-                    nanpatch = mpatches.Patch(color=nancolor, label='NA')
-                    subplot.legend(handles=[nanpatch], bbox_to_anchor=(0.85, -0.001), loc=2, frameon=False, borderaxespad=0.)
+                    figure.text(0.24, 0.01, "NA/Unknown values are shown in grey.")
+
             else:
                 if len(metadata_ordered_keys) <= self.max_labels_legend:
                     subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1, 0.5),
                                fontsize=7, frameon=False)
+
 
         if apply_transform:
             caption = "\n".join(
