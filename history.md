@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.5.3 03-14-2019 ##
+
+* Changes to colorbar plots to handle NAs
+
 ## v0.5.2 01-11-2019 ##
 
 * Add colorbar for continuous data in pcoa plots
