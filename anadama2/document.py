@@ -370,7 +370,20 @@ class PweaveDocument(Document):
             pass        
         
         return sorted_data
-        
+
+    def add_threshold(self, threshold, color, label):
+         """  Adds horizontal line to plot as threshold
+            :param threshold:  float
+            :param color:  string
+            :param label:  string
+         """
+         import matplotlib.pyplot as pyplot
+
+         pyplot.axhline(threshold, color=color)
+         pyplot.text(0, int(threshold) + 50, label)
+
+         pyplot.show()
+
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
         ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7):
