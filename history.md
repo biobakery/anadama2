@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.6.0 07-01-2019 ##
+
+* Added grid option for AWS batch with input/output files written to S3
+
 ## v0.5.3 03-14-2019 ##
 
 * Changes to colorbar plots to handle NAs
