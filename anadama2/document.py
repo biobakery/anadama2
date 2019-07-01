@@ -76,7 +76,7 @@ class PweaveDocument(Document):
         self.vars=vars
         
         # set the max number of x tick labels to be shown on plots
-        self.max_labels = 50
+        self.max_labels = 65
         # set the max labels for legends
         self.max_labels_legend = 30
         
@@ -370,7 +370,20 @@ class PweaveDocument(Document):
             pass        
         
         return sorted_data
-        
+
+    def add_threshold(self, threshold, color, label):
+         """  Adds horizontal line to plot as threshold
+            :param threshold:  float
+            :param color:  string
+            :param label:  string
+         """
+         import matplotlib.pyplot as pyplot
+
+         pyplot.axhline(threshold, color=color)
+         pyplot.text(0, int(threshold) + 50, label)
+
+         pyplot.show()
+
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
         ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7):
@@ -709,8 +722,10 @@ class PweaveDocument(Document):
         for color_set in itertools.cycle(zip(*sets)):
             for color in color_set:
                 yield color
-        
-    def plot_stacked_barchart(self, data, row_labels, column_labels, title, 
+
+  
+
+    def plot_stacked_barchart(self, data, row_labels, column_labels, title,
         xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7):
         """ Plot a stacked barchart
         
@@ -780,7 +795,7 @@ class PweaveDocument(Document):
             pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
         else:
             pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
-            
+        
         # reduce the size of the plot to fit in the legend
         subplot_position=subplot.get_position()
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
@@ -944,36 +959,41 @@ class PweaveDocument(Document):
         
         from matplotlib._png import read_png
         import matplotlib.pyplot as pyplot
+        import numpy
         
         # apply zscore if requested
         if zscore:
             from scipy import stats
-            import numpy
             
             data = stats.zscore(numpy.array(data),axis=1)
         
         # write a file of the data
         handle, hclust2_input_file=tempfile.mkstemp(prefix="hclust2_input",dir=os.getcwd())
         heatmap_file=hclust2_input_file+".png"
+        if metadata_rows:
+            metadata_legend_file = hclust2_input_file+"_legend.png"
+
         self.write_table(["# "]+sample_names,feature_names,data,hclust2_input_file)
         
         # increase the dpi for small text
         dpi=300
-        label_font="12"
+        label_font="8"
+
         # compute the aspect ratio based on the number of samples and features
         aspect_ratio=len(sample_names)/(len(feature_names)*1.0)
         command=["hclust2.py","-i",hclust2_input_file,"-o",heatmap_file,"--title",title,
             "--title_font",str(int(label_font)*2),"--cell_aspect_ratio",str(aspect_ratio),
-            "--flabel_size",label_font,"--slabel_size",label_font,
+            "--flabel_size", label_font, "--slabel_size", label_font,
             "--colorbar_font_size",label_font,"--dpi",str(dpi),"--f_dist_f",method]
         if log_scale:
             command+=["--log_scale"]
         if metadata_rows:
             command+=["--metadata_rows",",".join(str(i) for i in metadata_rows)]
+            command+=["--legend_file", metadata_legend_file]
             if len(metadata_rows) > 10:
-                command+=["--metadata_height","0.35"]
+                command+=["--metadata_height","0.8"]
             elif len(metadata_rows) > 4:
-                command+=["--metadata_height","0.2"]
+                command+=["--metadata_height","0.4"]
             elif len(metadata_rows) > 1:
                 command+=["--metadata_height","0.1"]
             
@@ -992,21 +1012,32 @@ class PweaveDocument(Document):
         except (subprocess.CalledProcessError, OSError):
             print("Unable to generate heatmap")
             heatmap=[]
-        
+
         # create a subplot and remove the frame and axis labels
-        # set the figure to square and increase the dpi for small text
-        fig = pyplot.figure(figsize=(8, 8), dpi=dpi)
-        subplot = fig.add_subplot(111, frame_on=False)
-        subplot.xaxis.set_visible(False)
-        subplot.yaxis.set_visible(False)
-        
+        # set the figure and increase the dpi for small text
+
+        fig = pyplot.figure(figsize=(8,8),dpi=dpi)
+
+        if metadata_rows:
+            subplot1 = pyplot.subplot2grid((4,1),(0,0), rowspan=3, frame_on=False)
+            subplot1.xaxis.set_visible(False)
+            subplot1.yaxis.set_visible(False)
+        else:
+            subplot = fig.add_subplot(111, frame_on=False)
+            subplot.xaxis.set_visible(False)
+            subplot.yaxis.set_visible(False)
         # show but do not interpolate (as this will make the text hard to read)
-        try:
-            pyplot.imshow(heatmap, interpolation="none")
-        except TypeError:
-            print("Unable to plot heatmap")
-            pass
-        
+        pyplot.imshow(heatmap, interpolation="none")
+
+        if metadata_rows:
+            heatmap_legend = read_png(metadata_legend_file)
+            # metadata legend subplot
+            subplot2 = pyplot.subplot2grid((4,1),(3,0), rowspan=1, frame_on=False)
+            subplot2.xaxis.set_visible(False)
+            subplot2.yaxis.set_visible(False)
+            pyplot.imshow(heatmap_legend, interpolation="none")
+
+        pyplot.show()
         # adjust the heatmap to fit in the figure area
         # this is needed to increase the image size (to fit in the increased figure)
         pyplot.tight_layout()
@@ -1226,11 +1257,14 @@ class PweaveDocument(Document):
 
         pyplot.show()
  
-    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species", metadata=None, apply_transform=False):
-        """ Use the vegan package in R plus matplotlib to plot a PCoA. 
-        Input data should be organized with samples as columns and features as rows. 
+
+
+    def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species",
+                  metadata=None, apply_transform=False, sort_function=None, metadata_type=None):
+        """ Use the vegan package in R plus matplotlib to plot a PCoA.
+        Input data should be organized with samples as columns and features as rows.
         Data should be scaled to [0-1] if transform is to be applied.
-        
+
         :param sample_names: The labels for the columns
         :type sample_names: list
 
@@ -1239,92 +1273,139 @@ class PweaveDocument(Document):
 
         :param data: A list of lists containing the data
         :type data: list
-        
+
         :param title: The title for the plot
         :type title: str
-        
+
         :keyword sample_types: What type of data are the columns
         :type sample_types: str
-        
+
         :keyword feature_types: What type of data are the rows
         :type feature_types: str
-        
-        :keyword metadata: Metadata for each sample 
+
+        :keyword metadata: Metadata for each sample
         :type metadata: dict
-        
+
+        :keyword metadata_type: Type of metadata (continuous or categorical)
+        :type metadata_type: str
+
         :keyword apply_transform: Arcsin transform to be applied
         :type apply_transform: bool
-        """
-        
-        import matplotlib.pyplot as pyplot
 
-        pcoa_data, pcoa1_x_label, pcoa2_y_label=self.compute_pcoa(sample_names, feature_names, data, apply_transform)         
- 
+        :keyword sort_function: The function to sort the plot data
+        :type sort_function: lambda
+        """
+
+        import matplotlib.pyplot as pyplot
+        import matplotlib.colors as mcolors
+        import matplotlib.cm as cm
+        import matplotlib.patches as mpatches
+        import numpy as np
+
+        pcoa_data, pcoa1_x_label, pcoa2_y_label = self.compute_pcoa(sample_names, feature_names, data, apply_transform)
+
         # create a figure subplot to move the legend
         figure = pyplot.figure()
-        subplot=pyplot.subplot(111)
-        
+        subplot = pyplot.subplot(111)
+        nancolor="grey"
+
         # create a set of custom colors to prevent overlap
         if metadata:
-            metadata_categories=list(set(metadata.values()))
-            custom_colors=self._custom_colors(total_colors=len(metadata_categories))
-            colors_by_metadata=dict((key, color) for key, color in zip(metadata_categories,custom_colors))
+
+            metadata_categories = list(set(metadata.values()))
+            custom_colors = self._custom_colors(total_colors=len(metadata_categories))
+
+            if metadata_type == 'con':
+
+                cleaned_array = [value for value in metadata_categories if ~np.isnan(value)]
+                normalize = mcolors.Normalize(vmin=min(cleaned_array), vmax=max(cleaned_array))
+                colormap = pyplot.get_cmap('jet')
+                scalarmappaple = cm.ScalarMappable(norm=normalize, cmap=colormap)
+                scalarmappaple.set_array(cleaned_array)
+
+                custom_colors_cont = []
+                for value in metadata_categories:
+                    if np.isnan(value):
+                        custom_colors_cont.append(nancolor)
+                    else:
+                        custom_colors_cont.append(colormap(normalize(value)))
+
+                colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors_cont))
+
+            else:
+                colors_by_metadata = dict((key, color) for key, color in zip(metadata_categories, custom_colors))
+                colors_by_metadata["NA"] = nancolor
+
         else:
-            custom_colors=self._custom_colors(total_colors=len(pcoa_data))
-        
+            custom_colors = self._custom_colors(total_colors=len(pcoa_data))
+
+
         # reduce the size of the plot to fit in the legend
-        subplot_position=subplot.get_position()
-        subplot.set_position([subplot_position.x0, subplot_position.y0, 
-            subplot_position.width *0.80, subplot_position.height])
-        
-        
+        subplot_position = subplot.get_position()
+        subplot.set_position([subplot_position.x0, subplot_position.y0,
+                              subplot_position.width * 0.80, subplot_position.height])
+
         plots = []
         metadata_plots = {}
-        for i, (x,y) in enumerate(pcoa_data):
+        for i, (x, y) in enumerate(pcoa_data):
             if metadata:
                 if metadata[sample_names[i]] not in metadata_plots:
-                    metadata_plots[metadata[sample_names[i]]]=[[x],[y]]
+                    metadata_plots[metadata[sample_names[i]]] = [[x], [y]]
                 else:
                     metadata_plots[metadata[sample_names[i]]][0].append(x)
                     metadata_plots[metadata[sample_names[i]]][1].append(y)
             else:
-                plots.append(subplot.scatter(x,y,color=next(custom_colors)))
-                
+                plots.append(subplot.scatter(x, y, color=next(custom_colors)))
+
         # order the plots alphabetically or numerically
-        metadata_ordered_keys=self.sorted_data_numerical_or_alphabetical(metadata_plots.keys())
-        
+        if not sort_function:
+            metadata_ordered_keys = self.sorted_data_numerical_or_alphabetical(metadata_plots.keys())
+        else:
+            metadata_ordered_keys = sort_function(metadata_plots.keys())
+
         for key in metadata_ordered_keys:
-            plots.append(subplot.scatter(metadata_plots[key][0], metadata_plots[key][1],
-                color=colors_by_metadata[key]))
-        
+                plots.append(subplot.scatter(metadata_plots[key][0], metadata_plots[key][1],
+                                         color=colors_by_metadata[key]))
+
+
         pyplot.title(title)
-        pyplot.xlabel("PCoA 1 ("+str(pcoa1_x_label)+" %)")
-        pyplot.ylabel("PCoA 2 ("+str(pcoa2_y_label)+" %)")
+        pyplot.xlabel("PCoA 1 (" + str(pcoa1_x_label) + " %)")
+        pyplot.ylabel("PCoA 2 (" + str(pcoa2_y_label) + " %)")
 
         # remove the tick marks on both axis
-        pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
-        pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
-        
+        pyplot.tick_params(axis="x", which="both", bottom="off", labelbottom="off")
+        pyplot.tick_params(axis="y", which="both", left="off", labelleft="off")
+
         if not metadata and len(sample_names) <= self.max_labels_legend:
-            subplot.legend(plots, sample_names, loc="center left", bbox_to_anchor=(1,0.5),
-                fontsize=7, title="Samples", frameon=False)
-        
-        if metadata and len(metadata_ordered_keys) <= self.max_labels_legend:
-            subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1,0.5),
-                fontsize=7, frameon=False)            
-       
-        if apply_transform: 
-            caption="\n".join(["Principal coordinate analysis of variance among "+sample_types+", based on Bray-Curtis ", 
-                "dissimilarities between "+feature_types+" profiles of "+sample_types+".  Filtered "+feature_types+"' relative abundances ", 
-                "were arcsin-square root transformed to approximate a normal distribution and down-weigh the effect ",
-                "of highly abundant "+feature_types+" on Bray-Curtis dissimilarities.  Numbers in parenthesis on each axis ",
-                "represent the amount of variance explained by that axis."])
+            subplot.legend(plots, sample_names, loc="center left", bbox_to_anchor=(1, 0.5),
+                           fontsize=7, title="Samples", frameon=False)
+
+        if metadata:
+            if metadata_type == 'con':
+                subplot.append = pyplot.colorbar(scalarmappaple)
+                if nancolor in custom_colors_cont:
+                    figure.text(0.24, 0.01, "NA/Unknown values are shown in grey.")
+
+            else:
+                if len(metadata_ordered_keys) <= self.max_labels_legend:
+                    subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1, 0.5),
+                               fontsize=7, frameon=False)
+
+
+        if apply_transform:
+            caption = "\n".join(
+                ["Principal coordinate analysis of variance among " + sample_types + ", based on Bray-Curtis ",
+                 "dissimilarities between " + feature_types + " profiles of " + sample_types + ".  Filtered " + feature_types + "' relative abundances ",
+                 "were arcsin-square root transformed to approximate a normal distribution and down-weigh the effect ",
+                 "of highly abundant " + feature_types + " on Bray-Curtis dissimilarities.  Numbers in parenthesis on each axis ",
+                 "represent the amount of variance explained by that axis."])
         else:
-            caption="\n".join(["Principal coordinate analysis of variance among "+sample_types+", based on Bray-Curtis ", 
-                "dissimilarities between "+feature_types+" profiles of "+sample_types+".  Numbers in parenthesis on each axis ",
-                "represent the amount of variance explained by that axis."])
-        
+            caption = "\n".join(
+                ["Principal coordinate analysis of variance among " + sample_types + ", based on Bray-Curtis ",
+                 "dissimilarities between " + feature_types + " profiles of " + sample_types + ".  Numbers in parenthesis on each axis ",
+                 "represent the amount of variance explained by that axis."])
+
         pyplot.show()
-        
+
         return caption
-    
+
