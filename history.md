@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.6.1 08-09-2019 ##
+
+* Fix to prevent error with custom arguments
+
 ## v0.6.0 07-01-2019 ##
 
 * Added grid option for AWS batch with input/output files written to S3
