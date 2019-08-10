@@ -121,14 +121,20 @@ class Workflow(object):
         if storage_backend:
             self._backend = storage_backend
 
-        # get the temp directory location
-        self.tmpdir=self.vars.get("output")
-        if self.tmpdir is None or tracked.s3_folder(self.tmpdir):
-            # if no output folder is provided, then write to the current working directory
-            self.tmpdir = os.getcwd()
-
         logger.debug("Instantiated run context")
-        
+
+    def get_tmpdir(self):
+        """Get the temp directory location. Called here as to not call argparse
+        prior to custom args being added """      
+ 
+        # get the temp directory location
+        tmpdir=self.vars.get("output")
+        if tmpdir is None or tracked.s3_folder(tmpdir):
+            # if no output folder is provided, then write to the current working directory
+            tmpdir = os.getcwd()
+
+        return tmpdir
+ 
     def _get_grid(self):
         """Return the grid instance. First check if a grid instance has already 
         been set or was provided initially. If not, set the grid based on the 
@@ -153,17 +159,17 @@ class Workflow(object):
             grid = _grid.Dummy()
         elif grid_selection == "slurm":
             # get the temp output folder for the slurm scripts and stdout/stderr files
-            tmpdir = os.path.join(self.tmpdir, "slurm_files")
+            tmpdir = os.path.join(self.get_tmpdir, "slurm_files")
             grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
                 options=grid_options, environment=grid_environment)
         elif grid_selection == "sge":
             # get the temp output folder for the sge scripts and stdout/stderr files
-            tmpdir = os.path.join(self.tmpdir, "sge_files")
+            tmpdir = os.path.join(self.get_tmpdir, "sge_files")
             grid = SGE(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
                 options=grid_options, environment=grid_environment)
         elif grid_selection == "aws":
             # get the temp output folder for the aws scripts and stdout/stderr files
-            tmpdir = os.path.join(self.tmpdir, "aws_files")
+            tmpdir = os.path.join(self.get_tmpdir, "aws_files")
             grid = AWS(partition=grid_partition, tmpdir=tmpdir)
         else:
             print("Grid selected ( "+grid_selection+" ) can not be found. Tasks will run locally.")
@@ -588,7 +594,7 @@ class Workflow(object):
         else:
             # if any targets or depends generate temp files, create temp folder for task
             tracked_with_temp = list(filter(lambda x: x.temp_files(), deps+targs))
-            tmpdir = os.path.join(self.tmpdir,"anadama2_temp_tracked")
+            tmpdir = os.path.join(self.get_tmpdir,"anadama2_temp_tracked")
             if visible and tracked_with_temp:
                 if not os.path.isdir(tmpdir):
                     os.makedirs(tmpdir)
