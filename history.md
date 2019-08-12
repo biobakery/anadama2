@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.6.3 08-12-2019 ##
+
+* Fix to prevent error with visualization (part 3 of fixes from AWS batch merge: Allow targets/depends to not have temp_files method)
+
 ## v0.6.2 08-12-2019 ##
 
 * Fix to prevent error with custom arguments (part 2: only set tmpdir once and fix function calls)
