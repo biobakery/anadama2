@@ -1,9 +1,13 @@
 
 # AnADAMA2 History #
 
+## v0.6.2 08-12-2019 ##
+
+* Fix to prevent error with custom arguments (part 2: only set tmpdir once and fix function calls)
+
 ## v0.6.1 08-09-2019 ##
 
-* Fix to prevent error with custom arguments
+* Fix to prevent error with custom arguments (part 1: set tmpdir after custom args are added)
 
 ## v0.6.0 07-01-2019 ##
 
