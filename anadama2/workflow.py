@@ -597,7 +597,10 @@ class Workflow(object):
             return finish_add_task
         else:
             # if any targets or depends generate temp files, create temp folder for task
-            tracked_with_temp = list(filter(lambda x: x.temp_files(), deps+targs))
+            try:
+                tracked_with_temp = list(filter(lambda x: x.temp_files(), deps+targs))
+            except AttributeError:
+                tracked_with_temp = []
             tmpdir = os.path.join(self.get_tmpdir(),"anadama2_temp_tracked")
             if visible and tracked_with_temp:
                 if not os.path.isdir(tmpdir):
