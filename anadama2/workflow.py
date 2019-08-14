@@ -214,7 +214,12 @@ class Workflow(object):
             import boto3
             client = boto3.client("s3")
             bucket = tracked.s3_bucket(vars_input)
-            contents = [i['Key'] for i in client.list_objects(Bucket=bucket)['Contents']]
+            paginator = client.get_paginator('list_objects')
+            page_iterator = paginator.paginate(Bucket=bucket)
+
+            contents = []
+            for page in page_iterator:
+                contents+= [i['Key'] for i in page['Contents']]
             input_files = [tracked.s3_build_path(bucket,file) for file in filter(lambda file: not file.endswith("/"), contents)]
         else:
             input = os.path.abspath(vars_input)
