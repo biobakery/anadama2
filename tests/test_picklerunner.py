@@ -27,8 +27,7 @@ class TestPicklerunner(unittest.TestCase):
         self.workdir = "/tmp/anadama_testdir"
         if not os.path.isdir(self.workdir):
             os.mkdir(self.workdir)
-        cfg = anadama2.cli.Configuration()
-        cfg._arguments["output"].keywords["default"]=self.workdir
+        cfg = anadama2.cli.Configuration(prompt_user=False).add("output", type="dir", default=self.workdir)
         self.ctx = anadama2.workflow.Workflow(vars=cfg)
         self.stub_result=TaskResult(1,None,[],[])
 

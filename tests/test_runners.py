@@ -29,7 +29,10 @@ class TestRunners(unittest.TestCase):
             depends=[anadama2.tracked.auto("/etc/hosts")],
             targets=[anadama2.tracked.auto(outf)],
             task_no=1,
-            visible=True
+            visible=True,
+            actions_raw=[anadama2.helpers.sh("wc -l /etc/hosts > "+outf)],
+            kwargs=None,
+            use_parse_sh=False
         )
         ret = anadama2.runners._run_task_locally(t)
         self.assertTrue(os.stat(outf).st_size > 0,
@@ -44,7 +47,10 @@ class TestRunners(unittest.TestCase):
             depends=[anadama2.tracked.auto("/etc/hosts")],
             targets=[anadama2.tracked.auto(outf+".doesntexist")],
             task_no=1,
-            visible=True
+            visible=True,
+            actions_raw=[anadama2.helpers.sh("wc -l /etc/hosts > "+outf)],
+            kwargs=None,
+            use_parse_sh=False
             )
         ret = anadama2.runners._run_task_locally(t2)
         self.assertTrue(isinstance(ret, anadama2.runners.TaskResult),
@@ -60,7 +66,10 @@ class TestRunners(unittest.TestCase):
             depends=[anadama2.tracked.auto("/etc/hosts")],
             targets=[anadama2.tracked.auto(outf)],
             task_no=1,
-            visible=True
+            visible=True,
+            actions_raw=[anadama2.helpers.sh("wc -l /etc/hosts > "+outf)],
+            kwargs=None,
+            use_parse_sh=False
         )
         ret = anadama2.runners._run_task_locally(t3)
         self.assertTrue(isinstance(ret, anadama2.runners.TaskResult),
