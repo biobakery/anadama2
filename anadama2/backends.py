@@ -143,7 +143,13 @@ class LevelDBBackend(BaseBackend):
             return
         batch = leveldb.WriteBatch()
         for key, val in zip(dep_keys, dep_vals):
-            batch.Put(key.encode("utf-8"), json.dumps(val).encode("utf-8"))
+            decoded_val=[]
+            for v in val:
+                try:
+                    decoded_val.append(v.decode("utf-8"))
+                except AttributeError:
+                    decoded_val.append(v)
+            batch.Put(key.encode("utf-8"), json.dumps(decoded_val).encode("utf-8"))
         self.db.Write(batch)
 
 
