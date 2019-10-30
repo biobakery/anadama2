@@ -126,7 +126,7 @@ def format_command(command, **kwargs):
             for i, item in enumerate(replacement):
                 command=command.replace("["+str(key)+"["+str(i)+"]]",str(item))
             # for lists/tuples with one item, allow for index to not be included
-            if len(replacement) == 1:
+            if len(list(replacement)) == 1:
                 command=command.replace("["+str(key)+"]",str(replacement[0]))
         else:
             replacement=try_get_local_path(replacement) 
