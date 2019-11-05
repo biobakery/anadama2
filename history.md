@@ -1,6 +1,12 @@
 
 # AnADAMA2 History #
 
+## v0.6.4 11-05-2019 ##
+
+* Updates for python 3 compatibility.
+* Add paging for AWS batch queue (for large numbers of input files).
+* Fix texts so they comply with AWS batch modifications.
+
 ## v0.6.3 08-12-2019 ##
 
 * Fix to prevent error with visualization (part 3 of fixes from AWS batch merge: Allow targets/depends to not have temp_files method)
