@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.6.5 11-14-2019 ##
+
+* Small fix to allow for logs generated with python2 to be used in reports generated in python3.
+
 ## v0.6.4 11-05-2019 ##
 
 * Updates for python 3 compatibility.
