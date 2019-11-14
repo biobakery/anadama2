@@ -642,7 +642,7 @@ class LoggerReporter(BaseReporter):
         for exe_depends in filter(lambda x: isinstance(x, TrackedExecutable), self.run_context.tasks[task_no].depends):
             version = exe_depends.version()
             if version:
-                self.logger.info(VERSION_COMMAND+" {}".format(version))
+                self.logger.info(VERSION_COMMAND+" {}".format(version.decode('utf-8')))
         
         # if a command, then log the shell command(s)
         if not list(filter(lambda x: six.callable(x), self.run_context.tasks[task_no].actions)):
