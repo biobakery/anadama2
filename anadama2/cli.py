@@ -161,7 +161,7 @@ class Configuration(object):
         
         grid = cls.identify_grid()
         if grid == "slurm":
-            partitions = ["serial_requeue","general",4*60]
+            partitions = ["serial_requeue","shared",4*60]
         elif grid == "sge":
             partitions = "broad"
         elif grid == "aws":
