@@ -387,7 +387,7 @@ class GridQueue(object):
         except IndexError:
             jobid="error"
 
-        return jobib
+        return jobid
 
     def submit_job(self,grid_script):
         """ Submit the grid jobs and return the grid job id """
