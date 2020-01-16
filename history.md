@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.6.6 01-16-2019 ##
+
+* Fix small variable typo in grid class introduced with AWS grid changes.
+
 ## v0.6.5 11-14-2019 ##
 
 * Small fix to allow for logs generated with python2 to be used in reports generated in python3.
