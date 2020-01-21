@@ -448,6 +448,11 @@ class AWSHugeTrackedFile(HugeTrackedFile):
     def temp_files(self):
         return True
 
+    def file_size(self):
+        resource = boto3.resource("s3")
+        aws_object = resource.ObjectSummary(self.aws_bucket,self.aws_key)
+        return(aws_object.size / pow(1024.0,3))
+
     def exists(self):
         import botocore
         import boto3
