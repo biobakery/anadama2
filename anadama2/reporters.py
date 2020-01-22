@@ -620,7 +620,13 @@ class LoggerReporter(BaseReporter):
             options=vars(ctx.vars.get_option_values())
         except (AttributeError, TypeError):
             options={}
-            
+           
+        # write the description and version of the workflow to the log if provided
+        if ctx.vars.description:
+            self.logger.info("Workflow description = %s", ctx.vars.description)
+        if ctx.vars.version:
+            self.logger.info("Workflow version = %s", ctx.vars.version)
+ 
         if options:
             self.logger.info("Workflow configuration options")
         

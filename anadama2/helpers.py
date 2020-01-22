@@ -43,6 +43,8 @@ from .util import sh as _sh
 from .util import sugar_list
 
 from .tracked import try_get_local_path
+from .tracked import s3_folder
+from .tracked import AWSHugeTrackedFile
 from .reporters import SHELL_COMMAND
 
 def file_size(depends):
@@ -53,10 +55,13 @@ def file_size(depends):
     if hasattr(depends,"name"):
         file_name = depends.name
 
-    try:
-        size = os.path.getsize(file_name) / (1024.0**3)
-    except (OSError, AttributeError):
-        size = 0
+    if s3_folder(file_name):
+        size = AWSHugeTrackedFile(file_name).file_size()    
+    else:
+        try:
+            size = os.path.getsize(file_name) / (1024.0**3)
+        except (OSError, AttributeError):
+            size = 0
         
     return size 
 
