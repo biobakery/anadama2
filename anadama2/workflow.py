@@ -205,7 +205,7 @@ class Workflow(object):
         return self.vars.get_option_values()
     
 
-    def get_input_files(self, extension=None, name=None):
+    def get_input_files(self, extension=None, name=None, input_folder=None):
         """Return the files in the input folder filtered with the extension
         or name if provided. The input folder default can be set in the workflow
         or it can be provided on the command line by the user.
@@ -214,12 +214,17 @@ class Workflow(object):
         :type extension: str
         :keyword name: Return input files with this name
         :type name: str
+        :keyword input_folder: Use this input folder instead of the default vars
+        :type name: str
 
         :returns: A list of files
         """
         
         # get the contents of the input folder (with the full paths)
-        vars_input = self.vars.get("input")
+        if input_folder:
+            vars_input = input_folder
+        else:
+            vars_input = self.vars.get("input")
         if tracked.s3_folder(vars_input):
             import boto3
             client = boto3.client("s3")
