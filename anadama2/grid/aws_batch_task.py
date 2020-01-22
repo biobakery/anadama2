@@ -9,7 +9,7 @@ import shutil
 
 import six
 
-from anadama2.runners import _run_task_locally
+from anadama2.runners import _run_task_locally, TaskFailed
 from anadama2.tracked import try_get_local_path
 
 def parse_arguments(args):
@@ -108,6 +108,10 @@ def main():
 
     # remove the working directory
     shutil.rmtree(args.working_directory)
+
+    # if task failed print error for grid
+    if isinstance(result, TaskFailed):
+        sys.exit(result.msg)
 
 if __name__ == "__main__":
     main()
