@@ -1,7 +1,13 @@
 
 # AnADAMA2 History #
 
-## v0.6.6 01-16-2019 ##
+## v0.6.7 01-22-2020 ##
+
+* Update aws batch task script to return error message to grid (in addition to messages already in log).
+* Print workflow description and version to log.
+* Add to file_size function the ability to get s3 file sizes.
+
+## v0.6.6 01-16-2020 ##
 
 * Fix small variable typo in grid class introduced with AWS grid changes.
 
