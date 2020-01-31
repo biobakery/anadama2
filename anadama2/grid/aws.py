@@ -13,7 +13,7 @@ import threading
 import six
 
 from ..helpers import build_actions
-from ..tracked import AWSHugeTrackedFile
+from ..tracked import AWSHugeTrackedFile, try_set_local_path
 from ..runners import _get_task_result
 
 from .grid import Grid
@@ -89,7 +89,11 @@ class AWSGridWorker(GridWorker):
         # move the temp tracked files to /tmp folder for docker run
         # update the action to use the new dependency locations        
         tracked_with_temp = list(filter(lambda x: x.temp_files(), task.depends+task.targets))
-        task_working_directory = os.path.join("/tmp",task.targets[0].tmpdir)
+
+        task_working_directory = os.path.join("/tmp",task.tmpdir)
+        
+        # update all targets/depends to use the task tmpdir
+        tmp_paths = [try_set_local_path(x, task.tmpdir) for x in tracked_with_temp] 
         tmp_paths = [x.prepend_local_path(task_working_directory) for x in tracked_with_temp]
 
         # build the actions again with the new targets/depends paths

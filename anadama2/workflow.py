@@ -623,7 +623,8 @@ class Workflow(object):
             acts = build_actions(actions, deps, targs, visible, kwargs, 
                                   use_parse_sh=interpret_deps_and_targs)
 
-            the_task = Task(name, acts, deps, targs, task_no, bool(visible), actions, kwargs, interpret_deps_and_targs)
+            task_tmpdir = os.path.split(tmpdir)[-1]
+            the_task = Task(name, acts, deps, targs, task_no, bool(visible), actions, kwargs, interpret_deps_and_targs, task_tmpdir)
             self._add_task(the_task)
             return the_task
 

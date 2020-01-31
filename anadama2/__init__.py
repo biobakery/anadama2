@@ -34,9 +34,12 @@ class Task(object):
     :param use_parse_sh: Should parse actions resolving targets/dependencies.
     :type use_parse_sh: bool
 
+    :param tmpdir: The tempdir to use for the task.
+    :type tmpdir: str
+
     """
     
-    def __init__(self, name, actions, depends, targets, task_no, visible, actions_raw, kwargs, use_parse_sh):
+    def __init__(self, name, actions, depends, targets, task_no, visible, actions_raw, kwargs, use_parse_sh, tmpdir=None):
         # Set a default task number
         if task_no is None:
             self.task_no="NA"
@@ -72,6 +75,7 @@ class Task(object):
         else:
             self.description=six.u(name)
             
+        self.tmpdir=tmpdir
             
 from .workflow import Workflow
 from .document import PweaveDocument
