@@ -100,7 +100,11 @@ class AWSGridWorker(GridWorker):
         task.actions=build_actions(task.actions_raw, task.depends, task.targets,
             task.visible, task.kwargs, task.use_parse_sh) 
 
-        task_name="task_"+str(task.task_no)
+        if "Task" in task.name:
+            task_name="task_"+str(task.task_no)
+        else:
+            task_name=task.name+"_task_"+str(task.task_no)
+
         task_pkl_file_basename = task_name+".pkl"
         task_pkl_file=os.path.join(tmpdir,task_pkl_file_basename)
         task_result_pkl_file_basename = "result_"+task_name+".pkl"
@@ -191,7 +195,7 @@ class AWSQueue(GridQueue):
 
         return functools.partial(submit_aws_batch, grid_script)
 
-    def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir,docker_image):
+    def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir,docker_image,task_name):
         """ Create a grid script from the template also creating job definition """
 
         if not docker_image:
@@ -201,7 +205,10 @@ class AWSQueue(GridQueue):
         partition = self.get_partition(time, partition)
 
         # create job definition
-        job_name = "task_{}".format(taskid)
+        if not "Task" in task_name:
+            job_name = "{0}_task_{1}".format(task_name,taskid)
+        else:
+            job_name = "task_{}".format(taskid)
 
         # get lock to submit job definition
         self.lock_submit_task_definition.acquire()

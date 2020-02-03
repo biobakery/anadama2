@@ -413,7 +413,7 @@ class GridQueue(object):
     
         return jobid
     
-    def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir,docker_image):
+    def create_grid_script(self,partition,cpus,minutes,memory,command,taskid,dir,docker_image,task_name):
         """ Create a grid script from the template also creating temp stdout and stderr files """
     
         # create temp files for stdout, stderr, and return code    
@@ -547,7 +547,7 @@ class GridWorker(threading.Thread):
         
         # create the grid bash script
         grid_script, out_file, error_file, rc_file = grid_queue.create_grid_script(current_partition,
-            cores, time, memory, commands, task.task_no, tmpdir, docker_image)
+            cores, time, memory, commands, task.task_no, tmpdir, docker_image, task.name)
     
         logging.info("Created grid files for task id %s: %s, %s, %s, %s",
             task.task_no, grid_script, out_file, error_file, rc_file)
