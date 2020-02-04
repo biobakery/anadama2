@@ -73,8 +73,10 @@ class AWSGridWorker(GridWorker):
     def __init__(self, work_q, result_q, lock, reporter):
         super(AWSGridWorker, self).__init__(work_q, result_q, lock, reporter)
 
-    @classmethod
-    def run_task_by_type(cls, task, extra):
+        # this is a lock for task pkl write
+        self.lock_write_task_pkl = threading.Lock()
+
+    def run_task_by_type(self, task, extra):
         import cloudpickle
         import boto3
 
@@ -92,6 +94,9 @@ class AWSGridWorker(GridWorker):
 
         task_working_directory = os.path.join("/tmp",task.tmpdir)
         
+        # get lock to write task pkl
+        self.lock_write_task_pkl.acquire()
+
         # update all targets/depends to use the task tmpdir
         tmp_paths = [try_set_local_path(x, task.tmpdir) for x in tracked_with_temp] 
         tmp_paths = [x.prepend_local_path(task_working_directory) for x in tracked_with_temp]
@@ -121,6 +126,9 @@ class AWSGridWorker(GridWorker):
         # copy to cloud
         upload_file(resource,bucket,task_pkl_file_basename,task_pkl_file)
 
+        # release lock
+        self.lock_write_task_pkl.release()
+
         # update the task to run the pickle script
         pickle_task = copy.deepcopy(task)
         pickle_task.actions = [" ".join(["anadama2_aws_batch_task",
@@ -128,7 +136,7 @@ class AWSGridWorker(GridWorker):
             "--working-directory", task_working_directory])]
 
         # run the task as a command
-        result = cls.run_task_command(pickle_task, extra)
+        result = self.run_task_command(pickle_task, extra)
 
         # download the results
         download_file(resource,bucket,task_result_pkl_file_basename,task_result_pkl_file)
