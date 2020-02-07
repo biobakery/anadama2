@@ -73,8 +73,7 @@ class AWSGridWorker(GridWorker):
     def __init__(self, work_q, result_q, lock, reporter):
         super(AWSGridWorker, self).__init__(work_q, result_q, lock, reporter)
 
-        # this is a lock for task pkl write
-        self.lock_write_task_pkl = threading.Lock()
+        self.lock = lock
 
     def run_task_by_type(self, task, extra):
         import cloudpickle
@@ -95,7 +94,7 @@ class AWSGridWorker(GridWorker):
         task_working_directory = os.path.join("/tmp",task.tmpdir)
         
         # get lock to write task pkl
-        self.lock_write_task_pkl.acquire()
+        self.lock.acquire()
 
         # update all targets/depends to use the task tmpdir
         tmp_paths = [try_set_local_path(x, task.tmpdir) for x in tracked_with_temp] 
@@ -127,7 +126,7 @@ class AWSGridWorker(GridWorker):
         upload_file(resource,bucket,task_pkl_file_basename,task_pkl_file)
 
         # release lock
-        self.lock_write_task_pkl.release()
+        self.lock.release()
 
         # update the task to run the pickle script
         pickle_task = copy.deepcopy(task)
