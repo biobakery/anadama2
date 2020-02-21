@@ -108,6 +108,8 @@ class Configuration(object):
                 help="Write output to this directory")),
             ("input", cls.Argument("-i", "--input", default=os.getcwd(), 
                 help="Find inputs in this directory \n[default: %(default)s]")),
+            ("config", cls.Argument(None, "--config", default=None, 
+                help="Find workflow configuration in this folder \n[default: only use command line options]")),
             ("jobs", cls.Argument(None, "--local-jobs", default=1, type=int, dest="jobs", 
                 help="Number of tasks to execute in parallel locally \n[default: %(default)s]")),
             ("grid_jobs", cls.Argument(None, '--grid-jobs', default=0, type=int, 
@@ -310,6 +312,29 @@ class Configuration(object):
         self._user_asked = False
 
 
+    def read_config_file(self):
+        """ Read the config file and return the value pairs """
+
+        # try to import the python2 ConfigParser
+        # if unable to import, then try to import the python3 configparser
+        try:
+            import ConfigParser as configparser
+        except ImportError:
+            import configparser
+
+        config = configparser.ConfigParser()
+
+        try:
+            config.read(self.config)
+        except EnvironmentError:
+            sys.exit("Unable to read from the config file: " + self.config)
+
+        for section in config.sections():
+            config_list = config.items(section)
+            for name,value in config_list:
+                yield name, value
+
+
     def ask_user(self, override=False, argv=None):
         """Set up and display the command line interface. Store defaults and
         any user input in the Configuration object. The defaults and
@@ -343,11 +368,23 @@ class Configuration(object):
                 self.parser.add_argument(arg_values.long, **arg_values.keywords)
             
         opts = self.parser.parse_args(args=argv)
+        set_command_line_options = []
         for name in list(self._user_arguments.keys()) + list(self._arguments.keys()):
             name = re.sub(r'-', '_', name)
             val = getattr(opts, name)
-            logger.info("Command line argument `%s' = `%s'", name, val)
             setattr(self, name, val)
+            set_command_line_options.append([name, val])
+
+        # if a config file is provided, read in, set options that were not set on the command line
+        if not self.config is None:
+            config_settings = self.read_config_file()
+            for name, val in config_settings:
+                setattr(self, name, val)
+
+        # log command line options
+        for name, value in set_command_line_options:
+            logger.info("Command line argument `%s' = `%s'", name, val)
+
         self._user_asked = True
         return self
 
