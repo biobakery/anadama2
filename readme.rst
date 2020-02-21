@@ -173,7 +173,22 @@ For a full list of options, run your workflow script with the "--help" option.
                             will run locally.
       -p GRID_PARTITION, --grid-partition=GRID_PARTITION
                             Run gridable tasks on this partition.
+      --config              Find workflow configuration in this folder
+                            [default: only use command line options] 
 
+Options can be provided on the command line or included in a config file with the option "--config=FILE". The config file should be of the format
+similar to Microsoft Windows INI files with a section plus key value pairs. No specific section name is required but "default" is recommended.
+An example config file is included below setting two custom options. Please note the settings in the config file override the default
+option settings while command line options override the config file settings. More specifically if a user were to set an option in the 
+config file and also on the command line the value on the command line is the one that will be used for the workflow. All options set,
+those that are defaults, included on the command line or in the config file, are written to the log each time the workflow is run to
+capture the exact run-time settings.
+
+::
+
+    [default]
+    input_extension = fastq.gz
+    output_extension = bam
 
 
 **Console Output**
