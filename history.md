@@ -1,6 +1,11 @@
 
 # AnADAMA2 History #
 
+## v0.7.0 04-01-2020 ##
+
+* Add grid scratch option for slurm.
+* Add config option.
+
 ## v0.6.7 01-22-2020 ##
 
 * Update aws batch task script to return error message to grid (in addition to messages already in log).
