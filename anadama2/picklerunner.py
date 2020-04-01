@@ -23,8 +23,24 @@ out_file = "{out_file}"
 # load the task
 task = cloudpickle.load(open(in_file,"rb"))
 
-# run the task
+# run the task (first update to scratch locations if set)
+def update_path(depends, output_dir, scratch):
+    for index in range(len(depends)):
+        depends[index].name=depends[index].name.replace(output_dir, scratch)
+    return depends
+
+if task.scratch:
+    original_depends=task.depends
+    task.depends=update_path(task.depends, task.output_dir, task.scratch)
+    original_targets=task.targets
+    task.targets=update_path(task.targets, task.output_dir, task.scratch)
+
 result = _run_task_locally(task)
+
+# change the task batch to the original locations (if scratch used)
+if task.scratch:
+    task.depends=original_depends
+    task.targets=original_targets
 
 # write the pickled results to a file
 cloudpickle.dump(result,open(out_file,"wb"))
@@ -32,7 +48,7 @@ cloudpickle.dump(result,open(out_file,"wb"))
 """
 
 class PickleScript(object):
-    def __init__(self, task, tmpdir, suffix):
+    def __init__(self, task, tmpdir, suffix, scratch=None, output_dir=None):
         # create temp files for the script, input and the output file
         output_handle, output_file = tempfile.mkstemp(dir=tmpdir, suffix=suffix+"_output.pkl")
         os.close(output_handle)
@@ -42,6 +58,8 @@ class PickleScript(object):
         os.close(script_handle)
         
         self.task = task
+        self.task.scratch = scratch
+        self.task.output_dir = output_dir
         self.output_file = output_file
         self.input_file = input_file
         self.script_file = script_file

@@ -53,6 +53,13 @@ class Task(object):
         self.depends=depends
         self.targets=targets
         self.visible=visible
+        
+        self.args=kwargs.get('args',[])
+        if isinstance(self.args, six.string_types):
+            self.args=[self.args]
+
+        self.output_dir=None
+        self.scratch=None
 
         self.actions_raw=actions_raw
         self.kwargs=kwargs

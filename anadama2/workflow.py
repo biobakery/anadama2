@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 import re
 import shlex
 import fnmatch
@@ -155,6 +156,7 @@ class Workflow(object):
         grid_jobs = self.vars.get("grid_jobs")
         grid_options = self.vars.get("grid_options")
         grid_environment = self.vars.get("grid_environment")
+        grid_scratch = self.vars.get("grid_scratch")
         grid_benchmark_setting = True if self.vars.get("grid_benchmark") == "on" else False
         
         # set the grid instance based on the user option
@@ -164,8 +166,12 @@ class Workflow(object):
         elif grid_selection == "slurm":
             # get the temp output folder for the slurm scripts and stdout/stderr files
             tmpdir = os.path.join(self.get_tmpdir(), "slurm_files")
+            if grid_scratch is None:
+                sys.exit("Please select a scratch space with the option --grid-scratch")
+            if self.vars.get("output") in self.vars.get("input"):
+                sys.exit("Please select an output folder that is not a subfolder of the input folder")
             grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
-                options=grid_options, environment=grid_environment)
+                options=grid_options, environment=grid_environment, output_dir = self.vars.get("output"), scratch=grid_scratch)
         elif grid_selection == "sge":
             # get the temp output folder for the sge scripts and stdout/stderr files
             tmpdir = os.path.join(self.get_tmpdir(), "sge_files")
