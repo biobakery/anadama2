@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.7.1 04-07-2020 ##
+
+* For grid scratch, rerun get task result after grid job to get final output files in target output folder resolving issue with function targets not being recorded in database after run success.
+
 ## v0.7.0 04-01-2020 ##
 
 * Add grid scratch option for slurm.
