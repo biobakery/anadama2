@@ -27,20 +27,12 @@ task = cloudpickle.load(open(in_file,"rb"))
 def update_path(depends, output_dir, scratch):
     for index in range(len(depends)):
         depends[index].name=depends[index].name.replace(output_dir, scratch)
-    return depends
 
 if task.scratch:
-    original_depends=task.depends
-    task.depends=update_path(task.depends, task.output_dir, task.scratch)
-    original_targets=task.targets
-    task.targets=update_path(task.targets, task.output_dir, task.scratch)
+    update_path(task.depends, task.output_dir, task.scratch)
+    update_path(task.targets, task.output_dir, task.scratch)
 
 result = _run_task_locally(task)
-
-# change the task batch to the original locations (if scratch used)
-if task.scratch:
-    task.depends=original_depends
-    task.targets=original_targets
 
 # write the pickled results to a file
 cloudpickle.dump(result,open(out_file,"wb"))

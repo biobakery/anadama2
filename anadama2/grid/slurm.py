@@ -9,6 +9,7 @@ import time
 import six
 
 from .. import picklerunner
+from .. import runners
 
 from .grid import Grid
 from .grid import GridWorker
@@ -88,6 +89,10 @@ class SlurmGridWorker(GridWorker):
 
         # decode the result
         result = pickle_script.result(result)
+
+        # if no errors, rerun to get result on final output files
+        if not result.error:
+            result = runners._get_task_result(task)
 
         return result
 
