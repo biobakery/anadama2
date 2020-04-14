@@ -226,7 +226,7 @@ class SLURMQueue(GridQueue):
     def get_job_status_from_stderr(self, error_file, grid_job_status, grid_jobid):
         # read the error file to see if any time or memory errors were reported
         try:
-            slurm_errors=subprocess.check_output(["grep","-i","slurmstepd: error\|killed",error_file]).split("\n")
+            slurm_errors=subprocess.check_output(["grep","-i","slurmstepd: error\|killed",error_file]).decode("utf-8").split("\n")
         except (EnvironmentError, subprocess.CalledProcessError):
             slurm_errors=[]
                 
