@@ -171,7 +171,7 @@ class Workflow(object):
             if self.vars.get("output") in self.vars.get("input"):
                 sys.exit("Please select an output folder that is not a subfolder of the input folder")
             grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
-                options=grid_options, environment=grid_environment, output_dir = self.vars.get("output"), scratch=grid_scratch)
+                options=grid_options, environment=grid_environment, output_dir = os.path.abspath(self.vars.get("output")), scratch=grid_scratch)
         elif grid_selection == "sge":
             # get the temp output folder for the sge scripts and stdout/stderr files
             tmpdir = os.path.join(self.get_tmpdir(), "sge_files")
