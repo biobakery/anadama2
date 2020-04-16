@@ -107,7 +107,11 @@ class SlurmGridWorker(GridWorker):
         for name in [item.name for item in task.depends+task.targets]+task.args:
             for index in range(len(commands)):
                 try:
-                    new_name=name.replace(output_dir, scratch)
+                    new_name = name
+                    if output_dir in name:
+                        new_name=name.replace(output_dir, scratch)
+                    elif output_dir == name+"/":
+                        new_name=scratch
                     if new_name != name:
                         commands[index]=commands[index].replace(name, new_name)
                         mkdirs_set.add(os.path.dirname(new_name))
