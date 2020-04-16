@@ -434,7 +434,7 @@ class GridQueue(object):
         bash=bash_template.substitute(partition=partition,cpus=cpus,time=time,
             memory=memory,command=command,output=out_file,error=error_file,rc_command="export RC=$? ; echo $RC > "+rc_file+" ; bash -c 'exit $RC'")
         file_handle, new_file=tempfile.mkstemp(suffix=".bash",prefix="task_"+str(taskid)+"_",dir=dir)
-        os.write(file_handle,bytes(bash, 'utf-8'))
+        os.write(file_handle,bytearray(bash, 'utf-8'))
         os.close(file_handle)
         
         return new_file, out_file, error_file, rc_file
