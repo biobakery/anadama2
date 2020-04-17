@@ -115,7 +115,7 @@ class SlurmGridWorker(GridWorker):
                     if new_name != name:
                         commands[index]=commands[index].replace(name, new_name)
                         mkdirs_set.add(os.path.dirname(new_name))
-                except AttributeError:
+                except (AttributeError, TypeError):
                     pass
 
         # make the new directories for scratch
