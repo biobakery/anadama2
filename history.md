@@ -1,6 +1,11 @@
 
 # AnADAMA2 History #
 
+## v0.7.2 05-04-2020 ##
+
+* Decode version for tracked executable to resolve reruns for tasks with executable depends in python 3.
+* Changes to grid module for python 3.
+
 ## v0.7.1 04-07-2020 ##
 
 * For grid scratch, rerun get task result after grid job to get final output files in target output folder resolving issue with function targets not being recorded in database after run success.
