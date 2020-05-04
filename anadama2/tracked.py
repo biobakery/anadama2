@@ -657,7 +657,7 @@ class TrackedExecutable(Base):
             
     def version(self):
         try:
-            version = subprocess.check_output(self.version_command, shell=True, stderr=subprocess.STDOUT)
+            version = subprocess.check_output(self.version_command, shell=True, stderr=subprocess.STDOUT).decode('utf-8')
         except (subprocess.CalledProcessError, EnvironmentError):
             version = None
         
