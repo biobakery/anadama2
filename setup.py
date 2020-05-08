@@ -11,7 +11,7 @@ try:
 except ImportError:
     from urllib import urlretrieve
 
-VERSION="0.7.2"
+VERSION="0.7.3"
 AUTHOR = "AnADAMA2 Development Team"
 AUTHOR_EMAIL = "anadama-users@googlegroups.com"
 
@@ -25,25 +25,6 @@ if os.name != 'posix' or sys.version_info[0] > 2:
         requires.remove("subprocess32")
     except ValueError:
         pass
-
-COUNTER_URL="http://bitbucket.org/biobakery/anadama2/downloads/counter.txt"
-
-def download(url, download_file):
-    """ Download a file from a url """
-
-    try:
-        print("Downloading "+url)
-        file, headers = urlretrieve(url,download_file)
-        # print final return to start new line of stdout
-        print("\n")
-    except EnvironmentError:
-        print("WARNING: Unable to download "+url)
-
-counter_file=os.path.basename(COUNTER_URL)
-if not os.path.isfile(counter_file):
-    print("Downloading counter file to track anadama2 downloads"+
-    " since the global PyPI download stats are currently turned off.")
-    download(COUNTER_URL,counter_file)
 
 class SphinxBuild(distutils.cmd.Command):
     """ This is a custom command to build the API Docs"""

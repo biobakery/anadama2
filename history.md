@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.7.3 05-04-2020 ##
+
+* Remove extra decode to resolve new error from prior fix for python 3.
+
 ## v0.7.2 05-04-2020 ##
 
 * Decode version for tracked executable to resolve reruns for tasks with executable depends in python 3.
