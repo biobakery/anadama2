@@ -1,6 +1,11 @@
 
 # AnADAMA2 History #
 
+## v0.7.4 05-15-2020 ##
+
+* Subclass pweave processor class to modify function to not remove spaces at the end of strings generated from code chunks. This change allows for endlines after markdown images which is needed for pandoc to generate figure captions.
+* Update pandoc option to allow for use with latest version.
+
 ## v0.7.3 05-04-2020 ##
 
 * Remove extra decode to resolve new error from prior fix for python 3.
