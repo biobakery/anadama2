@@ -231,7 +231,7 @@ class PweaveDocument(Document):
                         #result = self.loadstring(code_str).strip()
                         # small modification from original code to allow for spaces at the end
                         # spaces after figures are required for figure captions with pandoc
-                        result = self.loadstring(code_str)
+                        result = self.loadstring(code_str).lstrip().replace("\n","",1)
                         splitted[i] = result
                 return ''.join(splitted)
 
