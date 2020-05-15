@@ -194,15 +194,46 @@ class PweaveDocument(Document):
         
         # set the pandoc command based on if a table of contents will be included
         pandoc_command="pandoc {0} -o {1} --variable=linkcolor:Blue "+\
-            "--variable=toccolor:Blue --latex-engine=pdflatex --standalone" 
+            "--variable=toccolor:Blue --pdf-engine=pdflatex --standalone" 
         if self.table_of_contents:
             pandoc_command+=" --toc"
         
         # run pweave then pandoc to generate document
-        
+ 
         # call pweave to use class with fix
-        from pweave import PwebPandocFormatter, Pweb
+        from pweave import PwebPandocFormatter, Pweb, PwebProcessor
         from pweave.readers import PwebScriptReader
+
+        class PwebProcessorSpaces(PwebProcessor):
+            def loadinline(self, content):
+                """Function from pweave slightly modified to allow for spaces in code"""
+                """Evaluate code from doc chunks using ERB markup"""
+                # Flags don't work with ironpython
+                import re
+                splitted = re.split('(<%[\w\s\W]*?%>)', content)  # , flags = re.S)
+                # No inline code
+                if len(splitted) < 2:
+                    return content
+
+                n = len(splitted)
+
+                for i in range(n):
+                    elem = splitted[i]
+                    if not elem.startswith('<%'):
+                        continue
+                    if elem.startswith('<%='):
+                        code_str = elem.replace('<%=', '').replace('%>', '').lstrip()
+                        result = self.loadstring(self.add_echo(code_str)).strip()
+                        splitted[i] = result
+                        continue
+                    if elem.startswith('<%'):
+                        code_str = elem.replace('<%', '').replace('%>', '').lstrip()
+                        #result = self.loadstring(code_str).strip()
+                        # small modification from original code to allow for spaces at the end
+                        # spaces after figures are required for figure captions with pandoc
+                        result = self.loadstring(code_str)
+                        splitted[i] = result
+                return ''.join(splitted)
 
         class PwebPandocFormatterFixedFigures(PwebPandocFormatter):
             def make_figure_string_size(self, figname, width, label, caption = ""):
@@ -252,10 +283,10 @@ class PweaveDocument(Document):
         doc = Pweb(temp_template)
         doc.setformat(Formatter = PwebPandocFormatterFixedFigures)
         doc.detect_reader()
-        doc.weave()
+        doc.weave(shell=PwebProcessorSpaces)
         
         sys.stdout = original_stdout
-        
+       
         sh(pandoc_command.format(intermediate_template, temp_report),log_command=True)()          
         
         # change back to original working directory
