@@ -172,7 +172,7 @@ class SLURMQueue(GridQueue):
         self.options=options
         self.environment=environment
         self.scratch=scratch
-        if not self.scratch.endswith("/"):
+        if self.scratch and not self.scratch.endswith("/"):
             self.scratch=self.scratch+"/"
         self.output_dir=output_dir
         if not self.output_dir.endswith("/"):
