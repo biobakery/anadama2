@@ -416,7 +416,7 @@ class PweaveDocument(Document):
          pyplot.axhline(threshold, color=color)
          pyplot.text(0, int(threshold) + 50, label)
 
-         pyplot.show()
+         pyplot.draw()
 
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
@@ -516,7 +516,7 @@ class PweaveDocument(Document):
             
         figure.suptitle(title, fontsize=14)
         
-        pyplot.show()
+        pyplot.draw()
 
     def plot_grouped_barchart(self, data, row_labels, column_labels, title, 
         xlabel=None, ylabel=None, legend_title=None, yaxis_in_millions=None):
@@ -614,7 +614,7 @@ class PweaveDocument(Document):
         subplot.legend(barplots,row_labels,loc="center left", bbox_to_anchor=(1,0.5),
             fontsize=7, title=legend_title, frameon=False)
         
-        pyplot.show()  
+        pyplot.draw()  
         
     def plot_scatter(self, data, title, row_labels, xlabel=None, ylabel=None, trendline=None):
         """ Plot a scatter plot 
@@ -672,7 +672,7 @@ class PweaveDocument(Document):
             
         pyplot.title(title)
 
-        pyplot.show()        
+        pyplot.draw()        
         
     def plot_barchart(self, data, labels=None, title=None, xlabel=None, ylabel=None):
         """ Plot a barchart 
@@ -724,7 +724,7 @@ class PweaveDocument(Document):
             
         pyplot.title(title)
 
-        pyplot.show() 
+        pyplot.draw() 
         
     def _custom_colors(self,total_colors):
         """ Get a set of custom colors for a matplotlib plot """
@@ -839,7 +839,7 @@ class PweaveDocument(Document):
         subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
             title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
         
-        pyplot.show()
+        pyplot.draw()
         
     def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
                    location="center", font=None):
@@ -934,7 +934,7 @@ class PweaveDocument(Document):
         pyplot.title(title)
         
         # plot the table
-        pyplot.show() 
+        pyplot.draw() 
         
     def write_table(self, column_labels, row_labels, data, file):
         """ Write a table of data to a file 
@@ -1070,7 +1070,7 @@ class PweaveDocument(Document):
             subplot2.yaxis.set_visible(False)
             pyplot.imshow(heatmap_legend, interpolation="none")
 
-        pyplot.show()
+        pyplot.draw()
         # adjust the heatmap to fit in the figure area
         # this is needed to increase the image size (to fit in the increased figure)
         pyplot.tight_layout()
@@ -1288,7 +1288,7 @@ class PweaveDocument(Document):
         # adjust spacing between subplots
         figure.tight_layout()   
 
-        pyplot.show()
+        pyplot.draw()
  
 
 
@@ -1438,7 +1438,7 @@ class PweaveDocument(Document):
                  "dissimilarities between " + feature_types + " profiles of " + sample_types + ".  Numbers in parenthesis on each axis ",
                  "represent the amount of variance explained by that axis."])
 
-        pyplot.show()
+        pyplot.draw()
 
         return caption
 
