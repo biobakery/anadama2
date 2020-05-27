@@ -352,7 +352,10 @@ class PweaveDocument(Document):
             """ Try to format the data, except use zero """
             
             try:
-                formatted_data=function(data)
+                if function == int:
+                    formatted_data=int(float(data))
+                else:
+                    formatted_data=function(data)
             except ValueError:
                 formatted_data=function(0)
                 
@@ -868,12 +871,12 @@ class PweaveDocument(Document):
         import numpy
         import matplotlib.pyplot as pyplot
         from matplotlib.table import Table
-        
+
         # if the option is set to format the data, add commas
         if format_data_comma:
-            format_data = [map(lambda x: "{:,}".format(int(x)),row) for row in data]
+            format_data = [list(map(lambda x: "{:,}".format(int(x)),row)) for row in data]
         else:
-            format_data = [map(str,row) for row in data]
+            format_data = [list(map(str,row)) for row in data]
         data=format_data
         
         # create a figure in one subplot
@@ -893,7 +896,7 @@ class PweaveDocument(Document):
         max_width_chars = [max(map(len,row_labels))]
         for i in range(total_columns):
             current_values=[str(value) for value in [column_labels[i]]+[row[i] for row in data]]
-            max_width_chars.append(max(map(len,current_values)))
+            max_width_chars.append(max(list(map(len,current_values))))
         
         # compute the widths for each column
         total_chars=sum(max_width_chars)*1.0
@@ -954,7 +957,7 @@ class PweaveDocument(Document):
         if not os.path.isdir(os.path.dirname(file)):
             os.makedirs(os.path.dirname(file))
     
-        with open(file, "wb") as file_handle:
+        with open(file, "w") as file_handle:
             file_handle.write("\t".join(column_labels)+"\n")
             for name, row in zip(row_labels, data):
                 file_handle.write("\t".join([name]+[str(i) for i in row])+"\n")
@@ -1082,7 +1085,7 @@ class PweaveDocument(Document):
         proc=subprocess.Popen(["R","--vanilla","--quiet","--args"]+args,
             stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
-        out, err = proc.communicate(input="\n".join(commands))
+        out, err = proc.communicate(input=bytearray("\n".join(commands),'utf-8'))
         
     def filter_zero_rows(self, row_names, data):
         """ Filter the rows from the data set that sum to zero 
