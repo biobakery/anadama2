@@ -991,7 +991,6 @@ class PweaveDocument(Document):
         
         """
         
-        from matplotlib._png import read_png
         import matplotlib.pyplot as pyplot
         import numpy
         
@@ -1042,7 +1041,7 @@ class PweaveDocument(Document):
         try: 
             output=subprocess.check_output(command)
             # read the heatmap png file
-            heatmap=read_png(heatmap_file)
+            heatmap=pyplot.imread(heatmap_file)
         except (subprocess.CalledProcessError, OSError):
             print("Unable to generate heatmap")
             heatmap=[]
