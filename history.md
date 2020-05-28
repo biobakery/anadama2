@@ -1,6 +1,11 @@
 
 # AnADAMA2 History #
 
+## v0.7.5 05-28-2020 ##
+
+* Updates to documentation methods for python 3 compatibility.
+* Fix issue running without grid scratch set (addition of / to empty string).
+
 ## v0.7.4 05-15-2020 ##
 
 * Subclass pweave processor class to modify function to not remove spaces at the end of strings generated from code chunks. This change allows for endlines after markdown images which is needed for pandoc to generate figure captions.
