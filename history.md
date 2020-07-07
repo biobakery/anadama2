@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.7.7 07-07-2020 ##
+
+* Suppress stdout in hclust2 exe name check.
+
 ## v0.7.6 07-07-2020 ##
 
 * Update hclust2 doc method to allow for pip executable.
