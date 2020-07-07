@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.7.6 07-07-2020 ##
+
+* Update hclust2 doc method to allow for pip executable.
+
 ## v0.7.5 05-28-2020 ##
 
 * Updates to documentation methods for python 3 compatibility.
