@@ -1018,7 +1018,7 @@ class PweaveDocument(Document):
         # check for hclust executable
         exe_name = "hclust2"
         try:
-            out=subprocess.check_call("which hclust2", shell=True, stderr=subprocess.DEVNULL)
+            out=subprocess.check_call("which hclust2", shell=True, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
         except subprocess.CalledProcessError:
             exe_name = "hclust2.py"
 
