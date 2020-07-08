@@ -1071,7 +1071,7 @@ class PweaveDocument(Document):
         pyplot.imshow(heatmap, interpolation="none")
 
         if metadata_rows:
-            heatmap_legend = read_png(metadata_legend_file)
+            heatmap_legend = pyplot.imread(metadata_legend_file)
             # metadata legend subplot
             subplot2 = pyplot.subplot2grid((4,1),(3,0), rowspan=1, frame_on=False)
             subplot2.xaxis.set_visible(False)
