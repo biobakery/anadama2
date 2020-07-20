@@ -1006,7 +1006,7 @@ class PweaveDocument(Document):
         if metadata_rows:
             metadata_legend_file = hclust2_input_file+"_legend.png"
 
-        self.write_table(["# "]+sample_names,feature_names,data,hclust2_input_file)
+        self.write_table([" "]+sample_names,feature_names,data,hclust2_input_file)
         
         # increase the dpi for small text
         dpi=300
