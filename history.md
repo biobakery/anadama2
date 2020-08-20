@@ -1,6 +1,14 @@
 
 # AnADAMA2 History #
 
+## v0.7.9 07-20-2020 ##
+
+* Change hclust2 input file format to work with latest hclust2 version. 
+
+## v0.7.8 07-15-2020 ##
+
+* Update hclust2 exe check to be python 2 compliant.
+
 ## v0.7.7 07-07-2020 ##
 
 * Suppress stdout in hclust2 exe name check.

@@ -1006,7 +1006,7 @@ class PweaveDocument(Document):
         if metadata_rows:
             metadata_legend_file = hclust2_input_file+"_legend.png"
 
-        self.write_table(["# "]+sample_names,feature_names,data,hclust2_input_file)
+        self.write_table([" "]+sample_names,feature_names,data,hclust2_input_file)
         
         # increase the dpi for small text
         dpi=300
@@ -1018,7 +1018,8 @@ class PweaveDocument(Document):
         # check for hclust executable
         exe_name = "hclust2"
         try:
-            out=subprocess.check_call("which hclust2", shell=True, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+            with open(os.devnull, 'w') as devnull:
+                out=subprocess.check_call("which hclust2", shell=True, stderr=devnull, stdout=devnull)
         except subprocess.CalledProcessError:
             exe_name = "hclust2.py"
 
