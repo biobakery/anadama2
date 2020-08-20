@@ -489,6 +489,7 @@ class Workflow(object):
             command=["zip","-r",targets[0]]
             command+=archive_inputs
             command+=["-x",document_db_folder]
+            command+=["-x","'*tmp*'"]
             if remove_log:
                 command+=["-x",document_log]
         elif archive_software == "tar": 

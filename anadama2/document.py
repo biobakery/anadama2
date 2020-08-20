@@ -301,7 +301,7 @@ class PweaveDocument(Document):
             shutil.move(os.path.join(temp_figures_folder,file),os.path.join(self.figures_folder,file))
         
         # remove all of the temp files in the temp folder
-        shutil.rmtree(temp_directory)
+        shutil.rmtree(temp_directory,ignore_errors=True)
         
         # remove the figures folder if it is empty
         if len(os.listdir(self.figures_folder)) == 0:
