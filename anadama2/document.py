@@ -201,10 +201,10 @@ class PweaveDocument(Document):
         # run pweave then pandoc to generate document
  
         # call pweave to use class with fix
-        from pweave import PwebPandocFormatter, Pweb, PwebProcessor
+        from pweave import PwebPandocFormatter, Pweb, PwebProcessors
         from pweave.readers import PwebScriptReader
 
-        class PwebProcessorSpaces(PwebProcessor):
+        class PwebProcessorSpaces(PwebProcessors):
             def loadinline(self, content):
                 """Function from pweave slightly modified to allow for spaces in code"""
                 """Evaluate code from doc chunks using ERB markup"""
