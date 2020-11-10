@@ -182,7 +182,7 @@ class SLURMQueue(GridQueue):
         self.job_code_cancelled="CANCELLED"
         self.job_code_failed="FAILED"
         self.job_code_timeout="TIMEOUT"
-        self.job_code_memkill="MEMKILL"
+        self.job_code_memkill="OUT_OF_ME+"
        
         self.all_failed_codes=[self.job_code_failed,self.job_code_timeout,self.job_code_memkill,self.job_code_cancelled]
         self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
