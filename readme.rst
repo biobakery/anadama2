@@ -1,7 +1,7 @@
 **AnADAMA2 User Manual**
 ========================
 
-AnADAMA2 is the next generation of AnADAMA (Another Automated Data Analysis Management Application). AnADAMA is a tool to create reproducible workflows and execute them efficiently. AnADAMA operates in a make-like manner using targets and dependencies of teach task to allow for parallelization. In cases where a workflow is modified or input files change, only those tasks impacted by the changes will be rerun. 
+AnADAMA2 is the next generation of AnADAMA (Another Automated Data Analysis Management Application). AnADAMA is a tool to create reproducible workflows and execute them efficiently. AnADAMA operates in a make-like manner using targets and dependencies of each task to allow for parallelization. In cases where a workflow is modified or input files change, only those tasks impacted by the changes will be rerun. 
  
 Tasks can be run locally or in a grid computing environment to increase efficiency. AnADAMA2 includes meta-schedulers for SLURM and SGE grids. Tasks that are specified to run on the grid will be submitted and monitored. If a task exceeds its time or memory allotment it will be resubmitted with double the time or memory (based on which resource needs to be increased) at most three times. Benchmarking information of time, memory, and cores will be recorded for each task run on the grid.
  
