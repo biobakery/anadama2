@@ -182,7 +182,7 @@ class SLURMQueue(GridQueue):
         self.job_code_cancelled="CANCELLED"
         self.job_code_failed="FAILED"
         self.job_code_timeout="TIMEOUT"
-        self.job_code_memkill="OUT_OF_ME+"
+        self.job_code_memkill="OUT_OF_MEMORY"
        
         self.all_failed_codes=[self.job_code_failed,self.job_code_timeout,self.job_code_memkill,self.job_code_cancelled]
         self.all_stopped_codes=[self.job_code_completed]+self.all_failed_codes
@@ -240,8 +240,8 @@ class SLURMQueue(GridQueue):
                 logging.info("Slurm task %s cancelled due to time limit", grid_jobid)
                 # This has the slurm status of "TIMEOUT" from slurm sacct
                 grid_job_status=self.job_code_timeout
-            elif list(filter(lambda x: "exceeded memory limit" in x and "being killed" in x, slurm_errors)) or \
-                all([i in "\n".join(slurm_errors).lower() for i in ["exceeded","memory limit","killed"]]):
+            elif list(filter(lambda x: "out-of-memory handler" in x and "oom-kill event" in x, slurm_errors)) or \
+                all([i in "\n".join(slurm_errors).lower() for i in ["memory","killed"]]):
                 logging.info("Slurm task %s cancelled due to memory limit", grid_jobid)
                 # This has the slurm status of "CANCELLED by 0" from slurm sacct (short form is "CANCELLED+")
                 # It might also have the slurm status of FAILED
