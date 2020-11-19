@@ -345,9 +345,9 @@ class GridQueue(object):
         else: 
             try:
                 logging.debug("Running grid command: %s"," ".join(command))
-                stdout=subprocess.check_output(command, stderr=subprocess.STDOUT)
+                stdout=subprocess.check_output(command, stderr=subprocess.STDOUT).decode('utf-8')
             except subprocess.CalledProcessError as err:
-                error=err.output
+                error=err.output.decode('utf-8')
                 stdout=error or "error"
             
         timeout_error=False
