@@ -383,7 +383,7 @@ class GridQueue(object):
     def get_job_id_from_submit_output(stdout):
         try:
             # search for the decimal job id at any location in stdout
-            jobid=re.findall(r'\d+',stdout.decode("utf-8"))[0]
+            jobid=re.findall(r'\d+',stdout)[0]
         except IndexError:
             jobid="error"
 
