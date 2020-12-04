@@ -259,7 +259,7 @@ class SLURMQueue(GridQueue):
         # remove the header information from the status lines
         # split each line and remove empty lines
         try:
-            info=filter(lambda x: x, [line.rstrip().split() for line in stdout.decode("utf-8").split("\n")[2:]])
+            info=filter(lambda x: x, [line.rstrip().split() for line in stdout.split("\n")[2:]])
         except IndexError:
             info=[]
             
