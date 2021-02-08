@@ -773,7 +773,7 @@ class Workflow(object):
             _runner = runners.DryRunner(self)
         _runner.quit_early = quit_early
         logger.debug("Sorting task_nos by network topology")
-        task_idxs = nx.algorithms.dag.topological_sort(self.dag, reverse=True)
+        task_idxs = list(reversed(list(nx.algorithms.dag.topological_sort(self.dag))))
         logger.debug("Sorting complete")
         keep, drop = set(), set()
         if until_task:
