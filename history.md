@@ -1,6 +1,12 @@
 
 # AnADAMA2 History #
 
+## v0.8.0 02-08-2021 ##
+
+* Modify topological sort function call to work with latest networkx version.
+* Allow for nsf working temp files by allowing for errors in remove of tmp folder and files from zip archive function.
+* Update slurm memkill state to match new RC SLURM state and update decodes for python3 to slurm grid submit checks.
+
 ## v0.7.9 07-20-2020 ##
 
 * Change hclust2 input file format to work with latest hclust2 version. 
