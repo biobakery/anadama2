@@ -276,16 +276,19 @@ class PweaveDocument(Document):
         
                 return figstring
 
-        # capture stdout messages
-        original_stdout = sys.stdout
-        sys.stdout = capture_stdout = StringIO()
+        if temp_template.endswith(".py"): 
+            # capture stdout messages
+            original_stdout = sys.stdout
+            sys.stdout = capture_stdout = StringIO()
+
+            doc = Pweb(temp_template)
+            doc.setformat(Formatter = PwebPandocFormatterFixedFigures)
+            doc.detect_reader()
+            doc.weave(shell=PwebProcessorSpaces)
         
-        doc = Pweb(temp_template)
-        doc.setformat(Formatter = PwebPandocFormatterFixedFigures)
-        doc.detect_reader()
-        doc.weave(shell=PwebProcessorSpaces)
-        
-        sys.stdout = original_stdout
+            sys.stdout = original_stdout
+        else:
+            sh("pweave {0} -o {1}".format(temp_template,intermediate_template),log_command=True)()
        
         sh(pandoc_command.format(intermediate_template, temp_report),log_command=True)()          
         
