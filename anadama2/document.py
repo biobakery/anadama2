@@ -134,6 +134,12 @@ class PweaveDocument(Document):
                 if data_file:
                     shutil.copy(data_file,os.path.join(self.data_folder,os.path.basename(data_file)))
 
+    def print_title(self):
+        if self.vars["header_image"]:
+            print(" ")
+            print("  ![{0}]({1})  ".format("",self.vars["header_image"]))
+        print("  "+self.vars["title"]+" for "+self.vars["project"])
+
     def create(self, task):
         """ Create the documents specified as targets """
 
@@ -148,14 +154,6 @@ class PweaveDocument(Document):
         temp_template_basename = os.path.join(temp_directory,os.path.basename(report_filename))
         # keep the extension of the template for pweave auto reader function
         temp_template = temp_template_basename + template_extension
-        
-        # merge the templates into the temp file
-        with open(temp_template,"w") as handle:
-            for file in self.templates:
-                for line in open(file):
-                    handle.write(line)
-                
-        handle.close()
         
         # if variables are provided, then create a pickled file to store these
         # for use when the document is created
@@ -178,6 +176,31 @@ class PweaveDocument(Document):
             # create a picked file with the temp template name in the same folder
             pickle.dump(self.vars, open(temp_template_basename+".pkl", "wb"))
 
+        # merge the templates into the temp file
+        templates_globals=globals()
+        templates_globals["vars"]=self.vars
+        with open(temp_template,"w") as handle:
+            for file in self.templates:
+                current_import_section=""
+                capture_import=False
+                for line in open(file):
+                    # look for and process imports
+                    if line.startswith("```{import"):
+                        capture_import=True
+                    elif line.startswith("```") and capture_import:
+                        exec(current_import_section, templates_globals)
+                        if "filename" in templates_globals:
+                            # import the file to the template
+                            for importline in open(os.path.join(os.path.dirname(file),filename)):
+                                handle.write(importline)
+                        del templates_globals["filename"]
+                        current_import_section=""
+                        capture_import=False
+                    elif capture_import:
+                        current_import_section+=line
+                    else: 
+                        handle.write(line)
+                
         # create the document
         # first move to the directory with the temp output files
         # this will cause all pweave output files to be written to this folder
