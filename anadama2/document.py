@@ -179,6 +179,7 @@ class PweaveDocument(Document):
         # merge the templates into the temp file
         templates_globals=globals()
         templates_globals["vars"]=self.vars
+        templates_globals["filename"]=""
         with open(temp_template,"w") as handle:
             for file in self.templates:
                 current_import_section=""
@@ -189,11 +190,11 @@ class PweaveDocument(Document):
                         capture_import=True
                     elif line.startswith("```") and capture_import:
                         exec(current_import_section, templates_globals)
-                        if "filename" in templates_globals:
+                        if "filename" in templates_globals and templates_globals["filename"]:
                             # import the file to the template
                             for importline in open(os.path.join(os.path.dirname(file),filename)):
                                 handle.write(importline)
-                        del templates_globals["filename"]
+                        templates_globals["filename"]=""
                         current_import_section=""
                         capture_import=False
                     elif capture_import:
