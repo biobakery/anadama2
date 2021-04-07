@@ -64,11 +64,23 @@ class GridJobRequires(object):
 class Grid(object):
     """ Base Grid Workflow manager class """
     
-    def __init__(self, name, worker, queue, tmpdir, benchmark_on=None):
+    def __init__(self, name, worker, queue, tmpdir, benchmark_on=None, max_time=None, max_mem=None):
         self.name = name
         self.worker = worker
         self.queue = queue
         self.tmpdir = tmpdir
+
+        try:
+            self.max_time = int(max_time)
+        except ValueError:
+            print("ERROR: Please provide an integer for the max time: {}".format(max_time))
+            self.max_time = None
+
+        try:
+            self.max_mem = int(max_mem)
+        except ValueError:
+            print("ERROR: Please provide an integer for the max memory: {}".format(max_mem))
+            self.max_mem = None
         
         # create the folder if it does not already exist for temp directory
         if not os.path.isdir(self.tmpdir):
@@ -98,8 +110,17 @@ class Grid(object):
             requires.append(None)    
         
         requires+=[depends]
-        
-        return (GridJobRequires(*requires), self.tmpdir)
+       
+        jobrequires=GridJobRequires(*requires)
+
+        # check for user max time and memory overrides
+        if self.max_time and self.max_time < jobrequires.time:
+            jobrequires.time=self.max_time
+
+        if self.max_mem and self.max_mem < jobrequires.mem:
+            jobrequires.mem=self.max_mem
+ 
+        return (jobrequires, self.tmpdir)
         
     def do(self, task, **kwargs):
         """Accepts the following extra arguments:

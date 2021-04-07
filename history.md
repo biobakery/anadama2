@@ -1,6 +1,10 @@
 
 # AnADAMA2 History #
 
+## v0.9.0 TBD ##
+
+* Added two new grid options "--grid-max-time" and "--grid-max-mem" to set the max time and memory used for each grid task.
+
 ## v0.8.0 02-08-2021 ##
 
 * Modify topological sort function call to work with latest networkx version.
