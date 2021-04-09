@@ -71,13 +71,19 @@ class Grid(object):
         self.tmpdir = tmpdir
 
         try:
-            self.max_time = int(max_time)
+            if self.max_time:
+                self.max_time = int(max_time)
+            else:
+                self.max_time = 0
         except ValueError:
             print("ERROR: Please provide an integer for the max time: {}".format(max_time))
             self.max_time = None
 
         try:
-            self.max_mem = int(max_mem)
+            if self.max_mem:
+                self.max_mem = int(max_mem)
+            else:
+                self.max_mem = 0
         except ValueError:
             print("ERROR: Please provide an integer for the max memory: {}".format(max_mem))
             self.max_mem = None
@@ -113,12 +119,10 @@ class Grid(object):
        
         jobrequires=GridJobRequires(*requires)
 
-        # check for user max time and memory overrides
-        if self.max_time and self.max_time < jobrequires.time:
-            jobrequires.time=self.max_time
+        # add the max time and memory overrides
+        jobrequires.time=[jobrequires.time,self.max_time]
 
-        if self.max_mem and self.max_mem < jobrequires.mem:
-            jobrequires.mem=self.max_mem
+        jobrequires.mem=[jobrequires.mem,self.max_mem]
  
         return (jobrequires, self.tmpdir)
         
@@ -609,17 +613,37 @@ class GridWorker(threading.Thread):
     @staticmethod
     def evaluate_resource_requests(time,mem):
         """ Evaluate the time/memory requests for the grid job, allowing for ints or formulas """
-        
+       
+        # allow for optional max time and memory
+        if not isinstance(time,list):
+            time=[time]
+
+        if not isinstance(mem,list):
+            mem=[mem]
+ 
         try:
-            time=eval(str(time))
+            time[0]=eval(str(time[0]))
         except TypeError:
             raise TypeError("Unable to evaluate time request for task: "+ time)
         
         try:
-            mem=eval(str(mem))
+            mem[0]=eval(str(mem[0]))
         except TypeError:
             raise TypeError("Unable to evaluate memory request for task: "+ mem)
         
+        # check for override with max
+        if time[0] > time[-1]:
+            logging.info("Using override of max time from {0} reset to {1}".format(time[0],time[-1]))
+            time=time[-1]
+        else:
+            time=time[0]
+        
+        if mem[0] > mem[-1]:
+            logging.info("Using override of max mem from {0} reset to {1}".format(mem[0],mem[-1]))
+            mem=mem[-1]
+        else:
+            mem=mem[0]
+
         return time, mem  
     
     @classmethod
