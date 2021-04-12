@@ -69,24 +69,20 @@ class Grid(object):
         self.worker = worker
         self.queue = queue
         self.tmpdir = tmpdir
+        self.max_time = None
+        self.max_mem = None
 
         try:
-            if self.max_time:
+            if max_time:
                 self.max_time = int(max_time)
-            else:
-                self.max_time = 0
         except ValueError:
             print("ERROR: Please provide an integer for the max time: {}".format(max_time))
-            self.max_time = None
 
         try:
-            if self.max_mem:
+            if max_mem:
                 self.max_mem = int(max_mem)
-            else:
-                self.max_mem = 0
         except ValueError:
             print("ERROR: Please provide an integer for the max memory: {}".format(max_mem))
-            self.max_mem = None
         
         # create the folder if it does not already exist for temp directory
         if not os.path.isdir(self.tmpdir):
@@ -632,13 +628,13 @@ class GridWorker(threading.Thread):
             raise TypeError("Unable to evaluate memory request for task: "+ mem)
         
         # check for override with max
-        if time[0] > time[-1]:
+        if time[-1] and time[0] > time[-1]:
             logging.info("Using override of max time from {0} reset to {1}".format(time[0],time[-1]))
             time=time[-1]
         else:
             time=time[0]
         
-        if mem[0] > mem[-1]:
+        if mem[-1] and mem[0] > mem[-1]:
             logging.info("Using override of max mem from {0} reset to {1}".format(mem[0],mem[-1]))
             mem=mem[-1]
         else:
