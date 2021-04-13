@@ -759,31 +759,21 @@ class PweaveDocument(Document):
         from matplotlib import cm
 
         # create a set of custom colors
-        
         # get the max amount of colors for a few different color maps
-        terrain=[cm.terrain(i/7.0) for i in range(7)]
-        # don't use the last dark2 color as this overlaps with the first terrain color
-        dark=[cm.Dark2(i/8.0) for i in range(7)]
-        jet=[cm.jet(i/7.0) for i in range(7)]
-        nipy_spectral=[cm.nipy_spectral(i/10.0) for i in range(10)]
-        set3=[cm.Set3(i/12.0) for i in range(12)]
+        tab10=[cm.tab10(i/10.0) for i in range(10)]
+        tab20=[cm.tab20(i/20.0) for i in range(20)]
+        tab20b=[cm.tab20b(i/20.0) for i in range(20)]
+        tab20c=[cm.tab20c(i/20.0) for i in range(20)]
         
-        # select the total numer of color maps based on the total number of colors
-        if total_colors <= 7:
-            sets=[terrain]
-        elif total_colors <= 14:
-            sets=[terrain,dark]
-        elif total_colors <= 24:
-            sets=[terrain,dark,nipy_spectral]
+        if total_colors <= 10:
+            sets=tab10
+        elif total_colors <= 20:
+            sets=tab20
         else:
-            sets=[terrain,dark,nipy_spectral,set3]
-        
-        # return a mixed set of colors from each set used
-        # repeat colors if we run out
-        for color_set in itertools.cycle(zip(*sets)):
-            for color in color_set:
-                yield color
-
+            sets=tab20c+tab20b
+       
+        for color in sets:
+            yield color
   
 
     def plot_stacked_barchart(self, data, row_labels, column_labels, title,
