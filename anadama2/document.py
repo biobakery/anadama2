@@ -765,9 +765,7 @@ class PweaveDocument(Document):
         tab20b=[cm.tab20b(i/20.0) for i in range(20)]
         tab20c=[cm.tab20c(i/20.0) for i in range(20)]
         
-        if total_colors <= 10:
-            sets=tab10
-        elif total_colors <= 20:
+        if total_colors <= 20:
             sets=tab20
         else:
             sets=tab20c+tab20b
