@@ -775,7 +775,7 @@ class PweaveDocument(Document):
   
 
     def plot_stacked_barchart(self, data, row_labels, column_labels, title,
-        xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7):
+        xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7, outfilename=None):
         """ Plot a stacked barchart
         
         :param data: A list of lists containing the data
@@ -810,7 +810,7 @@ class PweaveDocument(Document):
         import numpy
         import matplotlib.pyplot as pyplot
         
-        figure = pyplot.figure()
+        figure = pyplot.figure(figsize=(10,8))
         subplot=pyplot.subplot(111)
         bar_plots=[]
         names=[]
@@ -853,8 +853,13 @@ class PweaveDocument(Document):
         pyplot.yticks(fontsize=7)
         subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
             title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
-        
-        pyplot.draw()
+       
+        if outfilename:
+            pyplot.savefig(outfilename)
+            print("\n\n![]({0})\n\n".format(outfilename))
+            pyplot.close()
+        else: 
+            pyplot.draw()
         
     def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
                    location="center", font=None):
