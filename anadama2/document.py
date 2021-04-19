@@ -977,7 +977,7 @@ class PweaveDocument(Document):
             for name, row in zip(row_labels, data):
                 file_handle.write("\t".join([name]+[str(i) for i in row])+"\n")
         
-    def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False,metadata_rows=None,method="correlation"):
+    def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False,metadata_rows=None,method="correlation",outfilename=None):
         """ Create a hclust2 heatmap with dendrogram and show it in the document
         
         :param sample_names: The names of the samples
@@ -1004,6 +1004,8 @@ class PweaveDocument(Document):
         :keyword method: The distance function for features
         :type method: str
         
+        :keyword outfilename: The file to write the image
+        :type method: str
         """
         
         import matplotlib.pyplot as pyplot
@@ -1017,14 +1019,21 @@ class PweaveDocument(Document):
         
         # write a file of the data
         handle, hclust2_input_file=tempfile.mkstemp(prefix="hclust2_input",dir=os.getcwd())
-        heatmap_file=hclust2_input_file+".png"
-        if metadata_rows:
-            metadata_legend_file = hclust2_input_file+"_legend.png"
+        # if output file is provided, use that instead
+        if outfilename:
+            heatmap_file=outfilename
+            if metadata_rows:
+                outinfo = outfilename.split(".")
+                metadata_legend_file = outinfo[0]+"_legend."+outinfo[-1]
+        else:
+            heatmap_file=hclust2_input_file+".png"
+            if metadata_rows:
+                metadata_legend_file = hclust2_input_file+"_legend.png"
 
         self.write_table([" "]+sample_names,feature_names,data,hclust2_input_file)
         
         # increase the dpi for small text
-        dpi=300
+        dpi=150
         label_font="8"
 
         # compute the aspect ratio based on the number of samples and features
@@ -1070,34 +1079,40 @@ class PweaveDocument(Document):
             print("Unable to generate heatmap")
             heatmap=[]
 
-        # create a subplot and remove the frame and axis labels
-        # set the figure and increase the dpi for small text
-
-        fig = pyplot.figure(figsize=(8,8),dpi=dpi)
-
-        if metadata_rows:
-            subplot1 = pyplot.subplot2grid((4,1),(0,0), rowspan=3, frame_on=False)
-            subplot1.xaxis.set_visible(False)
-            subplot1.yaxis.set_visible(False)
+        # if the output file is provided, then just print out a link to it in the doc
+        if outfilename:
+            print("\n\n![]({0})\n\n".format(heatmap_file))
+            if metadata_rows:
+                print("\n\n![]({0})\n\n".format(metadata_legend_file))
         else:
-            subplot = fig.add_subplot(111, frame_on=False)
-            subplot.xaxis.set_visible(False)
-            subplot.yaxis.set_visible(False)
-        # show but do not interpolate (as this will make the text hard to read)
-        pyplot.imshow(heatmap, interpolation="none")
+            # create a subplot and remove the frame and axis labels
+            # set the figure and increase the dpi for small text
 
-        if metadata_rows:
-            heatmap_legend = pyplot.imread(metadata_legend_file)
-            # metadata legend subplot
-            subplot2 = pyplot.subplot2grid((4,1),(3,0), rowspan=1, frame_on=False)
-            subplot2.xaxis.set_visible(False)
-            subplot2.yaxis.set_visible(False)
-            pyplot.imshow(heatmap_legend, interpolation="none")
+            fig = pyplot.figure(figsize=(8,8),dpi=dpi)
 
-        pyplot.draw()
-        # adjust the heatmap to fit in the figure area
-        # this is needed to increase the image size (to fit in the increased figure)
-        pyplot.tight_layout()
+            if metadata_rows:
+                subplot1 = pyplot.subplot2grid((4,1),(0,0), rowspan=3, frame_on=False)
+                subplot1.xaxis.set_visible(False)
+                subplot1.yaxis.set_visible(False)
+            else:
+                subplot = fig.add_subplot(111, frame_on=False)
+                subplot.xaxis.set_visible(False)
+                subplot.yaxis.set_visible(False)
+            # show but do not interpolate (as this will make the text hard to read)
+            pyplot.imshow(heatmap, interpolation="none")
+
+            if metadata_rows:
+                heatmap_legend = pyplot.imread(metadata_legend_file)
+                # metadata legend subplot
+                subplot2 = pyplot.subplot2grid((4,1),(3,0), rowspan=1, frame_on=False)
+                subplot2.xaxis.set_visible(False)
+                subplot2.yaxis.set_visible(False)
+                pyplot.imshow(heatmap_legend, interpolation="none")
+
+            pyplot.draw()
+            # adjust the heatmap to fit in the figure area
+            # this is needed to increase the image size (to fit in the increased figure)
+            pyplot.tight_layout()
         
     def _run_r(self, commands, args=None):
         """ Run R on the commands providing the arguments """
