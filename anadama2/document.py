@@ -447,7 +447,7 @@ class PweaveDocument(Document):
 
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
-        ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7):
+        ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7, outfilename=None):
         """ Plot a stacked barchart with data grouped into subplots
         
         :param grouped_data: A dict of lists containing the grouped data
@@ -483,7 +483,7 @@ class PweaveDocument(Document):
         import matplotlib.pyplot as pyplot
         
         total_groups=len(grouped_data.keys())
-        figure, group_axis = pyplot.subplots(1, total_groups, sharey=True, gridspec_kw = {'wspace':0.02})
+        figure, group_axis = pyplot.subplots(1, total_groups, sharey=True, gridspec_kw = {'wspace':0.02},figsize=(11,8)))
 
         # create a set of custom colors to prevent overlap
         # get only a set number of items to recycle colors through subplots
@@ -542,8 +542,13 @@ class PweaveDocument(Document):
                 title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
             
         figure.suptitle(title, fontsize=14)
-        
-        pyplot.draw()
+       
+        if outfilename:
+            pyplot.savefig(outfilename)
+            print("\n\n![]({0})\n\n".format(outfilename))
+            pyplot.close()
+        else:
+            pyplot.draw() 
 
     def plot_grouped_barchart(self, data, row_labels, column_labels, title, 
         xlabel=None, ylabel=None, legend_title=None, yaxis_in_millions=None):
@@ -1337,7 +1342,7 @@ class PweaveDocument(Document):
 
 
     def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species",
-                  metadata=None, apply_transform=False, sort_function=None, metadata_type=None):
+                  metadata=None, apply_transform=False, sort_function=None, metadata_type=None, outfilename=None):
         """ Use the vegan package in R plus matplotlib to plot a PCoA.
         Input data should be organized with samples as columns and features as rows.
         Data should be scaled to [0-1] if transform is to be applied.
@@ -1382,7 +1387,7 @@ class PweaveDocument(Document):
         pcoa_data, pcoa1_x_label, pcoa2_y_label = self.compute_pcoa(sample_names, feature_names, data, apply_transform)
 
         # create a figure subplot to move the legend
-        figure = pyplot.figure()
+        figure = pyplot.figure(figsize=(11,8))
         subplot = pyplot.subplot(111)
         nancolor="grey"
 
@@ -1482,7 +1487,12 @@ class PweaveDocument(Document):
                  "dissimilarities between " + feature_types + " profiles of " + sample_types + ".  Numbers in parenthesis on each axis ",
                  "represent the amount of variance explained by that axis."])
 
-        pyplot.draw()
+        if outfilename:
+            pyplot.savefig(outfilename)
+            print("\n\n![]({0})\n\n".format(outfilename))
+            pyplot.close()
+        else:
+            pyplot.draw()
 
         return caption
 
