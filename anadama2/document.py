@@ -483,7 +483,7 @@ class PweaveDocument(Document):
         import matplotlib.pyplot as pyplot
         
         total_groups=len(grouped_data.keys())
-        figure, group_axis = pyplot.subplots(1, total_groups, sharey=True, gridspec_kw = {'wspace':0.02},figsize=(11,8)))
+        figure, group_axis = pyplot.subplots(1, total_groups, sharey=True, gridspec_kw = {'wspace':0.02},figsize=(8,6),dpi=150)
 
         # create a set of custom colors to prevent overlap
         # get only a set number of items to recycle colors through subplots
@@ -521,6 +521,10 @@ class PweaveDocument(Document):
                 pyplot.ylabel(ylabel)
             else:
                 pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
+
+            # remove the yticks from subplots
+            if group_number != 0:
+                group_axis[group_number].tick_params(axis="y",which="both",bottom="off",top="off",labelbottom="off")
                 
             # only label the x-axis if all subplots can have labels
             if total_columns_all_groups <= self.max_labels:
@@ -551,7 +555,7 @@ class PweaveDocument(Document):
             pyplot.draw() 
 
     def plot_grouped_barchart(self, data, row_labels, column_labels, title, 
-        xlabel=None, ylabel=None, legend_title=None, yaxis_in_millions=None):
+        xlabel=None, ylabel=None, legend_title=None, yaxis_in_millions=None, outfilename=None):
         """ Plot a grouped barchart 
         
         :param data: A list of lists containing the data
@@ -585,7 +589,7 @@ class PweaveDocument(Document):
         import matplotlib.ticker as ticker
         
         # create a figure subplot to move the legend
-        figure = pyplot.figure()
+        figure = pyplot.figure(figsize=(8,6),dpi=150)
         subplot=pyplot.subplot(111)
         
         # create a set of custom colors to prevent overlap
@@ -646,7 +650,12 @@ class PweaveDocument(Document):
         subplot.legend(barplots,row_labels,loc="center left", bbox_to_anchor=(1,0.5),
             fontsize=7, title=legend_title, frameon=False)
         
-        pyplot.draw()  
+        if outfilename:
+            pyplot.savefig(outfilename)
+            print("\n\n![]({0})\n\n".format(outfilename))
+            pyplot.close()
+        else:
+            pyplot.draw()
         
     def plot_scatter(self, data, title, row_labels, xlabel=None, ylabel=None, trendline=None):
         """ Plot a scatter plot 
@@ -815,7 +824,7 @@ class PweaveDocument(Document):
         import numpy
         import matplotlib.pyplot as pyplot
         
-        figure = pyplot.figure(figsize=(10,8))
+        figure = pyplot.figure(figsize=(8,6),dpi=150)
         subplot=pyplot.subplot(111)
         bar_plots=[]
         names=[]
@@ -1387,7 +1396,7 @@ class PweaveDocument(Document):
         pcoa_data, pcoa1_x_label, pcoa2_y_label = self.compute_pcoa(sample_names, feature_names, data, apply_transform)
 
         # create a figure subplot to move the legend
-        figure = pyplot.figure(figsize=(11,8))
+        figure = pyplot.figure(figsize=(8,6),dpi=150)
         subplot = pyplot.subplot(111)
         nancolor="grey"
 
