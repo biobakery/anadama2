@@ -549,7 +549,7 @@ class PweaveDocument(Document):
        
         if outfilename:
             pyplot.savefig(outfilename)
-            print("\n\n![]({0})\n\n".format(outfilename))
+            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
             pyplot.close()
         else:
             pyplot.draw() 
@@ -652,7 +652,7 @@ class PweaveDocument(Document):
         
         if outfilename:
             pyplot.savefig(outfilename)
-            print("\n\n![]({0})\n\n".format(outfilename))
+            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
             pyplot.close()
         else:
             pyplot.draw()
@@ -870,7 +870,7 @@ class PweaveDocument(Document):
        
         if outfilename:
             pyplot.savefig(outfilename)
-            print("\n\n![]({0})\n\n".format(outfilename))
+            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
             pyplot.close()
         else: 
             pyplot.draw()
@@ -1498,7 +1498,7 @@ class PweaveDocument(Document):
 
         if outfilename:
             pyplot.savefig(outfilename)
-            print("\n\n![]({0})\n\n".format(outfilename))
+            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
             pyplot.close()
         else:
             pyplot.draw()
