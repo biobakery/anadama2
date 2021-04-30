@@ -516,16 +516,7 @@ class PweaveDocument(Document):
             
             # Add the title, labels, and legend
             pyplot.title(group_name, size=12)
-            # only set the ylabels for the first subplot
-            if ylabel is not None and group_number == 0:
-                pyplot.ylabel(ylabel)
-            else:
-                pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
 
-            # remove the yticks from subplots
-            if group_number != 0:
-                group_axis[group_number].tick_params(axis="y",which="both",bottom="off",top="off",labelbottom="off")
-                
             # only label the x-axis if all subplots can have labels
             if total_columns_all_groups <= self.max_labels:
                 # move the bottom of the figure for larger xaxis labels
