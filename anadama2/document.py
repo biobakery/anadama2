@@ -493,7 +493,7 @@ class PweaveDocument(Document):
         group_number=0
         
         # sort the groups prior to plotting
-        sorted_group_names = self.sorted_data_numerical_or_alphabetical(grouped_data.keys())
+        sorted_group_names = self.sorted_data_numerical_or_alphabetical(list(grouped_data.keys()))
             
         # get the total number of columns for all groups
         total_columns_all_groups=len(list(itertools.chain.from_iterable(column_labels_grouped.values())))
@@ -775,7 +775,7 @@ class PweaveDocument(Document):
         else:
             sets=tab20c+tab20b
        
-        for color in sets:
+        for color in itertools.cycle(sets):
             yield color
   
 
@@ -1441,7 +1441,7 @@ class PweaveDocument(Document):
 
         # order the plots alphabetically or numerically
         if not sort_function:
-            metadata_ordered_keys = self.sorted_data_numerical_or_alphabetical(metadata_plots.keys())
+            metadata_ordered_keys = self.sorted_data_numerical_or_alphabetical(list(metadata_plots.keys()))
         else:
             metadata_ordered_keys = sort_function(metadata_plots.keys())
 
