@@ -849,16 +849,18 @@ class PweaveDocument(Document):
             pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
         else:
             pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
-        
+       
+        pyplot.tight_layout()
+ 
         # reduce the size of the plot to fit in the legend
         subplot_position=subplot.get_position()
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
-            subplot_position.width *0.80, subplot_position.height])
+            subplot_position.width *0.75, subplot_position.height])
             
         pyplot.yticks(fontsize=7)
         subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
             title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
-       
+      
         if outfilename:
             pyplot.savefig(outfilename)
             print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
