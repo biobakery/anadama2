@@ -527,7 +527,9 @@ class PweaveDocument(Document):
             pyplot.yticks(fontsize=7)
             
             group_number+=1
-            
+           
+        pyplot.tight_layout()
+ 
         # add the legend to the last subplot
         if legend:
             # reduce the size of the plot to fit in the legend
