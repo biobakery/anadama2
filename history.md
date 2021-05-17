@@ -1,9 +1,18 @@
 
 # AnADAMA2 History #
 
-## v0.9.0 TBD ##
+## v0.9.0 05-17-2021 ##
 
-* Added two new grid options "--grid-max-time" and "--grid-max-mem" to set the max time and memory used for each grid task.
+* Document processing
+  * Change to command line call of pweave for document processing (to remove overlap of scope).
+  * Add import functionality to document template.
+  * Update default custom colors for document plots.
+  * Update plots to increase default sizes, allow for write to file, include latex size in doc write (to increase document size). 
+  * Remove duplicate y-axis ticks for grouped plots.
+
+* SLURM grid
+  * Added two new grid options "--grid-max-time" and "--grid-max-mem" to set the max time and memory used for each grid task.
+  * Update grid template to allow for singularity environment settings.
 
 ## v0.8.0 02-08-2021 ##
 
