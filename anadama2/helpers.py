@@ -47,6 +47,24 @@ from .tracked import s3_folder
 from .tracked import AWSHugeTrackedFile
 from .reporters import SHELL_COMMAND
 
+import pickle as pickle
+import cloudpickle
+
+def try_pickle_dumps(obj):
+    """
+    Try two different packages to pickle task
+    """
+    try:
+        return cloudpickle.dumps(obj)
+    except Exception:
+        pass
+
+    try:
+        return pickle.dumps(obj)
+    except Exception:
+        raise
+
+
 def file_size(depends):
     """ Return the size of the file in GB """
     

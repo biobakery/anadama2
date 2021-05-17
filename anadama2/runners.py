@@ -10,11 +10,10 @@ from collections import namedtuple
 
 import six
 from six.moves import queue
-import cloudpickle
 
 from .util import istask
 from . import tracked
-from .helpers import apply_sh
+from .helpers import apply_sh, try_pickle_dumps
 
 logger = logging.getLogger(__name__)
 
@@ -316,7 +315,7 @@ class ParallelLocalRunner(BaseRunner):
                 self.task_idx_deque.appendleft(idx)
                 continue
             try:
-                pkl = cloudpickle.dumps(self.ctx.tasks[idx])
+                pkl = try_pickle_dumps(self.ctx.tasks[idx])
             except Exception as e:
                 msg = ("Unable to serialize task `{}'. "
                        "Original error was `{}'.")
@@ -458,7 +457,7 @@ class GridRunner(BaseRunner):
             if idx is None:
                 continue
             try:
-                pkl = cloudpickle.dumps(self.ctx.tasks[idx])
+                pkl = try_pickle_dumps(self.ctx.tasks[idx])
             except Exception as e:
                 msg = ("Unable to serialize task `{}'. "
                        "Original error was `{}'.")

@@ -9,6 +9,7 @@
   * Update default custom colors for document plots.
   * Update plots to increase default sizes, allow for write to file, include latex size in doc write (to increase document size). 
   * Remove duplicate y-axis ticks for grouped plots.
+  * Add another pickle method to allow for the pickle of document tasks (to allow document-based workflows to run in parallel).
 
 * SLURM grid
   * Added two new grid options "--grid-max-time" and "--grid-max-mem" to set the max time and memory used for each grid task.
