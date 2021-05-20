@@ -447,7 +447,7 @@ class PweaveDocument(Document):
 
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
-        ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7, outfilename=None):
+        ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7, outfilename=None, legend_reverse=False):
         """ Plot a stacked barchart with data grouped into subplots
         
         :param grouped_data: A dict of lists containing the grouped data
@@ -534,9 +534,13 @@ class PweaveDocument(Document):
         if legend:
             # reduce the size of the plot to fit in the legend
             figure.subplots_adjust(right=0.75)
-                
-            pyplot.legend(bar_plots,row_labels, loc="center left", bbox_to_anchor=(1,0.5),
-                title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
+               
+            if legend_reverse: 
+                pyplot.legend(list(reversed(bar_plots)),list(reversed(row_labels)), loc="center left", bbox_to_anchor=(1,0.5),
+                    title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
+            else:
+                pyplot.legend(bar_plots,row_labels, loc="center left", bbox_to_anchor=(1,0.5),
+                    title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
             
         figure.suptitle(title, fontsize=14)
        
@@ -782,7 +786,7 @@ class PweaveDocument(Document):
   
 
     def plot_stacked_barchart(self, data, row_labels, column_labels, title,
-        xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7, outfilename=None):
+        xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7, outfilename=None, legend_reverse=False):
         """ Plot a stacked barchart
         
         :param data: A list of lists containing the data
@@ -811,6 +815,9 @@ class PweaveDocument(Document):
         
         :keyword legend_size: The font size for the legend
         :type legend_size: int
+
+        :keyword legend_reverse : Reverse the legend order
+        :type legend_reverse: bool
         
         """
         
@@ -860,8 +867,12 @@ class PweaveDocument(Document):
             subplot_position.width *0.75, subplot_position.height])
             
         pyplot.yticks(fontsize=7)
-        subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
-            title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
+        if legend_reverse:
+            subplot.legend(list(reversed(bar_plots)),list(reversed(names)),loc="center left", bbox_to_anchor=(1,0.5),
+                title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
+        else:
+            subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
+                title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
       
         if outfilename:
             pyplot.savefig(outfilename)
