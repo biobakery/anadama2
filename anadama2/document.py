@@ -1101,14 +1101,15 @@ class PweaveDocument(Document):
             # read the heatmap png file
             heatmap=pyplot.imread(heatmap_file)
         except (subprocess.CalledProcessError, OSError):
-            print("Unable to generate heatmap")
+            print("Unable to generate heatmap.")
             heatmap=[]
 
         # if the output file is provided, then just print out a link to it in the doc
         if outfilename:
-            print("\n\n![]({0})\n\n".format(heatmap_file))
-            if metadata_rows:
-                print("\n\n![]({0})\n\n".format(metadata_legend_file))
+            if os.path.isfile(heatmap_file):
+                print("\n\n![]({0})\n\n".format(heatmap_file))
+                if metadata_rows:
+                    print("\n\n![]({0})\n\n".format(metadata_legend_file))
         else:
             # create a subplot and remove the frame and axis labels
             # set the figure and increase the dpi for small text
