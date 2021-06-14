@@ -64,11 +64,25 @@ class GridJobRequires(object):
 class Grid(object):
     """ Base Grid Workflow manager class """
     
-    def __init__(self, name, worker, queue, tmpdir, benchmark_on=None):
+    def __init__(self, name, worker, queue, tmpdir, benchmark_on=None, max_time=None, max_mem=None):
         self.name = name
         self.worker = worker
         self.queue = queue
         self.tmpdir = tmpdir
+        self.max_time = None
+        self.max_mem = None
+
+        try:
+            if max_time:
+                self.max_time = int(max_time)
+        except ValueError:
+            print("ERROR: Please provide an integer for the max time: {}".format(max_time))
+
+        try:
+            if max_mem:
+                self.max_mem = int(max_mem)
+        except ValueError:
+            print("ERROR: Please provide an integer for the max memory: {}".format(max_mem))
         
         # create the folder if it does not already exist for temp directory
         if not os.path.isdir(self.tmpdir):
@@ -98,8 +112,15 @@ class Grid(object):
             requires.append(None)    
         
         requires+=[depends]
-        
-        return (GridJobRequires(*requires), self.tmpdir)
+       
+        jobrequires=GridJobRequires(*requires)
+
+        # add the max time and memory overrides
+        jobrequires.time=[jobrequires.time,self.max_time]
+
+        jobrequires.mem=[jobrequires.mem,self.max_mem]
+ 
+        return (jobrequires, self.tmpdir)
         
     def do(self, task, **kwargs):
         """Accepts the following extra arguments:
@@ -425,7 +446,7 @@ class GridQueue(object):
         os.close(handle_rc)
         
         # add the remaining sections to the bash template
-        bash_template = string.Template("\n".join(["#!/bin/bash "] + self.submit_template() + ["", "${command}", "${rc_command}"]))
+        bash_template = string.Template("\n".join(["#!/bin/bash "] + self.submit_template() + ["${command}", "${rc_command}"]))
     
         # convert the minutes to the time string "HH:MM:00"
         hours, remaining_minutes = divmod(minutes, 60)
@@ -588,17 +609,37 @@ class GridWorker(threading.Thread):
     @staticmethod
     def evaluate_resource_requests(time,mem):
         """ Evaluate the time/memory requests for the grid job, allowing for ints or formulas """
-        
+       
+        # allow for optional max time and memory
+        if not isinstance(time,list):
+            time=[time]
+
+        if not isinstance(mem,list):
+            mem=[mem]
+ 
         try:
-            time=eval(str(time))
+            time[0]=eval(str(time[0]))
         except TypeError:
             raise TypeError("Unable to evaluate time request for task: "+ time)
         
         try:
-            mem=eval(str(mem))
+            mem[0]=eval(str(mem[0]))
         except TypeError:
             raise TypeError("Unable to evaluate memory request for task: "+ mem)
         
+        # check for override with max
+        if time[-1] and time[0] > time[-1]:
+            logging.info("Using override of max time from {0} reset to {1}".format(time[0],time[-1]))
+            time=time[-1]
+        else:
+            time=time[0]
+        
+        if mem[-1] and mem[0] > mem[-1]:
+            logging.info("Using override of max mem from {0} reset to {1}".format(mem[0],mem[-1]))
+            mem=mem[-1]
+        else:
+            mem=mem[0]
+
         return time, mem  
     
     @classmethod

@@ -134,6 +134,12 @@ class PweaveDocument(Document):
                 if data_file:
                     shutil.copy(data_file,os.path.join(self.data_folder,os.path.basename(data_file)))
 
+    def print_title(self):
+        if self.vars["header_image"]:
+            print(" ")
+            print("  ![{0}]({1})  ".format("",self.vars["header_image"]))
+        print("  "+self.vars["title"]+" for "+self.vars["project"])
+
     def create(self, task):
         """ Create the documents specified as targets """
 
@@ -148,14 +154,6 @@ class PweaveDocument(Document):
         temp_template_basename = os.path.join(temp_directory,os.path.basename(report_filename))
         # keep the extension of the template for pweave auto reader function
         temp_template = temp_template_basename + template_extension
-        
-        # merge the templates into the temp file
-        with open(temp_template,"w") as handle:
-            for file in self.templates:
-                for line in open(file):
-                    handle.write(line)
-                
-        handle.close()
         
         # if variables are provided, then create a pickled file to store these
         # for use when the document is created
@@ -178,6 +176,32 @@ class PweaveDocument(Document):
             # create a picked file with the temp template name in the same folder
             pickle.dump(self.vars, open(temp_template_basename+".pkl", "wb"))
 
+        # merge the templates into the temp file
+        templates_globals=globals()
+        templates_globals["vars"]=self.vars
+        templates_globals["filename"]=""
+        with open(temp_template,"w") as handle:
+            for file in self.templates:
+                current_import_section=""
+                capture_import=False
+                for line in open(file):
+                    # look for and process imports
+                    if line.startswith("```{import"):
+                        capture_import=True
+                    elif line.startswith("```") and capture_import:
+                        exec(current_import_section, templates_globals)
+                        if "filename" in templates_globals and templates_globals["filename"]:
+                            # import the file to the template
+                            for importline in open(os.path.join(os.path.dirname(file),filename)):
+                                handle.write(importline)
+                        templates_globals["filename"]=""
+                        current_import_section=""
+                        capture_import=False
+                    elif capture_import:
+                        current_import_section+=line
+                    else: 
+                        handle.write(line)
+                
         # create the document
         # first move to the directory with the temp output files
         # this will cause all pweave output files to be written to this folder
@@ -276,16 +300,19 @@ class PweaveDocument(Document):
         
                 return figstring
 
-        # capture stdout messages
-        original_stdout = sys.stdout
-        sys.stdout = capture_stdout = StringIO()
+        if temp_template.endswith(".py"): 
+            # capture stdout messages
+            original_stdout = sys.stdout
+            sys.stdout = capture_stdout = StringIO()
+
+            doc = Pweb(temp_template)
+            doc.setformat(Formatter = PwebPandocFormatterFixedFigures)
+            doc.detect_reader()
+            doc.weave(shell=PwebProcessorSpaces)
         
-        doc = Pweb(temp_template)
-        doc.setformat(Formatter = PwebPandocFormatterFixedFigures)
-        doc.detect_reader()
-        doc.weave(shell=PwebProcessorSpaces)
-        
-        sys.stdout = original_stdout
+            sys.stdout = original_stdout
+        else:
+            sh("pweave {0} -o {1}".format(temp_template,intermediate_template),log_command=True)()
        
         sh(pandoc_command.format(intermediate_template, temp_report),log_command=True)()          
         
@@ -420,7 +447,7 @@ class PweaveDocument(Document):
 
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
-        ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7):
+        ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7, outfilename=None, legend_reverse=False):
         """ Plot a stacked barchart with data grouped into subplots
         
         :param grouped_data: A dict of lists containing the grouped data
@@ -456,7 +483,7 @@ class PweaveDocument(Document):
         import matplotlib.pyplot as pyplot
         
         total_groups=len(grouped_data.keys())
-        figure, group_axis = pyplot.subplots(1, total_groups, sharey=True, gridspec_kw = {'wspace':0.02})
+        figure, group_axis = pyplot.subplots(1, total_groups, sharey=True, gridspec_kw = {'wspace':0.02},figsize=(8,6),dpi=150)
 
         # create a set of custom colors to prevent overlap
         # get only a set number of items to recycle colors through subplots
@@ -466,7 +493,7 @@ class PweaveDocument(Document):
         group_number=0
         
         # sort the groups prior to plotting
-        sorted_group_names = self.sorted_data_numerical_or_alphabetical(grouped_data.keys())
+        sorted_group_names = self.sorted_data_numerical_or_alphabetical(list(grouped_data.keys()))
             
         # get the total number of columns for all groups
         total_columns_all_groups=len(list(itertools.chain.from_iterable(column_labels_grouped.values())))
@@ -489,12 +516,7 @@ class PweaveDocument(Document):
             
             # Add the title, labels, and legend
             pyplot.title(group_name, size=12)
-            # only set the ylabels for the first subplot
-            if ylabel is not None and group_number == 0:
-                pyplot.ylabel(ylabel)
-            else:
-                pyplot.tick_params(axis="y",which="both",left="off",labelleft="off")
-                
+
             # only label the x-axis if all subplots can have labels
             if total_columns_all_groups <= self.max_labels:
                 # move the bottom of the figure for larger xaxis labels
@@ -505,21 +527,32 @@ class PweaveDocument(Document):
             pyplot.yticks(fontsize=7)
             
             group_number+=1
-            
+           
+        pyplot.tight_layout()
+ 
         # add the legend to the last subplot
         if legend:
             # reduce the size of the plot to fit in the legend
             figure.subplots_adjust(right=0.75)
-                
-            pyplot.legend(bar_plots,row_labels, loc="center left", bbox_to_anchor=(1,0.5),
-                title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
+               
+            if legend_reverse: 
+                pyplot.legend(list(reversed(bar_plots)),list(reversed(row_labels)), loc="center left", bbox_to_anchor=(1,0.5),
+                    title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
+            else:
+                pyplot.legend(bar_plots,row_labels, loc="center left", bbox_to_anchor=(1,0.5),
+                    title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
             
         figure.suptitle(title, fontsize=14)
-        
-        pyplot.draw()
+       
+        if outfilename:
+            pyplot.savefig(outfilename)
+            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            pyplot.close()
+        else:
+            pyplot.draw() 
 
     def plot_grouped_barchart(self, data, row_labels, column_labels, title, 
-        xlabel=None, ylabel=None, legend_title=None, yaxis_in_millions=None):
+        xlabel=None, ylabel=None, legend_title=None, yaxis_in_millions=None, outfilename=None):
         """ Plot a grouped barchart 
         
         :param data: A list of lists containing the data
@@ -553,7 +586,7 @@ class PweaveDocument(Document):
         import matplotlib.ticker as ticker
         
         # create a figure subplot to move the legend
-        figure = pyplot.figure()
+        figure = pyplot.figure(figsize=(8,6),dpi=150)
         subplot=pyplot.subplot(111)
         
         # create a set of custom colors to prevent overlap
@@ -614,7 +647,12 @@ class PweaveDocument(Document):
         subplot.legend(barplots,row_labels,loc="center left", bbox_to_anchor=(1,0.5),
             fontsize=7, title=legend_title, frameon=False)
         
-        pyplot.draw()  
+        if outfilename:
+            pyplot.savefig(outfilename)
+            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            pyplot.close()
+        else:
+            pyplot.draw()
         
     def plot_scatter(self, data, title, row_labels, xlabel=None, ylabel=None, trendline=None):
         """ Plot a scatter plot 
@@ -732,35 +770,23 @@ class PweaveDocument(Document):
         from matplotlib import cm
 
         # create a set of custom colors
-        
         # get the max amount of colors for a few different color maps
-        terrain=[cm.terrain(i/7.0) for i in range(7)]
-        # don't use the last dark2 color as this overlaps with the first terrain color
-        dark=[cm.Dark2(i/8.0) for i in range(7)]
-        jet=[cm.jet(i/7.0) for i in range(7)]
-        nipy_spectral=[cm.nipy_spectral(i/10.0) for i in range(10)]
-        set3=[cm.Set3(i/12.0) for i in range(12)]
+        tab10=[cm.tab10(i/10.0) for i in range(10)]
+        tab20=[cm.tab20(i/20.0) for i in range(20)]
+        tab20b=[cm.tab20b(i/20.0) for i in range(20)]
+        tab20c=[cm.tab20c(i/20.0) for i in range(20)]
         
-        # select the total numer of color maps based on the total number of colors
-        if total_colors <= 7:
-            sets=[terrain]
-        elif total_colors <= 14:
-            sets=[terrain,dark]
-        elif total_colors <= 24:
-            sets=[terrain,dark,nipy_spectral]
+        if total_colors <= 20:
+            sets=tab20
         else:
-            sets=[terrain,dark,nipy_spectral,set3]
-        
-        # return a mixed set of colors from each set used
-        # repeat colors if we run out
-        for color_set in itertools.cycle(zip(*sets)):
-            for color in color_set:
-                yield color
-
+            sets=tab20c+tab20b
+       
+        for color in itertools.cycle(sets):
+            yield color
   
 
     def plot_stacked_barchart(self, data, row_labels, column_labels, title,
-        xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7):
+        xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7, outfilename=None, legend_reverse=False):
         """ Plot a stacked barchart
         
         :param data: A list of lists containing the data
@@ -789,13 +815,16 @@ class PweaveDocument(Document):
         
         :keyword legend_size: The font size for the legend
         :type legend_size: int
+
+        :keyword legend_reverse : Reverse the legend order
+        :type legend_reverse: bool
         
         """
         
         import numpy
         import matplotlib.pyplot as pyplot
         
-        figure = pyplot.figure()
+        figure = pyplot.figure(figsize=(8,6),dpi=150)
         subplot=pyplot.subplot(111)
         bar_plots=[]
         names=[]
@@ -829,17 +858,28 @@ class PweaveDocument(Document):
             pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
         else:
             pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
-        
+       
+        pyplot.tight_layout()
+ 
         # reduce the size of the plot to fit in the legend
         subplot_position=subplot.get_position()
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
-            subplot_position.width *0.80, subplot_position.height])
+            subplot_position.width *0.75, subplot_position.height])
             
         pyplot.yticks(fontsize=7)
-        subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
-            title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
-        
-        pyplot.draw()
+        if legend_reverse:
+            subplot.legend(list(reversed(bar_plots)),list(reversed(names)),loc="center left", bbox_to_anchor=(1,0.5),
+                title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
+        else:
+            subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
+                title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
+      
+        if outfilename:
+            pyplot.savefig(outfilename)
+            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            pyplot.close()
+        else: 
+            pyplot.draw()
         
     def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
                    location="center", font=None):
@@ -962,7 +1002,7 @@ class PweaveDocument(Document):
             for name, row in zip(row_labels, data):
                 file_handle.write("\t".join([name]+[str(i) for i in row])+"\n")
         
-    def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False,metadata_rows=None,method="correlation"):
+    def show_hclust2(self,sample_names,feature_names,data,title,log_scale=True,zscore=False,metadata_rows=None,method="correlation",outfilename=None):
         """ Create a hclust2 heatmap with dendrogram and show it in the document
         
         :param sample_names: The names of the samples
@@ -989,6 +1029,8 @@ class PweaveDocument(Document):
         :keyword method: The distance function for features
         :type method: str
         
+        :keyword outfilename: The file to write the image
+        :type method: str
         """
         
         import matplotlib.pyplot as pyplot
@@ -1002,14 +1044,21 @@ class PweaveDocument(Document):
         
         # write a file of the data
         handle, hclust2_input_file=tempfile.mkstemp(prefix="hclust2_input",dir=os.getcwd())
-        heatmap_file=hclust2_input_file+".png"
-        if metadata_rows:
-            metadata_legend_file = hclust2_input_file+"_legend.png"
+        # if output file is provided, use that instead
+        if outfilename:
+            heatmap_file=outfilename
+            if metadata_rows:
+                outinfo = outfilename.split(".")
+                metadata_legend_file = outinfo[0]+"_legend."+outinfo[-1]
+        else:
+            heatmap_file=hclust2_input_file+".png"
+            if metadata_rows:
+                metadata_legend_file = hclust2_input_file+"_legend.png"
 
         self.write_table([" "]+sample_names,feature_names,data,hclust2_input_file)
         
         # increase the dpi for small text
-        dpi=300
+        dpi=150
         label_font="8"
 
         # compute the aspect ratio based on the number of samples and features
@@ -1052,37 +1101,44 @@ class PweaveDocument(Document):
             # read the heatmap png file
             heatmap=pyplot.imread(heatmap_file)
         except (subprocess.CalledProcessError, OSError):
-            print("Unable to generate heatmap")
+            print("Unable to generate heatmap.")
             heatmap=[]
 
-        # create a subplot and remove the frame and axis labels
-        # set the figure and increase the dpi for small text
-
-        fig = pyplot.figure(figsize=(8,8),dpi=dpi)
-
-        if metadata_rows:
-            subplot1 = pyplot.subplot2grid((4,1),(0,0), rowspan=3, frame_on=False)
-            subplot1.xaxis.set_visible(False)
-            subplot1.yaxis.set_visible(False)
+        # if the output file is provided, then just print out a link to it in the doc
+        if outfilename:
+            if os.path.isfile(heatmap_file):
+                print("\n\n![]({0})\n\n".format(heatmap_file))
+                if metadata_rows:
+                    print("\n\n![]({0})\n\n".format(metadata_legend_file))
         else:
-            subplot = fig.add_subplot(111, frame_on=False)
-            subplot.xaxis.set_visible(False)
-            subplot.yaxis.set_visible(False)
-        # show but do not interpolate (as this will make the text hard to read)
-        pyplot.imshow(heatmap, interpolation="none")
+            # create a subplot and remove the frame and axis labels
+            # set the figure and increase the dpi for small text
 
-        if metadata_rows:
-            heatmap_legend = pyplot.imread(metadata_legend_file)
-            # metadata legend subplot
-            subplot2 = pyplot.subplot2grid((4,1),(3,0), rowspan=1, frame_on=False)
-            subplot2.xaxis.set_visible(False)
-            subplot2.yaxis.set_visible(False)
-            pyplot.imshow(heatmap_legend, interpolation="none")
+            fig = pyplot.figure(figsize=(8,8),dpi=dpi)
 
-        pyplot.draw()
-        # adjust the heatmap to fit in the figure area
-        # this is needed to increase the image size (to fit in the increased figure)
-        pyplot.tight_layout()
+            if metadata_rows:
+                subplot1 = pyplot.subplot2grid((4,1),(0,0), rowspan=3, frame_on=False)
+                subplot1.xaxis.set_visible(False)
+                subplot1.yaxis.set_visible(False)
+            else:
+                subplot = fig.add_subplot(111, frame_on=False)
+                subplot.xaxis.set_visible(False)
+                subplot.yaxis.set_visible(False)
+            # show but do not interpolate (as this will make the text hard to read)
+            pyplot.imshow(heatmap, interpolation="none")
+
+            if metadata_rows:
+                heatmap_legend = pyplot.imread(metadata_legend_file)
+                # metadata legend subplot
+                subplot2 = pyplot.subplot2grid((4,1),(3,0), rowspan=1, frame_on=False)
+                subplot2.xaxis.set_visible(False)
+                subplot2.yaxis.set_visible(False)
+                pyplot.imshow(heatmap_legend, interpolation="none")
+
+            pyplot.draw()
+            # adjust the heatmap to fit in the figure area
+            # this is needed to increase the image size (to fit in the increased figure)
+            pyplot.tight_layout()
         
     def _run_r(self, commands, args=None):
         """ Run R on the commands providing the arguments """
@@ -1302,7 +1358,7 @@ class PweaveDocument(Document):
 
 
     def show_pcoa(self, sample_names, feature_names, data, title, sample_types="samples", feature_types="species",
-                  metadata=None, apply_transform=False, sort_function=None, metadata_type=None):
+                  metadata=None, apply_transform=False, sort_function=None, metadata_type=None, outfilename=None):
         """ Use the vegan package in R plus matplotlib to plot a PCoA.
         Input data should be organized with samples as columns and features as rows.
         Data should be scaled to [0-1] if transform is to be applied.
@@ -1347,7 +1403,7 @@ class PweaveDocument(Document):
         pcoa_data, pcoa1_x_label, pcoa2_y_label = self.compute_pcoa(sample_names, feature_names, data, apply_transform)
 
         # create a figure subplot to move the legend
-        figure = pyplot.figure()
+        figure = pyplot.figure(figsize=(8,6),dpi=150)
         subplot = pyplot.subplot(111)
         nancolor="grey"
 
@@ -1401,7 +1457,7 @@ class PweaveDocument(Document):
 
         # order the plots alphabetically or numerically
         if not sort_function:
-            metadata_ordered_keys = self.sorted_data_numerical_or_alphabetical(metadata_plots.keys())
+            metadata_ordered_keys = self.sorted_data_numerical_or_alphabetical(list(metadata_plots.keys()))
         else:
             metadata_ordered_keys = sort_function(metadata_plots.keys())
 
@@ -1447,7 +1503,12 @@ class PweaveDocument(Document):
                  "dissimilarities between " + feature_types + " profiles of " + sample_types + ".  Numbers in parenthesis on each axis ",
                  "represent the amount of variance explained by that axis."])
 
-        pyplot.draw()
+        if outfilename:
+            pyplot.savefig(outfilename)
+            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            pyplot.close()
+        else:
+            pyplot.draw()
 
         return caption
 
