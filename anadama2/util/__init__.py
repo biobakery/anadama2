@@ -317,7 +317,7 @@ def sh(cmd, **kwargs):
     ret = proc.communicate()
     if proc.returncode:
         msg = "Command `{}' failed. \nOut: {}\nErr: {}"
-        raise ShellException(proc.returncode, msg.format(cmd, ret[0], ret[1]))
+        raise ShellException(proc.returncode, msg.format(cmd, ret[0].decode('utf-8'), ret[1].decode('utf-8')))
     return ret
 
 
