@@ -882,7 +882,7 @@ class PweaveDocument(Document):
             pyplot.draw()
         
     def show_table(self, data, row_labels, column_labels, title, format_data_comma=None,
-                   location="center", font=None):
+                   location="center", font=None, outfilename=None):
         """ Plot the data as a table 
         
         :param data: A list of lists containing the data
@@ -972,10 +972,14 @@ class PweaveDocument(Document):
     
         # add the title
         pyplot.title(title)
-        
-        # plot the table
-        pyplot.draw() 
-        
+
+        if outfilename:
+            pyplot.savefig(outfilename)
+            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            pyplot.close()
+        else:
+            pyplot.draw()
+ 
     def write_table(self, column_labels, row_labels, data, file):
         """ Write a table of data to a file 
         
