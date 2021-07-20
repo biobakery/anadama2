@@ -138,7 +138,10 @@ class PweaveDocument(Document):
         if self.vars["header_image"]:
             print(" ")
             print("  ![{0}]({1})  ".format("",self.vars["header_image"]))
-        print("  "+self.vars["title"]+" for "+self.vars["project"])
+        if self.vars["project"]:
+            print("  "+self.vars["title"]+" for "+self.vars["project"])
+        else:
+            print("  "+self.vars["title"])
 
     def create(self, task):
         """ Create the documents specified as targets """
