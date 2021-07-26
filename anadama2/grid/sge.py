@@ -3,7 +3,7 @@ import os
 import sys
 import time
 import tempfile
-import pwd
+import getpass
 
 import six
 
@@ -158,7 +158,7 @@ class SGEQueue(GridQueue):
         jobs in the queue and for completed jobs to benchmark """
         
         # Get the jobid and state for all jobs pending/running/completed for the current user
-        qacct_stdout=self.run_grid_command_resubmit(["qacct","-o",pwd.getpwuid(os.getuid())[0],"-j","*"])
+        qacct_stdout=self.run_grid_command_resubmit(["qacct","-o",getpass.getuser(),"-j","*"])
         
         # info list should include jobid, state, cpus, time, and maxrss
         info=[]
