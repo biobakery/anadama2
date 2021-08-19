@@ -1,7 +1,7 @@
-networkx==1.11
+networkx
 leveldb
 six
-cloudpickle==0.2.1
+cloudpickle
 pweave==0.25
 markdown
 subprocess32
