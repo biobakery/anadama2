@@ -594,7 +594,7 @@ class LoggerReporter(BaseReporter):
         children = self.run_context.dag.successors(task_no)
         parents = self.run_context.dag.predecessors(task_no)
         msg = " {} parents: {}.  {} children: {}."
-        return msg.format(len(parents), parents, len(children), children)
+        return msg.format(len(list(parents)), parents, len(list(children)), children)
     
     def log_event(self, msg, task_no, debug_msg=None):
         visible=self.run_context.tasks[task_no].visible
