@@ -527,6 +527,7 @@ class PweaveDocument(Document):
                 pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
             else:
                 pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
+                pyplot.xticks([])
             pyplot.yticks(fontsize=7)
             
             group_number+=1
@@ -861,6 +862,7 @@ class PweaveDocument(Document):
             pyplot.xticks(plot_indexes, column_labels, fontsize=7, rotation="vertical")
         else:
             pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
+            pyplot.xticks([])
        
         pyplot.tight_layout()
  
