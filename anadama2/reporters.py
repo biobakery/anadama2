@@ -579,7 +579,7 @@ class LoggerReporter(BaseReporter):
             keyword = VERSION_COMMAND
             # remove redundant version from strings since these are already 
             # identified as version information
-            format_output=lambda x: x.replace("Version:","").replace(", version","")
+            format_output=lambda x: x.replace("Version:","").replace(", version","").split("/")[-1]
             for line in lines:
                 if keyword in line:
                     data[format_output(line.split(keyword)[-1].strip())]=1
