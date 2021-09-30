@@ -448,6 +448,16 @@ class PweaveDocument(Document):
 
          pyplot.draw()
 
+    def add_ellipse(self,labels):
+        # shorten any labels over the max cutoff
+        MAX_LEN=25
+        ELLIPSE="..."
+        new_labels=[]
+        for label in labels:
+            if len(label) > 25:
+                label=label[0:MAX_LEN]+ELLIPSE
+            new_labels+=[label]
+        return new_labels
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
         ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7, outfilename=None, legend_reverse=False):
@@ -540,10 +550,10 @@ class PweaveDocument(Document):
             figure.subplots_adjust(right=0.75)
                
             if legend_reverse: 
-                pyplot.legend(list(reversed(bar_plots)),list(reversed(row_labels)), loc="center left", bbox_to_anchor=(1,0.5),
+                pyplot.legend(list(reversed(bar_plots)),self.add_ellipse(list(reversed(row_labels))), loc="center left", bbox_to_anchor=(1,0.5),
                     title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
             else:
-                pyplot.legend(bar_plots,row_labels, loc="center left", bbox_to_anchor=(1,0.5),
+                pyplot.legend(bar_plots,self.add_ellipse(row_labels), loc="center left", bbox_to_anchor=(1,0.5),
                     title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
             
         figure.suptitle(title, fontsize=14)
@@ -648,7 +658,7 @@ class PweaveDocument(Document):
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
             subplot_position.width *0.80, subplot_position.height])
         
-        subplot.legend(barplots,row_labels,loc="center left", bbox_to_anchor=(1,0.5),
+        subplot.legend(barplots,self.add_ellipse(row_labels),loc="center left", bbox_to_anchor=(1,0.5),
             fontsize=7, title=legend_title, frameon=False)
         
         if outfilename:
@@ -709,7 +719,7 @@ class PweaveDocument(Document):
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
             subplot_position.width *0.80, subplot_position.height])
         
-        subplot.legend(plots,row_labels,loc="center left", bbox_to_anchor=(1,0.5),
+        subplot.legend(plots,self.add_ellipse(row_labels),loc="center left", bbox_to_anchor=(1,0.5),
             fontsize=7, frameon=False)
             
         pyplot.title(title)
@@ -873,10 +883,10 @@ class PweaveDocument(Document):
             
         pyplot.yticks(fontsize=7)
         if legend_reverse:
-            subplot.legend(list(reversed(bar_plots)),list(reversed(names)),loc="center left", bbox_to_anchor=(1,0.5),
+            subplot.legend(list(reversed(bar_plots)),self.add_ellipse(list(reversed(names))),loc="center left", bbox_to_anchor=(1,0.5),
                 title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
         else:
-            subplot.legend(bar_plots,names,loc="center left", bbox_to_anchor=(1,0.5),
+            subplot.legend(bar_plots,self.add_ellipse(names),loc="center left", bbox_to_anchor=(1,0.5),
                 title=legend_title, frameon=False, prop={"size":legend_size, "style":legend_style})
       
         if outfilename:
@@ -1484,7 +1494,7 @@ class PweaveDocument(Document):
         pyplot.tick_params(axis="y", which="both", left="off", labelleft="off")
 
         if not metadata and len(sample_names) <= self.max_labels_legend:
-            subplot.legend(plots, sample_names, loc="center left", bbox_to_anchor=(1, 0.5),
+            subplot.legend(plots, self.add_ellipse(sample_names), loc="center left", bbox_to_anchor=(1, 0.5),
                            fontsize=7, title="Samples", frameon=False)
 
         if metadata:
@@ -1495,7 +1505,7 @@ class PweaveDocument(Document):
 
             else:
                 if len(metadata_ordered_keys) <= self.max_labels_legend:
-                    subplot.legend(plots, metadata_ordered_keys, loc="center left", bbox_to_anchor=(1, 0.5),
+                    subplot.legend(plots, self.add_ellipse(metadata_ordered_keys), loc="center left", bbox_to_anchor=(1, 0.5),
                                fontsize=7, frameon=False)
 
 
