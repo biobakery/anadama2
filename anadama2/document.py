@@ -648,6 +648,7 @@ class PweaveDocument(Document):
             pyplot.xticks(bar_start_point + 0.5, column_labels, fontsize=7, rotation="vertical")
         else:
             pyplot.tick_params(axis="x",which="both",bottom="off",labelbottom="off")
+            pyplot.xticks([])
         pyplot.yticks(fontsize=7)
         
         # set the limits on the x axis so the edge gaps are correct
