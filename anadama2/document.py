@@ -651,9 +651,6 @@ class PweaveDocument(Document):
             pyplot.xticks([])
         pyplot.yticks(fontsize=7)
         
-        # set the limits on the x axis so the edge gaps are correct
-        pyplot.xlim(0-gap,len(column_labels))
-        
         # reduce the size of the plot to fit in the legend
         subplot_position=subplot.get_position()
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
