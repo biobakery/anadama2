@@ -124,7 +124,7 @@ class Configuration(object):
                 help="Grid specific options that will be applied to each grid task")),
             ("grid_environment", cls.Argument(None, "--grid-environment", action="append",
                 help="Commands that will be run before each grid task to set up environment")),
-            ("grid_scratch", cls.Argument(None, "--grid-scratch", default=None,
+            ("grid_scratch", cls.Argument(None, "--grid-scratch", default="",
                 help="The folder to write intermediate scratch files for grid jobs")),
             ("grid_time_max", cls.Argument(None, "--grid-time-max", default=None,
                 help="The max time allowed for a grid task (in minutes)")),
