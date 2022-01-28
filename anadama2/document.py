@@ -218,7 +218,7 @@ class PweaveDocument(Document):
             
         # process the template based on the extension type
         temp_report = temp_template_basename+"."+report_extension
-        
+       
         # set the pandoc command based on if a table of contents will be included
         pandoc_command="pandoc {0} -o {1} --variable=linkcolor:Blue "+\
             "--variable=toccolor:Blue --pdf-engine=pdflatex --standalone" 
@@ -450,17 +450,17 @@ class PweaveDocument(Document):
 
     def add_ellipse(self,labels):
         # shorten any labels over the max cutoff
-        MAX_LEN=25
+        MAX_LEN=45
         ELLIPSE="..."
         new_labels=[]
         for label in labels:
-            if len(label) > 25:
+            if len(label) > MAX_LEN:
                 label=label[0:MAX_LEN]+ELLIPSE
             new_labels+=[label]
         return new_labels
 
     def plot_stacked_barchart_grouped(self, grouped_data, row_labels, column_labels_grouped, title, 
-        ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=7, outfilename=None, legend_reverse=False):
+        ylabel=None, legend_title=None, legend_style="normal", legend=True, legend_size=8, outfilename=None, legend_reverse=False):
         """ Plot a stacked barchart with data grouped into subplots
         
         :param grouped_data: A dict of lists containing the grouped data
@@ -496,7 +496,7 @@ class PweaveDocument(Document):
         import matplotlib.pyplot as pyplot
         
         total_groups=len(grouped_data.keys())
-        figure, group_axis = pyplot.subplots(1, total_groups, sharey=True, gridspec_kw = {'wspace':0.02},figsize=(8,6),dpi=150)
+        figure, group_axis = pyplot.subplots(1, total_groups, sharey=True, gridspec_kw = {'wspace':0.02},figsize=(10,6),dpi=150)
 
         # create a set of custom colors to prevent overlap
         # get only a set number of items to recycle colors through subplots
@@ -547,7 +547,7 @@ class PweaveDocument(Document):
         # add the legend to the last subplot
         if legend:
             # reduce the size of the plot to fit in the legend
-            figure.subplots_adjust(right=0.75)
+            figure.subplots_adjust(right=0.65)
                
             if legend_reverse: 
                 pyplot.legend(list(reversed(bar_plots)),self.add_ellipse(list(reversed(row_labels))), loc="center left", bbox_to_anchor=(1,0.5),
@@ -560,7 +560,7 @@ class PweaveDocument(Document):
        
         if outfilename:
             pyplot.savefig(outfilename)
-            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            print("\n\n![]("+outfilename+"){#id .class width=675px height=405px}\n\n")
             pyplot.close()
         else:
             pyplot.draw() 
@@ -600,7 +600,7 @@ class PweaveDocument(Document):
         import matplotlib.ticker as ticker
         
         # create a figure subplot to move the legend
-        figure = pyplot.figure(figsize=(8,6),dpi=150)
+        figure = pyplot.figure(figsize=(10,6),dpi=150)
         subplot=pyplot.subplot(111)
         
         # create a set of custom colors to prevent overlap
@@ -657,11 +657,11 @@ class PweaveDocument(Document):
             subplot_position.width *0.80, subplot_position.height])
         
         subplot.legend(barplots,self.add_ellipse(row_labels),loc="center left", bbox_to_anchor=(1,0.5),
-            fontsize=7, title=legend_title, frameon=False)
+            fontsize=8, title=legend_title, frameon=False)
         
         if outfilename:
             pyplot.savefig(outfilename)
-            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            print("\n\n![]("+outfilename+"){#id .class width=675px height=405px}\n\n")
             pyplot.close()
         else:
             pyplot.draw()
@@ -798,7 +798,7 @@ class PweaveDocument(Document):
   
 
     def plot_stacked_barchart(self, data, row_labels, column_labels, title,
-        xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=7, outfilename=None, legend_reverse=False):
+        xlabel=None, ylabel=None, legend_title=None, legend_style="normal", legend_size=8, outfilename=None, legend_reverse=False):
         """ Plot a stacked barchart
         
         :param data: A list of lists containing the data
@@ -836,7 +836,7 @@ class PweaveDocument(Document):
         import numpy
         import matplotlib.pyplot as pyplot
         
-        figure = pyplot.figure(figsize=(8,6),dpi=150)
+        figure = pyplot.figure(figsize=(10,6),dpi=150)
         subplot=pyplot.subplot(111)
         bar_plots=[]
         names=[]
@@ -877,7 +877,7 @@ class PweaveDocument(Document):
         # reduce the size of the plot to fit in the legend
         subplot_position=subplot.get_position()
         subplot.set_position([subplot_position.x0, subplot_position.y0, 
-            subplot_position.width *0.75, subplot_position.height])
+            subplot_position.width *0.65, subplot_position.height])
             
         pyplot.yticks(fontsize=7)
         if legend_reverse:
@@ -889,7 +889,7 @@ class PweaveDocument(Document):
       
         if outfilename:
             pyplot.savefig(outfilename)
-            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            print("\n\n![]("+outfilename+"){#id .class width=675px height=405px}\n\n")
             pyplot.close()
         else: 
             pyplot.draw()
@@ -973,9 +973,9 @@ class PweaveDocument(Document):
         # set the font size for the table
         # first must turn off the auto set font size
         table.auto_set_font_size(False)
-        font_size=8
+        font_size=9
         if total_columns > 5:
-            font_size=7
+            font_size=8
             
         # use the font if provided
         if font is not None:
@@ -988,7 +988,7 @@ class PweaveDocument(Document):
 
         if outfilename:
             pyplot.savefig(outfilename)
-            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            print("\n\n![]("+outfilename+"){#id .class width=675px height=405px}\n\n")
             pyplot.close()
         else:
             pyplot.draw()
@@ -1420,7 +1420,7 @@ class PweaveDocument(Document):
         pcoa_data, pcoa1_x_label, pcoa2_y_label = self.compute_pcoa(sample_names, feature_names, data, apply_transform)
 
         # create a figure subplot to move the legend
-        figure = pyplot.figure(figsize=(8,6),dpi=150)
+        figure = pyplot.figure(figsize=(10,6),dpi=150)
         subplot = pyplot.subplot(111)
         nancolor="grey"
 
@@ -1458,7 +1458,7 @@ class PweaveDocument(Document):
         # reduce the size of the plot to fit in the legend
         subplot_position = subplot.get_position()
         subplot.set_position([subplot_position.x0, subplot_position.y0,
-                              subplot_position.width * 0.80, subplot_position.height])
+                              subplot_position.width * 0.70, subplot_position.height])
 
         plots = []
         metadata_plots = {}
@@ -1493,7 +1493,7 @@ class PweaveDocument(Document):
 
         if not metadata and len(sample_names) <= self.max_labels_legend:
             subplot.legend(plots, self.add_ellipse(sample_names), loc="center left", bbox_to_anchor=(1, 0.5),
-                           fontsize=7, title="Samples", frameon=False)
+                           fontsize=8, title="Samples", frameon=False)
 
         if metadata:
             if metadata_type == 'con':
@@ -1504,7 +1504,7 @@ class PweaveDocument(Document):
             else:
                 if len(metadata_ordered_keys) <= self.max_labels_legend:
                     subplot.legend(plots, self.add_ellipse(metadata_ordered_keys), loc="center left", bbox_to_anchor=(1, 0.5),
-                               fontsize=7, frameon=False)
+                               fontsize=8, frameon=False)
 
 
         if apply_transform:
@@ -1522,7 +1522,7 @@ class PweaveDocument(Document):
 
         if outfilename:
             pyplot.savefig(outfilename)
-            print("\n\n![]("+outfilename+"){#id .class width=540px height=405px}\n\n")
+            print("\n\n![]("+outfilename+"){#id .class width=675px height=405px}\n\n")
             pyplot.close()
         else:
             pyplot.draw()
