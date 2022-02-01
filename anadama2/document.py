@@ -221,7 +221,8 @@ class PweaveDocument(Document):
        
         # set the pandoc command based on if a table of contents will be included
         pandoc_command="pandoc {0} -o {1} --variable=linkcolor:Blue "+\
-            "--variable=toccolor:Blue --pdf-engine=pdflatex --standalone" 
+            "--variable=toccolor:Blue --pdf-engine=pdflatex --standalone "+\
+            "-V geometry:left=1in -V geometry:right=1in -V geometry:top=1in -V geometry:bottom=1in"
         if self.table_of_contents:
             pandoc_command+=" --toc"
         
@@ -450,7 +451,7 @@ class PweaveDocument(Document):
 
     def add_ellipse(self,labels):
         # shorten any labels over the max cutoff
-        MAX_LEN=45
+        MAX_LEN=37
         ELLIPSE="..."
         new_labels=[]
         for label in labels:
@@ -1124,14 +1125,14 @@ class PweaveDocument(Document):
         # if the output file is provided, then just print out a link to it in the doc
         if outfilename:
             if os.path.isfile(heatmap_file):
-                print("\n\n![]({0})\n\n".format(heatmap_file))
+                print("\n\n![]("+heatmap_file+"){#id .class width=540px height=405px}\n\n")
                 if metadata_rows:
-                    print("\n\n![]({0})\n\n".format(metadata_legend_file))
+                    print("\n\n![]("+metadata_legend_file+"){#id .class width=540px height=405px}\n\n")
         else:
             # create a subplot and remove the frame and axis labels
             # set the figure and increase the dpi for small text
 
-            fig = pyplot.figure(figsize=(8,8),dpi=dpi)
+            fig = pyplot.figure(figsize=(6,6),dpi=dpi)
 
             if metadata_rows:
                 subplot1 = pyplot.subplot2grid((4,1),(0,0), rowspan=3, frame_on=False)
