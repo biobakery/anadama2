@@ -1078,6 +1078,7 @@ class PweaveDocument(Document):
         # increase the dpi for small text
         dpi=150
         label_font="8"
+        label_max="45"
 
         # compute the aspect ratio based on the number of samples and features
         aspect_ratio=len(sample_names)/(len(feature_names)*1.0)
@@ -1093,7 +1094,7 @@ class PweaveDocument(Document):
         command=[exe_name,"-i",hclust2_input_file,"-o",heatmap_file,"--title",title,
             "--title_font",str(int(label_font)*2),"--cell_aspect_ratio",str(aspect_ratio),
             "--flabel_size", label_font, "--slabel_size", label_font,
-            "--colorbar_font_size",label_font,"--dpi",str(dpi),"--f_dist_f",method]
+            "--colorbar_font_size",label_font,"--dpi",str(dpi),"--f_dist_f",method,"--max_flabel_len",label_max]
         if log_scale:
             command+=["--log_scale"]
         if metadata_rows:
