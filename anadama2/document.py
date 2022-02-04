@@ -1057,8 +1057,9 @@ class PweaveDocument(Document):
         # apply zscore if requested
         if zscore:
             from scipy import stats
-            
-            data = stats.zscore(numpy.array(data),axis=1)
+
+            total_metadata=len(metadata_rows)
+            data[total_metadata:] = stats.zscore(numpy.array(data[total_metadata:]),axis=1).tolist()
         
         # write a file of the data
         handle, hclust2_input_file=tempfile.mkstemp(prefix="hclust2_input",dir=os.getcwd())
