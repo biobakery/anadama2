@@ -120,7 +120,7 @@ class SlurmGridWorker(GridWorker):
 
         # make the new directories for scratch
         mkdirs_cmmds=["mkdir -p {}".format(dir) for dir in list(mkdirs_set)]
-        commands=mkdirs_cmmds+[""]+commands
+        commands=mkdirs_cmmds+commands
 
         # copy the targets at the end of the task
         copy_commands=[]
