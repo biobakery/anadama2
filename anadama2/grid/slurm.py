@@ -127,7 +127,7 @@ class SlurmGridWorker(GridWorker):
         for name in [item.name for item in task.targets]:
             new_name=name.replace(output_dir, scratch)
             copy_commands.append("mkdir -p {0} && cp {1} {2}".format(os.path.dirname(name), new_name, name))
-        commands="\n".join(commands+[""]+copy_commands)
+        commands=" && ".join(commands+copy_commands)
 
         return commands
 
