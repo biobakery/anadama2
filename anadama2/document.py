@@ -974,9 +974,9 @@ class PweaveDocument(Document):
         # set the font size for the table
         # first must turn off the auto set font size
         table.auto_set_font_size(False)
-        font_size=9
+        font_size=8
         if total_columns > 5:
-            font_size=8
+            font_size=7
             
         # use the font if provided
         if font is not None:
