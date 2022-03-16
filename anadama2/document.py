@@ -1058,7 +1058,7 @@ class PweaveDocument(Document):
         if zscore:
             from scipy import stats
 
-            total_metadata=len(metadata_rows)
+            total_metadata=len(metadata_rows) if metadata_rows else 0
             data[total_metadata:] = stats.zscore(numpy.array(data[total_metadata:]),axis=1).tolist()
         
         # write a file of the data
