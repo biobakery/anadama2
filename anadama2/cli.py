@@ -163,13 +163,24 @@ class Configuration(object):
             
         return found_grid
     
+    @staticmethod
+    def identify_slurm_partitions():
+        """ Get default partitions based on slurm config """
+        partitions=["serial_requeue","serial_requeue",4*60]
+        try:
+            if list(filter(lambda partition: partition == "fasse",[item.split(" ")[0] for item in subprocess.check_output("sinfo", encoding='UTF-8').split("\n")])):
+                partitions=["fasse"]
+        except OSError:
+            pass
+        return partitions
+
     @classmethod
     def default_partitions(cls):
         """ Get default partitions based on the default grid """
         
         grid = cls.identify_grid()
         if grid == "slurm":
-            partitions = ["serial_requeue","serial_requeue",4*60]
+            partitions = cls.identify_slurm_partitions()
         elif grid == "sge":
             partitions = "broad"
         elif grid == "aws":
