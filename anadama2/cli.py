@@ -170,7 +170,7 @@ class Configuration(object):
         # determine the default sleep time based on the grid environment
         partition=cls.default_partitions()
         submit_sleep=5
-        if "fasse" in partition[0]:
+        if "fasse" in partition:
             submit_sleep=25
         return submit_sleep
  
