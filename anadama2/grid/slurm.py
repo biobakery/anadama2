@@ -68,8 +68,8 @@ class Slurm(Grid):
 
     """
 
-    def __init__(self, partition, tmpdir, benchmark_on=None, options=None, environment=None, output_dir=None, scratch=None, max_time=None, max_mem=None):
-        super(Slurm, self).__init__("slurm", SlurmGridWorker, SLURMQueue(partition, benchmark_on, options, environment, output_dir, scratch), tmpdir, benchmark_on, max_time, max_mem)
+    def __init__(self, partition, tmpdir, benchmark_on=None, options=None, environment=None, output_dir=None, scratch=None, max_time=None, max_mem=None, submit_sleep=5):
+        super(Slurm, self).__init__("slurm", SlurmGridWorker, SLURMQueue(partition, benchmark_on, submit_sleep, options, environment, output_dir, scratch), tmpdir, benchmark_on, max_time, max_mem)
 
 class SlurmGridWorker(GridWorker):
     """ Base Grid Worker class """
@@ -166,8 +166,8 @@ class SlurmGridWorker(GridWorker):
 
 class SLURMQueue(GridQueue):
     
-    def __init__(self, partition, benchmark_on=None, options=None, environment=None, output_dir=None, scratch=None):
-        super(SLURMQueue, self).__init__(partition, benchmark_on)
+    def __init__(self, partition, benchmark_on=None, submit_sleep=5, options=None, environment=None, output_dir=None, scratch=None):
+        super(SLURMQueue, self).__init__(partition, benchmark_on, submit_sleep)
         
         self.options=options
         self.environment=environment

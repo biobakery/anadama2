@@ -177,7 +177,7 @@ class Grid(object):
 
 class GridQueue(object):
     
-    def __init__(self, partition, benchmark_on=None):
+    def __init__(self, partition, benchmark_on=None, submit_sleep=5):
         # check for short/long partitions
         if not isinstance(partition, list):
             partition = [x.strip() for x in partition.split(",")] 
@@ -203,7 +203,7 @@ class GridQueue(object):
         self.timeout_retry_max = 3
         
         # this is the number of seconds to wait after job submission
-        self.submit_sleep = 5
+        self.submit_sleep = submit_sleep
         
         # this is the last time the queue was checked
         self.last_check = time.time()

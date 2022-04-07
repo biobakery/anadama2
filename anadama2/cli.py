@@ -122,6 +122,8 @@ class Configuration(object):
                 help="Benchmark gridable tasks \n[default: %(default)s]")),
             ("grid_options", cls.Argument(None, "--grid-options", action="append",
                 help="Grid specific options that will be applied to each grid task")),
+            ("grid_submit_sleep", cls.Argument(None, "--grid-submit-sleep", default=cls.default_submit_sleep(), type=int,
+                help="Number of seconds to wait between job submissions on grid \n[default: %(default)s]")),
             ("grid_environment", cls.Argument(None, "--grid-environment", action="append",
                 help="Commands that will be run before each grid task to set up environment")),
             ("grid_scratch", cls.Argument(None, "--grid-scratch", default="",
@@ -162,7 +164,16 @@ class Configuration(object):
                 pass
             
         return found_grid
-    
+   
+    @classmethod
+    def default_submit_sleep(cls):
+        # determine the default sleep time based on the grid environment
+        partition=cls.default_partitions()
+        submit_sleep=5
+        if "fasse" in partition[0]:
+            submit_sleep=25
+        return submit_sleep
+ 
     @staticmethod
     def identify_slurm_partitions():
         """ Get default partitions based on slurm config """
