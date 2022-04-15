@@ -13,7 +13,9 @@ class Dummy(object):
         return runners.default(ctx, jobs)
 
 from .sge import SGE
+from .lsf import LSF
 from .slurm import Slurm
 
 SGE #pyflakes
 Slurm #pyflakes
+LSF #pyflakes
