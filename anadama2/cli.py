@@ -181,7 +181,7 @@ class Configuration(object):
         try:
             if list(filter(lambda partition: partition == "fasse",[item.split(" ")[0] for item in subprocess.check_output("sinfo", encoding='UTF-8').split("\n")])):
                 partitions=["fasse"]
-        except OSError:
+        except ( OSError, subprocess.CalledProcessError ):
             pass
         return partitions
 
