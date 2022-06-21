@@ -116,7 +116,6 @@ class Grid(object):
 
         # add the max time and memory overrides
         jobrequires.time=[jobrequires.time,self.max_time]
-
         jobrequires.mem=[jobrequires.mem,self.max_mem]
 
         return (jobrequires, self.tmpdir)
@@ -189,14 +188,14 @@ class GridQueue(object):
             self.partition_cutoff = 0
 
         # this is the refresh rate for checking the queue, in seconds
-        self.refresh_rate = 10*60
+        self.refresh_rate = 4*60
 
         # this is the rate for checking the job status, in seconds
-        self.check_job_rate = 60
+        self.check_job_rate = 30
 
         # this is the number of minutes to wait if there is an time out
         # socket error returned from the scheduler when running a command
-        self.timeout_sleep = 5*60
+        self.timeout_sleep = 1*60
 
         # this is the number of times to retry after a timeout error
         self.timeout_retry_max = 3
@@ -260,7 +259,6 @@ class GridQueue(object):
 
         # check the last time the queue was captured and refresh if set
         current_time = time.time()
-        print(self.refresh_rate)
         if ( current_time - self.last_check > self.refresh_rate ) or refresh or self.sacct is None:
             self.last_check = current_time
             logging.info("Getting latest queue info to refresh job status")
@@ -468,7 +466,6 @@ class GridQueue(object):
         # convert the minutes to the time string "HH:MM:00"
         hours, remaining_minutes = divmod(minutes, 60)
         time = "{:02d}:{:02d}:00".format(hours, remaining_minutes)
-
         bash=bash_template.substitute(partition=partition,cpus=cpus,time=time,
             memory=memory,command=command,output=out_file,error=error_file,rc_command="export RC=$? ; echo $RC > "+rc_file+" ; bash -c 'exit $RC'")
         file_handle, new_file=tempfile.mkstemp(suffix=".bash",prefix="task_"+str(taskid)+"_",dir=dir)
@@ -538,9 +535,13 @@ class GridWorker(threading.Thread):
 
         resubmission = 0
         cores, time, memory, partition, docker_image = perf.cores, perf.time, perf.mem, perf.partition, perf.docker_image
+        if hasattr(grid_queue, "mem_per_core"):
+            mem_per_core = grid_queue.mem_per_core
+        else:
+            mem_per_core = False
 
         jobid, out_file, error_file, rc_file = cls.submit_grid_job(cores, time, memory,
-            partition, tmpdir, commands, task, grid_queue, reporter, docker_image)
+                                                                   partition, tmpdir, commands, task, grid_queue, reporter, docker_image, mem_per_core)
 
         # monitor job if submission was successful
         result, job_final_status = cls.check_submission_then_monitor_grid_job(grid_queue,
@@ -574,10 +575,11 @@ class GridWorker(threading.Thread):
         return result
 
     @classmethod
-    def submit_grid_job(cls, cores, time, memory, partition, tmpdir, commands, task, grid_queue, reporter, docker_image):
+    def submit_grid_job(cls, cores, time, memory, partition, tmpdir, commands, task, grid_queue, reporter, docker_image, mem_per_core):
 
         # evaluate the time/memory requests for the job
-        time, memory = cls.evaluate_resource_requests(time, memory)
+        logging.info(task)
+        time, memory = cls.evaluate_resource_requests(time, memory, cores, mem_per_core)
 
         # get the partition for the task
         current_partition = grid_queue.get_partition(time, partition)
@@ -623,7 +625,7 @@ class GridWorker(threading.Thread):
         return line
 
     @staticmethod
-    def evaluate_resource_requests(time,mem):
+    def evaluate_resource_requests(time,mem, cores, mem_per_core):
         """ Evaluate the time/memory requests for the grid job, allowing for ints or formulas """
 
         # allow for optional max time and memory
@@ -655,7 +657,10 @@ class GridWorker(threading.Thread):
             mem=mem[-1]
         else:
             mem=mem[0]
-
+        if mem_per_core:
+            new_mem = mem/cores
+            logging.info("converting memory (%f) to memory per core (%f)" %(mem, new_mem))
+            mem = new_mem
         return time, mem
 
     @classmethod
