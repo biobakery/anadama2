@@ -465,7 +465,10 @@ class GridQueue(object):
 
         # convert the minutes to the time string "HH:MM:00"
         hours, remaining_minutes = divmod(minutes, 60)
-        time = "{:02d}:{:02d}:00".format(hours, remaining_minutes)
+        if self.__class__.__name__ == "LSFQueue":
+            time = "{:02d}:{:02d}".format(hours, remaining_minutes)
+        else:
+            time = "{:02d}:{:02d}:00".format(hours, remaining_minutes)
         bash=bash_template.substitute(partition=partition,cpus=cpus,time=time,
             memory=memory,command=command,output=out_file,error=error_file,rc_command="export RC=$? ; echo $RC > "+rc_file+" ; bash -c 'exit $RC'")
         file_handle, new_file=tempfile.mkstemp(suffix=".bash",prefix="task_"+str(taskid)+"_",dir=dir)
