@@ -1,6 +1,34 @@
 
 # AnADAMA2 History #
 
+## v0.10.0 -9-08-2022 ##
+* Document updates
+  * Add option to reverse legend for stacked barplots.
+  * Update heatmap methods to allow for case where heatmap is not generated.
+  * Add option to write table figure to file.
+  * Make the project name optional.
+  * Remove ticks and labels from x-axis where there are too many samples to fit.
+  * Remove full path from DADA2 version in log (full path not needed and runs out of space).
+  * Add ellpise to legends on plots when needed.
+  * Remove xlim and xticks from grouped barplot if too many samples.
+  * Increase margins/figures/legends to fit longer variable names.
+  * Increase the size of the margins to MLA format (1 inch all), decrese max legend length, and decrease heatmap sizes.
+  * Update zscore in heatmap to allow for metadata rows.
+
+* Grid updates
+  * Update check for user id to use getpass instead of pwd for python3.
+  * Make grid scratch optional by default.
+  * Modify grid scratch option commands to catch error in actions (prevents copy of partial targets from scratch to output folder). This
+    will also resolve slurm grid status stating task completed (based on file copy) when the task failed based on task actions.
+  * Add default check to determine Cannon vs Fasse grid paritions.
+  * Add --grid-submit-sleep option plus defaults to resolve fasse autofs mounting issues with too many jobs submitted at once.
+  * Add another exception to allow for sinfo "Unable to contact slurm controller error".
+
+* Fix error with reporter message format in python 3.9.
+* Update requirements to allow for newer versions of dependencies.
+* Format error messages so they are easier to read. 
+
+
 ## v0.9.0 05-17-2021 ##
 
 * Document processing
