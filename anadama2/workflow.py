@@ -171,7 +171,7 @@ class Workflow(object):
             tmpdir = os.path.join(self.get_tmpdir(), "slurm_files")
             if grid_scratch is None:
                 sys.exit("Please select a scratch space with the option --grid-scratch")
-            if self.vars.get("output") in self.vars.get("input"):
+            if self.vars.get("input") and self.vars.get("output") in self.vars.get("input"):
                 sys.exit("Please select an output folder that is not a subfolder of the input folder")
             grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting, submit_sleep = grid_submit_sleep,
                 options=grid_options, environment=grid_environment, output_dir = os.path.abspath(self.vars.get("output")), scratch=grid_scratch, max_time=grid_time_max, max_mem=grid_mem_max)
