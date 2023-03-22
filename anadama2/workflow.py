@@ -31,6 +31,7 @@ from .util import istask, sugar_list, dichotomize
 from .util import keepkeys
 from .util import fname
 from .grid.slurm import Slurm
+from .grid.lsf import LSF
 from .grid.sge import SGE
 from .grid.aws import AWS
 from .document import PweaveDocument
@@ -45,7 +46,7 @@ class RunFailed(ValueError):
 
 class Workflow(object):
     """Create a Workflow.
-    
+
     :keyword storage_backend: Lookup and save dependency information
       from this object. If ``None`` is passed (the default), the
       default backend from :func:`anadama2.backends.default` is used.
@@ -53,10 +54,10 @@ class Workflow(object):
       :class:`anadama2.backends.BaseBackend` subclass or None.
 
     :keyword grid: Use this object to configure the run
-      context to submit tasks to a compute grid.  
+      context to submit tasks to a compute grid.
     :type grid: objects implementing the interface of
       :class:`anadama2.grid.Dummy
-    
+
     :keyword strict: Enable strict mode. If strict, whenever a task is
       added that depends on something that is not the target of
       another task (or isn't marked with
@@ -65,22 +66,22 @@ class Workflow(object):
       ``.exists()`` automatically do what's necessary to track the
       object; if ``.exists()`` is False, raise a KeyError.
     :type strict: bool
-    
+
     :keyword vars: Provide a custom Configuration class for command line options.
-    :type vars: instance of any 
+    :type vars: instance of any
       :class:`anadama2.cli.Configuration` class or None.
-      
+
     :keyword version: The version of the workflow. This version will be used for
       the command line option ``--version``.
     :type version: str
-    
-    :keyword description: A description of the workflow. This description 
+
+    :keyword description: A description of the workflow. This description
       will be used in the command line ``--help`` message.
     :type description: str
-    
+
     :keyword remove_options: A list of options to remove
     :type remove_options: list
-    
+
     :keyword document: Provide a custom Document class.
     :type: document: instance of any :class: `anadama2.Document' class or None.
     """
@@ -98,7 +99,7 @@ class Workflow(object):
         #: :meth:`anadama2.workflow.Workflow.add_task` and
         #: :meth:`anadama2.workflow.Workflow.do`
         self.tasks = TaskContainer()
-        #: task_results is a list of objects of type 
+        #: task_results is a list of objects of type
         #: :class:`anadama2.runners.TaskResult`. This list is populated
         #: only after tasks have been run with
         #: :meth:`anadama2.workflow.Workflow.go`.
@@ -113,7 +114,7 @@ class Workflow(object):
         self.strict = strict
         self.vars = vars or Configuration(description=description,
             version=version, defaults=True, remove_options=remove_options, prompt_user=cli)
-        
+
         if document:
             self.document=document
         else:
@@ -127,11 +128,11 @@ class Workflow(object):
 
     def get_tmpdir(self):
         """Get the temp directory location. Called here as to not call argparse
-        prior to custom args being added """      
+        prior to custom args being added """
 
         if self.tmpdir:
             return self.tmpdir
- 
+
         # get the temp directory location
         self.tmpdir=self.vars.get("output")
         if self.tmpdir is None or tracked.s3_folder(self.tmpdir):
@@ -139,17 +140,17 @@ class Workflow(object):
             self.tmpdir = os.getcwd()
 
         return self.tmpdir
- 
+
     def _get_grid(self):
-        """Return the grid instance. First check if a grid instance has already 
-        been set or was provided initially. If not, set the grid based on the 
+        """Return the grid instance. First check if a grid instance has already
+        been set or was provided initially. If not, set the grid based on the
         command line options. A dummy grid is set if the option to run is not
         provided on the command line. In this case, all tasks will run locally."""
-        
+
         # if the grid has already been set by the user, then return
         if self.grid_set:
             return self.grid
-        
+
         # get the grid selection set on the command line
         grid_selection = self.vars.get("grid")
         grid_partition = self.vars.get("grid_partition")
@@ -161,7 +162,7 @@ class Workflow(object):
         grid_time_max = self.vars.get("grid_time_max")
         grid_mem_max = self.vars.get("grid_mem_max")
         grid_benchmark_setting = True if self.vars.get("grid_benchmark") == "on" else False
-        
+
         # set the grid instance based on the user option
         # if no grid jobs are selected, then no grid will be used
         if grid_jobs == 0:
@@ -180,6 +181,11 @@ class Workflow(object):
             tmpdir = os.path.join(self.get_tmpdir(), "sge_files")
             grid = SGE(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
                 options=grid_options, environment=grid_environment)
+        elif grid_selection == "lsf":
+            # get the temp output folder for the lsf scripts and stdout/stderr files
+            tmpdir = os.path.join(self.get_tmpdir(), "lsf_files")
+            grid = LSF(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting,
+                options=grid_options, environment=grid_environment)
         elif grid_selection == "aws":
             # get the temp output folder for the aws scripts and stdout/stderr files
             tmpdir = os.path.join(self.get_tmpdir(), "aws_files")
@@ -187,20 +193,20 @@ class Workflow(object):
         else:
             print("Grid selected ( "+grid_selection+" ) can not be found. Tasks will run locally.")
             grid = _grid.Dummy()
-            
+
         self.grid=grid
         self.grid_set=True
-        
+
         return self.grid
-        
+
 
     def add_argument(self, name, **kwargs):
         """This function adds an argument to the configuration object provided
         to the workflow. Arguments can alternatively be added to the configuration
         object before it is provided to the workflow. See the ``add`` function
-        documentation for your Configuration class, for more information. The 
+        documentation for your Configuration class, for more information. The
         default configuration class is :class:`anadama2.cli.Configuration`."""
-        
+
         self.vars.add(name, **kwargs)
 
     def parse_args(self):
@@ -212,13 +218,13 @@ class Workflow(object):
 
         # return the arguments
         return self.vars.get_option_values()
-    
+
 
     def get_input_files(self, extension=None, name=None, input_folder=None):
         """Return the files in the input folder filtered with the extension
         or name if provided. The input folder default can be set in the workflow
         or it can be provided on the command line by the user.
-        
+
         :keyword extension: Return input files with this extension
         :type extension: str
         :keyword name: Return input files with this name
@@ -228,7 +234,7 @@ class Workflow(object):
 
         :returns: A list of files
         """
-        
+
         # get the contents of the input folder (with the full paths)
         if input_folder:
             vars_input = input_folder
@@ -247,7 +253,7 @@ class Workflow(object):
             input_files = [tracked.s3_build_path(bucket,file) for file in filter(lambda file: not file.endswith("/"), contents)]
         else:
             input = os.path.abspath(vars_input)
-        
+
             input_folder_contents = map(lambda file: os.path.join(input, file), os.listdir(input))
             # filter out contents to only include files
             input_files = [item for item in input_folder_contents if os.path.isfile(item)]
@@ -259,15 +265,15 @@ class Workflow(object):
         # if name is set, then filter files to only those with the exact name
         if name:
             input_files = list(filter(lambda file: os.path.basename(file) == name, input_files))
-            
+
         return input_files
-    
+
     def name_output_files(self, name, tag=None, extension=None, subfolder=None):
-        """Return names of files in the output folder 
-        use the name(s), tag, extension, and subfolder provided. 
-        The output folder default can be set in the workflow or 
+        """Return names of files in the output folder
+        use the name(s), tag, extension, and subfolder provided.
+        The output folder default can be set in the workflow or
         it can be provided on the command line by the user.
-        
+
         :parameter name: The name(s) of the output file(s)
         :type name: str or list
         :keyword tag: Add tag to the basename
@@ -284,8 +290,8 @@ class Workflow(object):
         if not isinstance(name, list):
             name=[name]
             convert_to_string=True
-       
-        output_folder = self.vars.get("output") 
+
+        output_folder = self.vars.get("output")
         if not tracked.s3_folder(output_folder):
             # get the output folder name (full path)
             output_folder = os.path.abspath(output_folder)
@@ -293,19 +299,19 @@ class Workflow(object):
         # add the subfolder if provided
         if subfolder:
             output_folder = os.path.join(output_folder, subfolder)
-            
+
         # Add tag and extension to file names
         output_files = [ fname.mangle(file, tag=tag, dir=output_folder, ext=extension) for file in name]
-            
+
         # If the input was a single string, then convert output to single string
         if convert_to_string:
             output_files=output_files[0]
-        
+
         return output_files
 
     def do(self, cmd, track_cmd=True, track_binaries=True):
         """Create and add a :class:`anadama2.Task` to the workflow using a
-        convenient, shell-like syntax. 
+        convenient, shell-like syntax.
 
         To explicitly mark task targets, wrap filenames within ``cmd``
         with ``[t:]``. Similarly, wrap dependencies with ``[d:]``. The
@@ -365,12 +371,12 @@ class Workflow(object):
           target filename in ``[t:]`` and wrap a dependency filename
           in ``[d:]``. Variables from workflow configuration can be
           substituted into the command by wrapping the variable name
-          in ``[v:]``. 
+          in ``[v:]``.
         :type cmd: str
 
         :keyword track_cmd: Set to False to not track changes to ``cmd``.
         :type track_cmd: bool
-        
+
         :keyword track_binaries: Set to False to not discover files
           within ``cmd`` and treat them as dependencies.
         :type track_binaries: bool
@@ -422,20 +428,20 @@ class Workflow(object):
         t = self.do(cmd, track_cmd, track_binaries)
         self._get_grid().do(t, **gridopts)
         return t
-    
+
     def add_document(self, templates, depends=None, targets=None, vars=None, table_of_contents=None):
         """ Create and add a group of :class:`anadama2.Task` to the workflow. This
         task will create a document which will be the target(s) provided. The
         variables will be passed on to the template and be available when the
         document is generated from the template. The document class provided
         to the workflow will be used to create the document."""
-        
+
         doc = copy.deepcopy(self.document)
         doc.__init__(templates, depends, targets, vars, table_of_contents)
-        
+
         return self.add_task(actions=doc.create, depends=depends, targets=targets,
-                      interpret_deps_and_targs=False, name="document")  
-        
+                      interpret_deps_and_targs=False, name="document")
+
     def add_archive(self, depends, targets, archive_software=None, remove_log=None):
         """ Create an archive including the dependencies. Name it the target. This
         adds a :class:`anadama2.Task` to the workflow to create the archive. """
@@ -444,33 +450,33 @@ class Workflow(object):
         # update to absolute paths
         depends=sugar_list(depends)
         targets=[os.path.abspath(target) for target in sugar_list(targets)]
-        
+
         # get the absolute path to the output folder
         if not self.vars.get("output") is None and not tracked.s3_folder(self.vars.get("output")):
             output_folder = os.path.abspath(self.vars.get("output"))
         else:
             output_folder = None
-        
+
         # determine the archive software based on the target extension
         if archive_software is None:
             if targets[0].endswith(".zip"):
                 archive_software = "zip"
             else:
                 archive_software = "tar"
-                
+
         # get the archive extension
         if archive_software == "zip":
             extension=".zip"
         else:
             extension=".tar"+targets[0].split("tar")[-1]
-                
+
         # normalize a path to remove any extra separators included by the user
         # allows joining a folder ending with a separator with an extension as a target
         targets[0]=targets[0].replace(os.pathsep+extension,extension)
-            
+
         # remove any tasks from the depends list of archive inputs
         archive_inputs=list(filter(lambda x: not isinstance(x,Task), depends))
-        
+
         # if there is an output folder, change the depends to relative paths
         # so the full path is not included in the archive
         if output_folder is not None:
@@ -481,11 +487,11 @@ class Workflow(object):
             output=subprocess.check_output([archive_software,"--help"])
         except EnvironmentError:
             raise EnvironmentError("Unable to archive document with software requested. Please install " +archive_software)
-        
+
         # get the possible location of the db folder and the log
         document_db_folder="*"+backends.LOCAL_DB_FOLDER+"*"
         document_log=reporters.LOG_FILE_NAME
-        
+
         # create the command always removing the database, if found
         # if the database is not found this will not issue an error it just will not be excluded
         if archive_software == "zip":
@@ -495,7 +501,7 @@ class Workflow(object):
             command+=["-x","'*tmp*'"]
             if remove_log:
                 command+=["-x",document_log]
-        elif archive_software == "tar": 
+        elif archive_software == "tar":
             if targets[0].endswith(".tar.gz"):
                 settings="czvf"
             elif targets[0].endswith(".tar"):
@@ -504,7 +510,7 @@ class Workflow(object):
                 settings="cjvf"
             else:
                 raise TypeError("Unknown archive software extension. Please use .tar.gz, .tar, or .tar.bz2 with tar software.")
-                
+
             command=["tar",settings,targets[0]]
             command+=archive_inputs
             command+=["--exclude",document_db_folder]
@@ -512,55 +518,55 @@ class Workflow(object):
                 command+=["--exclude",document_log]
         else:
             raise TypeError("Unknown archive software provided. Please select zip or tar with .tar.gz or .tar or .tar.bz2")
-        
+
         # move to the directory of the output folder to not include full paths in archives
         # if there is an output folder being used
         if output_folder is not None:
             cwd=os.getcwd()
             command=["cd",output_folder,";"]+command+[";","cd",cwd]
-            
+
         command=" ".join(command)
-        
+
         return self.add_task(actions=command, depends=depends, targets=targets,
                       interpret_deps_and_targs=False, name="archive")
 
     def add_task_group(self, actions=None, depends=None, targets=None,
                        name=[None], interpret_deps_and_targs=True, **kwargs):
-        """Create and add a group of :class:`anadama2.Task` to the workflow. 
+        """Create and add a group of :class:`anadama2.Task` to the workflow.
         This function will create a task for each set of depends and targets
         provided. The number of targets and dependencies should be the same.
-        
+
         This function will call ``add_task`` for each task in the group. Please
         see the ``add_task`` documentation for more information."""
-        
+
         task_group=[]
         for deps, targs, tname in zip(depends, targets, itertools.cycle(sugar_list(name))):
             task_group.append(self.add_task(actions, deps, targs, tname, interpret_deps_and_targs, **kwargs))
-            
+
         return task_group
-            
+
     def add_task_group_gridable(self, actions=None, depends=None, targets=None,
                        name=[None], interpret_deps_and_targs=True, **kwargs):
         """Create gridable tasks as a group."""
-        
+
         task_group=[]
         for deps, targs, tname in zip(depends, targets, itertools.cycle(sugar_list(name))):
             task = self.add_task(actions, deps, targs, tname, interpret_deps_and_targs, **kwargs)
             task_group.append(task)
             self._get_grid().add_task(task, **kwargs)
-        
-        return task_group        
+
+        return task_group
 
     def add_task(self, actions=None, depends=None, targets=None,
                  name=None, visible=True,
                  interpret_deps_and_targs=True, **kwargs):
         """Create and add a :class:`anadama2.Task` to the workflow.  This
         function can be used as a decorator to set a function as the
-        sole action. 
+        sole action.
 
         Extra keyword arguments can be used as formatting values
         similar to ``[depends[0]]``. See :func:`anadama2.helpers.parse_sh`
-        
+
         :param actions: The actions to be performed to complete the
           task. Strings or lists of strings are interpreted as shell
           commands according to :func:`anadama2.helpers.parse_sh`. If given
@@ -600,7 +606,7 @@ class Workflow(object):
         :keyword interpret_deps_and_targs: Should I use
           :func:`anadama2.helpers.parse_sh` to change
           ``[depends[0]]`` and ``[targets[0]]`` into the first item in
-          depends and the first item in targets? Default is True 
+          depends and the first item in targets? Default is True
         :type interpret_deps_and_targs: bool
 
         :returns: The :class:`anadama2.Task` just created
@@ -630,7 +636,7 @@ class Workflow(object):
                 # set local temp locations for tracked items
                 tmp = [tracked.try_set_local_path(x, tmpdir) for x in tracked_with_temp]
 
-            acts = build_actions(actions, deps, targs, visible, kwargs, 
+            acts = build_actions(actions, deps, targs, visible, kwargs,
                                   use_parse_sh=interpret_deps_and_targs)
 
             the_task = Task(name, acts, deps, targs, task_no, bool(visible), actions, kwargs, interpret_deps_and_targs)
@@ -687,11 +693,11 @@ class Workflow(object):
            reporter=None, jobs=None, grid_jobs=None,
            until_task=None, exclude_task=None, target=None,
            exclude_target=None, dry_run=False):
-        """Kick off execution of all previously configured tasks. 
+        """Kick off execution of all previously configured tasks.
 
         :keyword skip_nothing: Skip no tasks, even if you could.
         :type skip_nothing: bool
-        
+
         :keyword quit_early: If any tasks fail, stop all execution
           immediately. If set to ``False`` (the default), children of
           failed tasks are *not* executed but children of successful
@@ -766,7 +772,7 @@ class Workflow(object):
         self.task_results = [None for _ in range(len(self.tasks))]
         self._reporter = reporter or reporters.default(self.vars.get("output"),self.vars.get("log_level"))
         self._reporter.started(self)
-        
+
         # if the backend is not set, then set to default
         if not self._backend:
             self._backend = backends.default(self.vars.get("output"))
@@ -825,9 +831,9 @@ class Workflow(object):
             pxdeps = [ d for d in self.tasks[result.task_no].depends
                        if not istask(d) and d not in self._depidx ]
             if pxdeps:
-                self._backend.save([d.name for d in pxdeps], 
+                self._backend.save([d.name for d in pxdeps],
                                    [list(d.compare()) for d in pxdeps])
-                    
+
 
 
     def _handle_finished(self):
@@ -879,9 +885,9 @@ class Workflow(object):
                 if istask(dep):
                     continue
                 grp[dep].add(idx)
-                    
+
         return six.iteritems(grp)
-        
+
 
     def _handle_task_started(self, task_no):
         self._reporter.task_started(task_no)
@@ -893,7 +899,7 @@ class Workflow(object):
 
     def _add_task(self, task):
         """Actually add a task to the internal dependency data structure"""
-        
+
         self.tasks.append(task)
         self.dag.add_node(task.task_no)
         for dep in task.depends:
@@ -902,7 +908,7 @@ class Workflow(object):
                 continue
             if dep in self._depidx:
                 pass
-            elif dep.must_preexist == False: 
+            elif dep.must_preexist == False:
                 continue
             elif not self.strict and dep.exists():
                 self.already_exists(dep)
@@ -916,12 +922,12 @@ class Workflow(object):
                 # a preexisting dependency
                 if parent_task is not None:
                     self.dag.add_edge(parent_task.task_no, task.task_no)
-        for targ in task.targets: 
+        for targ in task.targets:
             # add targets to the DependencyIndex after looking up
             # dependencies for the current task. Hopefully this avoids
             # circular references
             self._depidx.link(targ, task)
-                
+
 
     def _handle_nosuchdep(self, dep, task):
         self.tasks.pop()
@@ -979,14 +985,14 @@ class Workflow(object):
     def _taskmatch(self, task_name_or_number):
         # Find the tasks that match the name or number provided
         # Multiple tasks can share the same name but all will have unique numbers
-        
+
         taskset=[]
         for task in self.tasks:
             if task.name == task_name_or_number:
                 taskset.append(task)
             elif task.task_no == task_name_or_number:
                 taskset.append(task)
-                
+
         return taskset
 
 def _build_depends(depends):

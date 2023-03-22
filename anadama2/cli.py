@@ -44,16 +44,16 @@ class Configuration(object):
 
     :keyword defaults: Add a set of default options to the
       Configuration object. These defaults change behavior of
-      :meth:`anadama2.workflow.Workflow.go`. 
+      :meth:`anadama2.workflow.Workflow.go`.
     :type defaults: bool
 
     """
-    
+
     def __init__(self, description=None, version=None, defaults=True, remove_options=None, prompt_user=True):
         # set the description and version for the workflow
         self.description = description
         self.version = version
-        
+
         # set if should prompt user for command line arguments
         self.prompt_user=prompt_user
 
@@ -67,12 +67,12 @@ class Configuration(object):
 
         if not description:
             self.description = "AnADAMA2 Workflow"
-            
+
         # create a parser instance
         self.parser = argparse.ArgumentParser(
             description=self.description,
             formatter_class=argparse.RawTextHelpFormatter)
-        
+
         if defaults:
             self._arguments=collections.OrderedDict(self.get_default_options())
             for opt, info in self.get_default_options():
@@ -82,37 +82,37 @@ class Configuration(object):
         if remove_options:
             for option in remove_options:
                 self.remove(option)
-                
+
         # add a version option if version is provided
         if self.version:
             self.parser.add_argument("--version", action="version", version="%(prog)s v"+self.version)
-            
-            
+
+
     @staticmethod
     class Argument(object):
-        def __init__(self, short, long, default=None, type=None, action=None, 
+        def __init__(self, short, long, default=None, type=None, action=None,
             choices=None, help=None, dest=None, required=None):
-            
+
             # set the short and long option name
             self.short=short
             self.long=long
-            
+
             # keep the keywords for the option that are set
             keywords={"default":default, "type":type, "action":action, "choices":choices, "help":help, "dest":dest, "required":required}
             self.keywords = {key:value for key, value in keywords.items() if value is not None}
-                
+
     @classmethod
     def get_default_options(cls):
         return [
-            ("output", cls.Argument("-o", "--output", required=True, 
+            ("output", cls.Argument("-o", "--output", required=True,
                 help="Write output to this directory")),
-            ("input", cls.Argument("-i", "--input", default=os.getcwd(), 
+            ("input", cls.Argument("-i", "--input", default=os.getcwd(),
                 help="Find inputs in this directory \n[default: %(default)s]")),
-            ("config", cls.Argument(None, "--config", default=None, 
+            ("config", cls.Argument(None, "--config", default=None,
                 help="Find workflow configuration in this folder \n[default: only use command line options]")),
-            ("jobs", cls.Argument(None, "--local-jobs", default=1, type=int, dest="jobs", 
+            ("jobs", cls.Argument(None, "--local-jobs", default=1, type=int, dest="jobs",
                 help="Number of tasks to execute in parallel locally \n[default: %(default)s]")),
-            ("grid_jobs", cls.Argument(None, '--grid-jobs', default=0, type=int, 
+            ("grid_jobs", cls.Argument(None, '--grid-jobs', default=0, type=int,
                 help="Number of tasks to execute in parallel on the grid \n[default: %(default)s]")),
             ("grid", cls.Argument(None, "--grid", default=cls.identify_grid(),
                 help="Run gridable tasks on this grid type \n[default: %(default)s]")),
@@ -132,9 +132,9 @@ class Configuration(object):
                 help="The max time allowed for a grid task (in minutes)")),
             ("grid_mem_max", cls.Argument(None, "--grid-mem-max", default=None,
                 help="The max memory allowed for a grid task (in MB)")),
-            ("dry_run", cls.Argument(None, "--dry-run", action="store_true", 
+            ("dry_run", cls.Argument(None, "--dry-run", action="store_true",
                 help="Print tasks to be run but don't execute their actions ")),
-            ("skip_nothing", cls.Argument(None, "--skip-nothing", action="store_true", 
+            ("skip_nothing", cls.Argument(None, "--skip-nothing", action="store_true",
                 help="Run all tasks. Rerun tasks that have already been run.")),
             ("quit_early", cls.Argument(None, '--quit-early', action="store_true",
                 help="Stop if a task fails. By default,\nall tasks (except sub-tasks of failed tasks) will run.")),
@@ -146,25 +146,25 @@ class Configuration(object):
                 help="Only run tasks that generate these targets.\nAdd multiple times to append.\nPatterns with ? and * are allowed.")),
             ("exclude_target", cls.Argument(None, "--exclude-target", action="append",
                 help="Don't run tasks that generate these targets.\nAdd multiple times to append.\nPatterns with ? and * are allowed.")),
-            ("log_level", cls.Argument(None,"--log-level",default="INFO", choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"], 
+            ("log_level", cls.Argument(None,"--log-level",default="INFO", choices=["DEBUG","INFO","WARNING","ERROR","CRITICAL"],
                 help="Set the level of output for the log \n[default: %(default)s]"))
         ]
-                
+
     @staticmethod
     def identify_grid():
         """ Check if a grid is found on the machine and determine which type """
-        
+
         found_grid="None"
         # check for the grid job submission command for slurm and sge
-        for command, grid in [["sbatch","slurm"],["qsub","sge"],["aws","aws"]]:
+        for command, grid in [["sbatch","slurm"],["qsub","sge"],["aws","aws"], ["bsub","lsf"]]:
             try:
                 output=subprocess.check_output(["which",command],stderr=subprocess.STDOUT)
                 found_grid=grid
             except subprocess.CalledProcessError:
                 pass
-            
+
         return found_grid
-   
+
     @classmethod
     def default_submit_sleep(cls):
         # determine the default sleep time based on the grid environment
@@ -173,7 +173,7 @@ class Configuration(object):
         if "fasse" in partition:
             submit_sleep=25
         return submit_sleep
- 
+
     @staticmethod
     def identify_slurm_partitions():
         """ Get default partitions based on slurm config """
@@ -188,7 +188,7 @@ class Configuration(object):
     @classmethod
     def default_partitions(cls):
         """ Get default partitions based on the default grid """
-        
+
         grid = cls.identify_grid()
         if grid == "slurm":
             partitions = cls.identify_slurm_partitions()
@@ -198,7 +198,7 @@ class Configuration(object):
             partitions = ["general"]
         else:
             partitions = []
-            
+
         return ",".join(map(str,partitions))
 
     def add(self, name, desc=None, type=None, default=None, short=None,
@@ -218,49 +218,49 @@ class Configuration(object):
 
         :keyword type: Argparse type
         :type type: str
-        
+
         :keyword default: Set a default for the option. This value is
           stored if the user doesn't set the flag for this option.
 
         :keyword short: Set the short flag for this option. Defaults
           to find a short flag based off of the value for ``name``.
         :type short: str
-        
+
         :keyword action: Set an action to execute with flag
         :type action: function or string
-        
+
         :keyword required: Add this to the set of required options.
 
         :returns: self (the current Configuration object)
 
         """
-        
+
         # remove special characters from the name
         name=kebab(name)
-        
+
         # change format of final name
         option = re.sub(r'-', '_', name)
-        
+
         # compute the short if requested
         if add_short:
             short=self._find_short(name,short)
-            
+
         if short:
             short="-"+short
-            
+
         # add the default to the option
         if desc and default is not None:
             desc=desc+"\n[default: %(default)s]"
 
         # add the new item to the end of the user arguments
-        self._user_arguments[option] = self.Argument(short, "--"+name, default, type, action, 
+        self._user_arguments[option] = self.Argument(short, "--"+name, default, type, action,
             choices, help=desc, required=required)
 
         return self
 
     def change(self, name, **kwargs):
         """Change an option. Use keyword options to change the attribute of
-        the option. 
+        the option.
 
         Here's an example:
 
@@ -273,40 +273,40 @@ class Configuration(object):
             ...
 
         """
-        
+
         for key, value in kwargs.items():
             self._arguments[name][key]=value
 
     def remove(self, name):
         """ Remove an option from the Configuration object.
         :param name: The name of the option to remove
-        
+
         """
-        
+
         # remove the short if set
         try:
             self._shorts.remove(self._arguments[name].short)
         except KeyError:
             pass
-        
+
         del self._arguments[name]
 
 
     def get(self, name, default=None):
         """Get a stored option value from the Configuration object.
-        
+
         :param name: The name of the value to get
         """
-        
+
         # get arguments from the command line (will not run again if already parsed)
         if not self._user_asked:
             self.ask_user()
 
         return getattr(self, name, default)
-    
+
     def get_option_values(self):
         """Get all of the values for the command line options. Prompt user if not asked."""
-        
+
         class CommandLineOptions(object):
             def __getattr__(self, name):
                 # if an attribute can not be found, this is the last function called
@@ -314,17 +314,17 @@ class Configuration(object):
                 error_message="Unable to find option '{0}' in command line options.\n".format(name)
                 error_message+="The available options are: {0}".format(all_option_names)
                 raise AttributeError(error_message)
-            
+
         # get arguments from the command line (will not run again if already parsed)
         if not self._user_asked:
             self.ask_user()
-        
+
         args=CommandLineOptions()
         for option in list(self._user_arguments.keys()) + list(self._arguments.keys()):
             option = re.sub(r'-', '_', option)
             value = self.get(option)
             setattr(args,option,value)
-                
+
         return args
 
 
@@ -384,17 +384,17 @@ class Configuration(object):
             for arg_name, arg_values in self._arguments.items():
                 setattr(self,arg_name,arg_values.keywords.get("default",None))
             return self
-        
+
         if self._user_asked and not override:
             return self
-        
+
         # add options by dictionary order starting with the user arguments
         for arg_name, arg_values in list(self._user_arguments.items()) + list(self._arguments.items()):
             if arg_values.short:
                 self.parser.add_argument(arg_values.short, arg_values.long, **arg_values.keywords)
             else:
                 self.parser.add_argument(arg_values.long, **arg_values.keywords)
-            
+
         opts = self.parser.parse_args(args=argv)
         set_command_line_options = []
         for name in list(self._user_arguments.keys()) + list(self._arguments.keys()):
@@ -416,7 +416,7 @@ class Configuration(object):
         self._user_asked = True
         return self
 
-        
+
     def _find_short(self, name, short=None):
         s = None
         if short and short[-1] not in self._shorts:
@@ -430,5 +430,3 @@ class Configuration(object):
             raise ValueError("Unable to find short option flag for "+name)
         self._shorts.add(s)
         return "-"+s
-
-    
