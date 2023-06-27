@@ -68,8 +68,8 @@ class Slurm(Grid):
 
     """
 
-    def __init__(self, partition, tmpdir, benchmark_on=None, options=None, environment=None, output_dir=None, scratch=None, max_time=None, max_mem=None, submit_sleep=5):
-        super(Slurm, self).__init__("slurm", SlurmGridWorker, SLURMQueue(partition, benchmark_on, submit_sleep, options, environment, output_dir, scratch), tmpdir, benchmark_on, max_time, max_mem)
+    def __init__(self, partition, tmpdir, benchmark_on=None, options=None, environment=None, image=None, output_dir=None, scratch=None, max_time=None, max_mem=None, submit_sleep=5):
+        super(Slurm, self).__init__("slurm", SlurmGridWorker, SLURMQueue(partition, benchmark_on, submit_sleep, options, environment, image, output_dir, scratch), tmpdir, benchmark_on, max_time, max_mem)
 
 class SlurmGridWorker(GridWorker):
     """ Base Grid Worker class """
@@ -166,11 +166,12 @@ class SlurmGridWorker(GridWorker):
 
 class SLURMQueue(GridQueue):
     
-    def __init__(self, partition, benchmark_on=None, submit_sleep=5, options=None, environment=None, output_dir=None, scratch=None):
+    def __init__(self, partition, benchmark_on=None, submit_sleep=5, options=None, environment=None, image=None, output_dir=None, scratch=None):
         super(SLURMQueue, self).__init__(partition, benchmark_on, submit_sleep)
         
         self.options=options
         self.environment=environment
+        self.image=image
         self.scratch=scratch
         if self.scratch and not self.scratch.endswith("/"):
             self.scratch=self.scratch+"/"
@@ -204,7 +205,11 @@ class SLURMQueue(GridQueue):
         # add user supplied options if provided
         if self.options:
             template+=["#SBATCH "+option for option in self.options]
-            
+           
+        # if user supplied an image, add this to the template
+        if self.image:
+            template+=["singularity run "+self.image]
+ 
         # add user supplied environment commands if provided
         if self.environment:
             template+=self.environment

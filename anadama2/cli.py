@@ -126,6 +126,8 @@ class Configuration(object):
                 help="Number of seconds to wait between job submissions on grid \n[default: %(default)s]")),
             ("grid_environment", cls.Argument(None, "--grid-environment", action="append",
                 help="Commands that will be run before each grid task to set up environment")),
+            ("grid_image", cls.Argument(None, "--grid-image", default="",
+                help="Use this singularity image for the grid tasks")),
             ("grid_scratch", cls.Argument(None, "--grid-scratch", default="",
                 help="The folder to write intermediate scratch files for grid jobs")),
             ("grid_time_max", cls.Argument(None, "--grid-time-max", default=None,

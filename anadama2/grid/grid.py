@@ -446,7 +446,8 @@ class GridQueue(object):
         os.close(handle_rc)
         
         # add the remaining sections to the bash template
-        bash_template = string.Template("\n".join(["#!/bin/bash "] + self.submit_template() + ["${command}", "${rc_command}"]))
+        template = self.submit_template()
+        bash_template = string.Template("\n".join(["#!/bin/bash "] + template + ["${command}", "${rc_command}"] ))
     
         # convert the minutes to the time string "HH:MM:00"
         hours, remaining_minutes = divmod(minutes, 60)
