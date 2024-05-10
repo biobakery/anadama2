@@ -6,6 +6,7 @@ import argparse
 import os
 import subprocess
 import collections
+import inspect
 
 from .util import kebab
 from .util.fname import script_wd
@@ -105,6 +106,8 @@ class Configuration(object):
                 
     @classmethod
     def get_default_options(cls):
+        workflow_path=inspect.getfile(cls)
+        print (workflow_path)
         return [
             ("output", cls.Argument("-o", "--output", required=True, 
                 help="Write output to this directory")),

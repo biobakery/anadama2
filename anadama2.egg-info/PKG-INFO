@@ -1,0 +1,20 @@
+Metadata-Version: 1.1
+Name: anadama2
+Version: 0.10.0
+Summary: AnADAMA2: Another Automated Data Analysis Management Application 2
+Home-page: http://huttenhower.sph.harvard.edu/anadama2
+Author: AnADAMA2 Development Team
+Author-email: anadama-users@googlegroups.com
+License: MIT
+Description: AnADAMA2 is the next generation of AnADAMA. AnADAMA is a tool to create reproducible workflows and execute them efficiently. Tasks can be run locally or in a grid computing environment to increase efficiency. Essential information from all tasks is recorded, using the default logger and command line reporters, to ensure reproducibility. A auto-doc feature allows for workflows to generate documentation automatically to further ensure reproducibility by capturing the latest essential workflow information. AnADAMA2 was architected to be modular allowing users to customize the application by subclassing the base grid meta-schedulers, reporters, and tracked objects (ie files, executables, etc).
+Keywords: microbial,microbiome,bioinformatics,workflow,grid,anadama,anadama2
+Platform: Linux
+Platform: MacOS
+Classifier: Programming Language :: Python
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Environment :: Console
+Classifier: Operating System :: MacOS
+Classifier: Operating System :: Unix
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
