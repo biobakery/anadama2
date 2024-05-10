@@ -1,3 +1,0 @@
-[console_scripts]
-anadama2_aws_batch_task = anadama2.grid.aws_batch_task:main
-
