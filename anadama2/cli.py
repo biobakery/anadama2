@@ -11,9 +11,8 @@ from .util import kebab
 from .util.fname import script_wd
 
 logger = logging.getLogger(__name__)
+SCRIPTS_FOLDER = os.pathsep + os.path.join(os.getcwd(),"src")
 
-# Adding args.scripts folder to the users $PATH so these scripts are available to call directly from a workflow without the user having to install them
-os.environ['PATH'] += os.pathsep + os.path.join(os.getcwd(),"src")
 class Configuration(object):
     """The Configuration class makes objects that get user input via a
     command line interface and store the user input for easy access.
@@ -112,7 +111,7 @@ class Configuration(object):
                 help="Find inputs in this directory \n[default: %(default)s]")),
             ("config", cls.Argument(None, "--config", default=os.path.join(os.getcwd(),"etc"), 
                 help="Find workflow configuration in this folder \n[default: only use command line options]")),
-            ("scripts", cls.Argument(None, "--scripts", default=os.path.join(os.getcwd(),"src"), 
+            ("scripts", cls.Argument(None, "--scripts", default=SCRIPTS_FOLDER, 
                 help="Find location of utility scripts \n[default: %(default)s]")),
             ("tmp", cls.Argument(None, "--tmp", default=os.path.join(os.getcwd(),"tmp"), 
                 help="Find location of temporary folder \n[default: %(default)s]")),
