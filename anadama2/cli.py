@@ -117,7 +117,7 @@ class Configuration(object):
                 help="Find inputs in this directory \n[default: %(default)s]")),
             ("config", cls.Argument(None, "--config", default=os.path.join(os.getcwd(),"etc"), 
                 help="Find workflow configuration in this folder \n[default: only use command line options]")),
-            ("scripts", cls.Argument(None, "--scripts", default=os.path.join(os.getcwd(),"src"), 
+            ("scripts", cls.Argument(None, "--scripts", default=os.path.join(MAIN_PATH,"src"), 
                 help="Find location of utility scripts \n[default: %(default)s]")),
             ("tmp", cls.Argument(None, "--tmp", default=os.path.join(os.getcwd(),"tmp"), 
                 help="Find location of temporary folder \n[default: %(default)s]")),
