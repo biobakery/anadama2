@@ -124,6 +124,7 @@ class Workflow(object):
             self._backend = storage_backend
 
         logger.debug("Instantiated run context")
+        
 
     def get_tmpdir(self):
         """Get the temp directory location. Called here as to not call argparse
@@ -767,6 +768,10 @@ class Workflow(object):
         self.task_results = [None for _ in range(len(self.tasks))]
         self._reporter = reporter or reporters.default(self.vars.get("output"),self.vars.get("log_level"))
         self._reporter.started(self)
+
+        # Adding args.scripts folder to the users $PATH so these scripts are 
+        # available to call directly from a workflow without the user having to install them
+        os.environ['PATH']+=os.pathsep+os.path.join(self.vars.get("scripts"))
         
         # if the backend is not set, then set to default
         if not self._backend:
