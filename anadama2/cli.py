@@ -12,6 +12,13 @@ from .util.fname import script_wd
 
 logger = logging.getLogger(__name__)
 
+try:
+    import __main__
+    MAIN_PATH=os.path.dirname(os.path.abspath(__main__.__file__))
+except Exception as e:
+    MAIN_PATH=os.getcwd()
+
+
 class Configuration(object):
     """The Configuration class makes objects that get user input via a
     command line interface and store the user input for easy access.
