@@ -155,6 +155,7 @@ class Workflow(object):
         grid_selection = self.vars.get("grid")
         grid_partition = self.vars.get("grid_partition")
         grid_jobs = self.vars.get("grid_jobs")
+        grid_tasks = self.vars.get("grid_tasks")
         grid_submit_sleep = self.vars.get("grid_submit_sleep")
         grid_options = self.vars.get("grid_options")
         grid_environment = self.vars.get("grid_environment")
@@ -176,7 +177,7 @@ class Workflow(object):
             if self.vars.get("input") and self.vars.get("output") in self.vars.get("input"):
                 sys.exit("Please select an output folder that is not a subfolder of the input folder")
             grid = Slurm(partition=grid_partition, tmpdir=tmpdir, benchmark_on = grid_benchmark_setting, submit_sleep = grid_submit_sleep,
-                options=grid_options, environment=grid_environment, image=grid_image, output_dir = os.path.abspath(self.vars.get("output")), scratch=grid_scratch, max_time=grid_time_max, max_mem=grid_mem_max)
+                options=grid_options, environment=grid_environment, image=grid_image, output_dir = os.path.abspath(self.vars.get("output")), scratch=grid_scratch, max_time=grid_time_max, max_mem=grid_mem_max, grid_tasks=grid_tasks)
         elif grid_selection == "sge":
             # get the temp output folder for the sge scripts and stdout/stderr files
             tmpdir = os.path.join(self.get_tmpdir(), "sge_files")

@@ -125,6 +125,8 @@ class Configuration(object):
                 help="Number of tasks to execute in parallel locally \n[default: %(default)s]")),
             ("grid_jobs", cls.Argument(None, '--grid-jobs', default=0, type=int, 
                 help="Number of tasks to execute in parallel on the grid \n[default: %(default)s]")),
+            ("grid_tasks", cls.Argument(None, '--grid-tasks', default=[], action="append", 
+                help="Settings for specific tasks on the grid (task name, time, mem, cores, partition, docker_image)")),
             ("grid", cls.Argument(None, "--grid", default=cls.identify_grid(),
                 help="Run gridable tasks on this grid type \n[default: %(default)s]")),
             ("grid_partition", cls.Argument(None, "--grid-partition", default=cls.default_partitions(),

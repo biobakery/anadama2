@@ -171,6 +171,8 @@ For a full list of options, run your workflow script with the "--help" option.
                             The default setting is zero jobs will be run on the
                             grid. By default, all jobs, including gridable jobs,
                             will run locally.
+      --grid-tasks GRID_TASKS
+                            Settings for specific tasks on the grid (task name, time, mem, cores, partition, docker_image)
       -p GRID_PARTITION, --grid-partition=GRID_PARTITION
                             Run gridable tasks on this partition.
       --config              Find workflow configuration in this folder
@@ -689,17 +691,23 @@ Another option is to submit only some of the tasks to the grid computing environ
     6 workflow.do("join [d:global_exe.txt] [d:local_exe.txt] > [t:match_exe.txt]")
     7 workflow.go()
 
-Similarly if we were using ``add_task`` instead of ``do``, ``add_task_gridable`` will run the task on the grid while ``add_task`` will always run the task locally.
+Similarly if we were using ``add_task`` instead of ``do``, ``add_task_gridable`` will run the task on the grid while ``add_task`` will always run the task locally. We can also add names to tasks.
 
 :: 
 
     1 from anadama2 import Workflow
     2 
     3 workflow = Workflow(remove_options=["input","output"])
-    4 workflow.add_task_gridable("ls /usr/bin/ | sort > [targets[0]]", targets="global_exe.txt", mem=20, cores=1, time=2)
+    4 workflow.add_task_gridable("ls /usr/bin/ | sort > [targets[0]]", targets="global_exe.txt", name="task1", mem=20, cores=1, time=2)
     5 workflow.add_task("ls $HOME/.local/bin/ | sort > [targets[0]]", targets="local_exe.txt")
     6 workflow.add_task("join [depends[0]] [depends[0]] > [targets[0]]", targets="match_exe.txt", depends=["global_exe.txt","local_exe.txt"])
     7 workflow.go()
+
+To run this workflow and change the time, memory, and cores (increasing all 2x) for the named task `task1`, run:
+
+::
+
+    $ python exe_check.py --grid-jobs 2 --grid-tasks="task1,4,40,2"
 
 If you are running with sun grid engine instead of slurm, you do not need to modify your workflow. The software will identify the grid engine installed and run on the grid available. Alternatively, when running your workflow provide the options ``--grid <slurm/sge>`` and ``--grid-partition <general>`` on the command line.
 

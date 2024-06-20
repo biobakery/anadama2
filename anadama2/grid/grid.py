@@ -64,13 +64,14 @@ class GridJobRequires(object):
 class Grid(object):
     """ Base Grid Workflow manager class """
     
-    def __init__(self, name, worker, queue, tmpdir, benchmark_on=None, max_time=None, max_mem=None):
+    def __init__(self, name, worker, queue, tmpdir, benchmark_on=None, max_time=None, max_mem=None, grid_tasks=None):
         self.name = name
         self.worker = worker
         self.queue = queue
         self.tmpdir = tmpdir
         self.max_time = None
         self.max_mem = None
+        self.grid_tasks = None
 
         try:
             if max_time:
@@ -84,17 +85,25 @@ class Grid(object):
         except ValueError:
             print("ERROR: Please provide an integer for the max memory: {}".format(max_mem))
         
+        if grid_tasks:
+            self.grid_tasks={}
+            for item in grid_tasks:
+                task_info=item.split(",")
+                self.grid_tasks[task_info[0]]=task_info[1:]
+
         # create the folder if it does not already exist for temp directory
         if not os.path.isdir(self.tmpdir):
             os.makedirs(self.tmpdir)
         
         self.task_data = dict()
 
-    def _get_grid_task_settings(self, kwargs, depends):
+    def _get_grid_task_settings(self, kwargs, depends, name=None):
         """ Get the resources required to run this task on the grid """
         # check for the required keywords
         requires=[]
-        for key in ["time","mem","cores"]:
+        keys=["time","mem","cores","partition","docker_image"]
+
+        for key in keys[0:3]:
             try:
                 requires.append(kwargs[key])
             except KeyError:
@@ -102,14 +111,22 @@ class Grid(object):
 
         # check for optional keyword
         try:
-            requires.append(kwargs["partition"])
+            requires.append(kwargs[keys[3]])
         except KeyError:
             requires.append(None)    
         
         try:
-            requires.append(kwargs["docker_image"])
+            requires.append(kwargs[keys[4]])
         except KeyError:
             requires.append(None)    
+        
+        # check if this task is set by the command line options
+        if name and self.grid_tasks:
+            for task_name, task_info in self.grid_tasks.items():
+                if task_name in name:
+                    for i, item in enumerate(task_info):
+                        if item:
+                            requires[i]=item
         
         requires+=[depends]
        
@@ -121,6 +138,7 @@ class Grid(object):
         jobrequires.mem=[jobrequires.mem,self.max_mem]
  
         return (jobrequires, self.tmpdir)
+
         
     def do(self, task, **kwargs):
         """Accepts the following extra arguments:
@@ -161,7 +179,7 @@ class Grid(object):
         :type partition: str
         """
         
-        self.task_data[task.task_no] = self._get_grid_task_settings(kwargs, task.depends)
+        self.task_data[task.task_no] = self._get_grid_task_settings(kwargs, task.depends, name=task.name)
 
 
     def runner(self, workflow, jobs=1, grid_jobs=1):
