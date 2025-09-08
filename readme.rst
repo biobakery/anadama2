@@ -297,8 +297,7 @@ Running the example workflow with the expanded target option would only create t
 
 **Output Files**
 ----------------
-
-AnADAMA2 will always place at least two items in the output folder. The output folder by default is the directory of your workflow script. If in your workflow, you remove the output folder the database will be written to your home directory and the log will be written to your current working directory. All workflows without output folders will share the same database. Currently it is not possible to run two workflows at once that share the same database.
+AnADAMA2 writes its own artifacts (e.g., anadama.log, internal state/database, scheduler scripts) to the directory supplied via --output. Task outputs are not automatically placed there: files are created exactly at the paths you specify in commands/targets, and a bare filename is resolved relative to the shell’s current working directory (not --output). If no output directory is provided, AnADAMA2 writes its database to your home directory and the log to your current working directory; workflows without an explicit output directory therefore share the same database and cannot run concurrently. To keep runs self-contained and avoid collisions, pass --output and construct your targets/paths under that directory.
 
 **Database**
 ~~~~~~~~~~~~
