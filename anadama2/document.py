@@ -264,6 +264,10 @@ class PweaveDocument(Document):
                 return ''.join(splitted)
 
         class PwebPandocFormatterFixedFigures(PwebPandocFormatter):
+            def _wrap(self, content):
+            # Do not wrap: textwrap breaks markdown image paths at hyphens
+                return content
+
             def make_figure_string_size(self, figname, width, label, caption = ""):
                 # new function to fix figure width string to work with pandoc format
                 # only use width if pandoc installed is >= v1.16.0
@@ -317,8 +321,13 @@ class PweaveDocument(Document):
             sys.stdout = original_stdout
         else:
             sh("pweave {0} -o {1}".format(temp_template,intermediate_template),log_command=True)()
-       
-        sh(pandoc_command.format(intermediate_template, temp_report),log_command=True)()          
+            with open(intermediate_template) as f:
+                md = f.read()
+            import re
+            md = re.sub(r'(!\[[^\]]*\]\([^\)\n]+)\n([^\n]*\))', r'\1\2', md)
+            with open(intermediate_template, "w") as f:
+                f.write(md)
+        sh(pandoc_command.format(intermediate_template, temp_report),log_command=True)()
         
         # change back to original working directory
         os.chdir(current_working_directory)
